@@ -49,9 +49,16 @@ public class DatabaseBackupService {
         // 格式化当前日期
         String formattedDate = currentDate.format(formatter);
 
-        String BACKUP_FILE = BACKUP_DIR + "\\iviep_backup_" + formattedDate + ".sql";
+        // 使用 Paths.get 拼接路径，保证跨平台
+        String BACKUP_FILE = Paths.get(BACKUP_DIR, "iviep_backup_" + formattedDate + ".sql").toString();
 
-        // 修改命令：用ProcessBuilder处理文件输出
+        // 确保备份目录存在
+        File backupDirFile = new File(BACKUP_DIR);
+        if (!backupDirFile.exists()) {
+            backupDirFile.mkdirs();
+        }
+
+        // mysqldump 命令及参数
         String[] command = {
                 DUMP_PATH,
                 "-u", "root",
@@ -59,28 +66,22 @@ public class DatabaseBackupService {
                 "iviep"
         };
 
-        // 创建 ProcessBuilder 实例
         ProcessBuilder processBuilder = new ProcessBuilder(command);
 
         // 重定向输出到指定文件
         processBuilder.redirectOutput(new File(BACKUP_FILE));
 
         try {
-            // 启动进程
             Process process = processBuilder.start();
-
-            // 等待命令执行结束并获取返回码
             int exitCode = process.waitFor();
             System.out.println("Exit Code: " + exitCode);
-
-            // 检查进程退出码，如果是 0，表示成功
             if (exitCode == 0) {
-                System.out.println("The database backup is successful!");
+                System.out.println("The database backup is successful! Backup file: " + BACKUP_FILE);
             } else {
                 System.err.println("Database backup failed!");
             }
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace(); // 打印异常信息
+            e.printStackTrace();
         }
     }
 
