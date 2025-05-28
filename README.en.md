@@ -1,36 +1,35 @@
-# Insightful Verse
+# Insightful Verse Intelligent Education Platform (IVIEP)
 
-#### Description
-{**When you're done, you can delete the content in this README and update the file with details for others getting started with your repository**}
+## 📘 Overview
 
-#### Software Architecture
-Software architecture description
+The **Insightful Verse Intelligent Education Platform** (IVIEP) is an AI-enhanced educational platform focused on intelligent literature reading and knowledge management.  
+It provides a personalized and efficient learning experience for researchers, students, and knowledge workers by integrating semantic analysis, multi-modal resources, and AI-driven interaction.
 
-#### Installation
+## 🔧 Key Features
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+- 📄 **Intelligent Document Parsing**  
+  Extracts structured content and builds knowledge graphs from PDF, DOCX, and HTML documents.
 
-#### Instructions
+- 🧠 **AI Q&A and Summarization**  
+  Uses large language models to generate contextual answers, summaries, and related information.
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+- 🧩 **Multi-modal Learning Resource Integration**  
+  Supports management of text, images, audio, video, and source code in a unified interface.
 
-#### Contribution
+- 🔍 **Semantic Search and Recommendations**  
+  Offers context-aware retrieval, personalized recommendations, and conceptual linkage.
 
-1.  Fork the repository
-2.  Create Feat_xxx branch
-3.  Commit your code
-4.  Create Pull Request
+- 🔐 **Data Privacy and Encryption**  
+  Local-first architecture with optional encrypted storage and controlled cloud sync support.
 
+## 🚀 Getting Started
 
-#### Gitee Feature
+```bash
+git clone https://github.com/your-username/iviep.git
+cd iviep
+# Follow INSTALL.md to configure and run the environment
+````
 
-1.  You can use Readme\_XXX.md to support different languages, such as Readme\_en.md, Readme\_zh.md
-2.  Gitee blog [blog.gitee.com](https://blog.gitee.com)
-3.  Explore open source project [https://gitee.com/explore](https://gitee.com/explore)
-4.  The most valuable open source project [GVP](https://gitee.com/gvp)
-5.  The manual of Gitee [https://gitee.com/help](https://gitee.com/help)
-6.  The most popular members  [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+## 🤝 Join Us
+
+We welcome educators, researchers, AI developers, and open-source contributors to collaborate with us.
