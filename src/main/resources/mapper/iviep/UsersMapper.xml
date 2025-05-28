@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.eagloxis.mapper.UserDao">
+
+    <resultMap id="BaseResultMap" type="tech.eagloxis.model.iviep.User">
+            <id property="userId" column="user_id" jdbcType="INTEGER"/>
+            <result property="username" column="username" jdbcType="VARCHAR"/>
+            <result property="email" column="email" jdbcType="VARCHAR"/>
+            <result property="phone" column="phone" jdbcType="VARCHAR"/>
+            <result property="password" column="password" jdbcType="VARCHAR"/>
+            <result property="classId" column="class_id" jdbcType="INTEGER"/>
+            <result property="eagloxisId" column="eagloxis_id" jdbcType="INTEGER"/>
+            <result property="way1Id" column="way_1_id" jdbcType="VARCHAR"/>
+            <result property="way2Id" column="way_2_id" jdbcType="VARCHAR"/>
+            <result property="way3Id" column="way_3_id" jdbcType="VARCHAR"/>
+            <result property="way4Id" column="way_4_id" jdbcType="VARCHAR"/>
+            <result property="way5Id" column="way_5_id" jdbcType="VARCHAR"/>
+            <result property="way6Id" column="way_6_id" jdbcType="VARCHAR"/>
+            <result property="authority" column="authority" jdbcType="OTHER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        user_id,username,email,
+        phone,password,class_id,
+        eagloxis_id,way_1_id,way_2_id,
+        way_3_id,way_4_id,way_5_id,
+        way_6_id,authority
+    </sql>
+
+    <!-- 根据 identifier 和 password 验证用户登录 -->
+    <select id="checkUserLogin" resultType="tech.eagloxis.model.iviep.User" resultMap="BaseResultMap">
+        SELECT *
+        FROM iviep.users
+        WHERE (email = #{identifier} OR phone = #{identifier} OR user_id = #{identifier})
+          AND password = #{password}
+        LIMIT 1
+    </select>
+
+    <!-- 根据 identifier 获取用户信息 -->
+    <select id="getUserInfo" resultType="tech.eagloxis.model.iviep.User" resultMap="BaseResultMap">
+        SELECT *
+        FROM iviep.users
+        WHERE user_id = #{identifier} OR email = #{identifier} OR phone = #{identifier}
+        LIMIT 1
+    </select>
+
+    <!-- 插入新用户 -->
+    <insert id="doUserRegister">
+        INSERT INTO iviep.users (username, email, phone, password, authority)
+        VALUES (
+                   #{username},
+                   #{email},
+                   #{phone},
+                   #{password},
+                   CASE
+                       WHEN #{authority} IS NOT NULL THEN #{authority}
+                       ELSE 'normal'
+                       END
+               )
+    </insert>
+
+
+    <!-- 根据 email 查询刚插入的用户信息 -->
+    <select id="getUserByEmail" resultType="tech.eagloxis.model.iviep.User" resultMap="BaseResultMap">
+        SELECT *
+        FROM iviep.users
+        WHERE email = #{email}
+    </select>
+
+    <!-- 注销用户 -->
+    <delete id="unregisterUser">
+        DELETE
+        FROM iviep.users
+        WHERE user_id = #{userId}
+        LIMIT 1
+    </delete>
+
+    <!-- 删除用户相关的 fileviewrecords -->
+    <delete id="deleteUserFileViewRecords">
+        DELETE
+        FROM iviep.fileviewrecords
+        WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 更新用户信息 -->
+    <update id="updateUserInfo">
+        UPDATE iviep.users
+        SET username = #{username},
+            email = #{email},
+            phone = #{phone},
+            password = #{password}
+        WHERE user_id = #{userId}
+        LIMIT 1
+    </update>
+</mapper>

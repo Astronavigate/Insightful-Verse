@@ -1,0 +1,46 @@
+<script th:fragment="vmail">
+    function GetCode() {
+        var xhrGetCode = new XMLHttpRequest();
+        var button = document.getElementById("getCode");
+        button.disabled = true;
+        var email = document.getElementById("email") ? document.getElementById("email").value : '';
+
+        var url;
+        if (email.trim() !== '') {
+            url = "/InsightfulVerse/VerifyCode?email=" + email;
+        } else {
+            url = "/InsightfulVerse/VerifyCode";
+        }
+
+        xhrGetCode.open("GET", url, true);
+
+        xhrGetCode.onreadystatechange = function() {
+            if (xhrGetCode.readyState === XMLHttpRequest.DONE) {
+                if (xhrGetCode.status === 200) {
+                    disableButton(90); // 成功获取验证码后，禁用按钮 90 秒
+                } else {
+                    button.disabled = false;
+                    // 可以在这里添加错误处理逻辑，例如显示错误信息给用户
+                    console.error("Failed to get verification code. Status: " + xhrGetCode.status);
+                }
+            }
+        };
+
+        xhrGetCode.send();
+    }
+
+    function disableButton(seconds) {
+        var button = document.getElementById("getCode");
+        button.disabled = true;
+        var countDown = seconds;
+        var interval = setInterval(function() {
+            countDown--;
+            button.innerHTML = "Get Code (" + countDown + "s)";
+            if (countDown <= 0) {
+                clearInterval(interval);
+                button.innerHTML = "Get Code";
+                button.disabled = false; // 恢复按钮状态
+            }
+        }, 1000);
+    }
+</script>

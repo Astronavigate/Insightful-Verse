@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eagloxis Technology</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        /* Reset some basic styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #000;
+            color: white;
+        }
+
+        .navbar {
+            background-color: #111;
+            border-bottom: 1px solid #333;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .hero-section {
+            height: 100vh;
+            background: url('https://example.com/tech-bg.jpg') no-repeat center center/cover;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero-section .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .hero-section h1, .hero-section p {
+            z-index: 1;
+        }
+
+        section {
+            padding: 60px 0;
+        }
+
+        .bg-dark {
+            background-color: #111 !important;
+        }
+
+        .card {
+            background-color: #222;
+            border: none;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+        }
+
+        footer {
+            background-color: #111;
+        }
+    </style>
+    <script>
+        // Add smooth scrolling for navigation links
+        document.querySelectorAll('a.nav-link').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">Eagloxis Technology</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
+                <li class="nav-item"><a class="nav-link" href="#products">Products</a></li>
+                <li class="nav-item"><a class="nav-link" href="#about">About Us</a></li>
+                <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+            </ul>
+        </div>
+    </div>
+    <div>
+        <ul>
+            <li class=""><a class="" href="#">Application</a></li>
+            <li class=""><a class="" href="#">Driver</a></li>
+            <li class=""><a class="" href="#">Contact</a></li>
+        </ul>
+    </div>
+    <div>
+        <ul>
+            <li class=""><a class="" href="#">Software</a></li>
+            <li class=""><a class="" href="#">Hardware</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<header class="hero-section">
+    <div class="overlay"></div>
+    <div class="container text-center text-white d-flex flex-column justify-content-center align-items-center">
+        <h1 class="display-3">Eagloxis Technology</h1>
+        <p class="lead">Innovating the Future with Cutting-Edge Technology</p>
+        <a href="#about" class="btn btn-primary btn-lg mt-4">Discover More</a>
+    </div>
+</header>
+
+<!-- Services Section -->
+<section id="services" class="text-center py-5 bg-dark text-white">
+    <div class="container">
+        <h2 class="mb-5">Our Services</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <i class="fas fa-microchip fa-3x mb-3"></i>
+                <h4>High Performance</h4>
+                <p>Top-notch computing power for advanced tasks.</p>
+            </div>
+            <div class="col-md-4">
+                <i class="fas fa-lock fa-3x mb-3"></i>
+                <h4>Secure Solutions</h4>
+                <p>Leading security protocols for safe data handling.</p>
+            </div>
+            <div class="col-md-4">
+                <i class="fas fa-robot fa-3x mb-3"></i>
+                <h4>AI-Driven Innovation</h4>
+                <p>We leverage AI to create smarter, faster solutions.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Products Section -->
+<section id="products" class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Our Products</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <img src="https://example.com/product1.jpg" class="card-img-top" alt="Product 1">
+                    <div class="card-body">
+                        <h5 class="card-title">Product 1</h5>
+                        <p class="card-text">Revolutionary tech to transform industries.</p>
+                        <a href="#" class="btn btn-primary">Learn More</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <img src="https://example.com/product2.jpg" class="card-img-top" alt="Product 2">
+                    <div class="card-body">
+                        <h5 class="card-title">Product 2</h5>
+                        <p class="card-text">Next-gen solutions for modern challenges.</p>
+                        <a href="#" class="btn btn-primary">Learn More</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<a href="/InsightfulVerse/index.run" type="button">IVIEP</a>
+
+<!-- Footer -->
+<footer class="bg-black text-center text-white py-3">
+    <p>&copy; 2024 Eagloxis Technology. All Rights Reserved.</p>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script src="script.js"></script>
+</body>
+</html>

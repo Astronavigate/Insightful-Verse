@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<!-- saved from url=(0048)http://localhost:32453/InsightfulVerse/Login.run -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <title>Insightful Verse - Login</title>
+  
+
+<link rel="icon" href="http://localhost:32453/file/img/logo.png" type="image/png">
+<link href="./Insightful Verse - Login_files/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="./Insightful Verse - Login_files/bootstrap-icons.css">
+<style>
+    /* Main */
+    body {
+        background-color: #f3f3f3;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .link {
+        color: #0366d6;
+        text-decoration: none;
+    }
+
+    .link:hover {
+        text-decoration: underline;
+    }
+
+    .link-icon {
+        text-decoration: none;
+    }
+
+    /* NavBar */
+    .navbar {
+        margin-top: 1rem;
+        margin-left: 8%;
+        margin-right: 8%;
+        font-size: 1.2rem;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.117);
+        border-radius: 1.8rem;
+        z-index: 1000;
+    }
+
+    .carousel {
+        max-width: 90%;
+        margin: 0 auto;
+    }
+
+    .carousel-inner {
+        border-radius: 1rem;
+    }
+
+    .navbar-brand {
+        color: #333;
+        font-weight: bold;
+    }
+
+    .navbar-toggler {
+        border: none;
+    }
+
+    .navbar-nav .nav-link {
+        font-weight: bold;
+        transition: 0.3s;
+    }
+
+    /* MainContent */
+    .content {
+        margin-top: 6rem;
+        margin-left: 2rem;
+        margin-right: 2rem;
+        display: flex;
+    }
+
+    .contain {
+        margin-top: 2rem;
+        margin-left: 4rem;
+        margin-right: 4rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .contain table {
+        width: 80%;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    /* Footer */
+    footer {
+        background-color: #DDD;
+        box-shadow: 0 0 4px 6px rgba(240, 240, 240, 0.7);
+        padding: 1.25rem 0;
+        text-align: center;
+        margin-top: 3.125rem;
+        margin-left: 8%;
+        margin-right: 8%;
+        border-top-left-radius: 1.5rem;
+        border-top-right-radius: 1.5rem;
+    }
+
+    /* exclusivecss */
+    .rectangle-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 90%;
+        margin: 0 auto;
+    }
+
+    .rectangle {
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+        background-color: #d5d5d5;
+        border: 4px solid #f0f0f0;
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        margin-left: 1rem;
+        margin-right: 1rem;
+        min-width: 15rem;
+        text-align: center; /* 居中文本内容 */
+    }
+
+    css
+    .rectangle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between; /* 让内容和空白区域之间有空隙 */
+        background-color: #d5d5d5;
+        border: 4px solid #f0f0f0;
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        min-width: 15rem;
+        text-align: center;
+    }
+
+    .rectangle .content {
+        flex: 1; /* 这里让内容部分自动填充剩余空间 */
+    }
+
+    .rectangle img {
+        width: 100%;
+        height: auto;
+        max-height: 80%;
+        border-radius: 1.5rem;
+        max-width: 100%; /* 确保图片在小屏幕设备上不会溢出 */
+    }
+
+    .rectangle .cont {
+        margin-top: 0.5rem;
+    }
+
+    .rectangle h5 {
+        margin-top: 1rem; /* 标题与内容之间的间距 */
+    }
+
+    .rectangle .button {
+        padding: 0.5rem 1.5rem;
+        background-color: gray;
+        color: #fff;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        border: none;
+        margin-top: 1rem;
+        text-decoration: none;
+        transition: background-color 0.4s; /* 添加过渡效果 */
+    }
+
+    .rectangle .button:hover {
+        background-color: #a0a0a0;
+    }
+
+    .rectangle ul li {
+        line-height: 1.5; /* 调整列表项的行高 */
+    }
+
+    .form-group {
+        width: 80%;
+        max-width: 37.5rem;
+        margin: 2rem auto;
+        padding: 1rem;
+        background-color: #fff;
+        border-radius: 1rem;
+        box-shadow: 0 0.1rem rgba(0, 0, 0, 0.1);
+    }
+
+    form .btnn {
+        width: 100%;
+        padding: 1%;
+        margin-top: 1rem;
+        border: none;
+        border-radius: 0.1875rem;
+        cursor: pointer;
+    }
+
+    #codeArea {
+        width: 80vw;
+        height: 52vh;
+        overflow: auto;
+        resize: none;
+        border-radius: 1rem;
+        padding: 2rem 1rem 1rem;
+        background-color: #cdf3d2;
+        border: 1px solid #ddd;
+    }
+
+    #resultArea {
+        width: 80vw;
+        height: 24vh;
+        border-radius: 1rem;
+        border: 1px solid #ddd;
+        margin-top: 1rem;
+        padding: 2rem 1rem 1rem;
+        background-color: #C7EDCC;
+        overflow: auto;
+        font-size: 14px;
+    }
+
+    /* Relyer */
+    iframe {
+        margin-top: 1rem;
+    }
+
+    /* personal */
+    .contain {
+        margin-top: 2rem;
+        margin-left: 4rem;
+        margin-right: 4rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .contain table {
+        width: 80%;
+        box-shadow: 0 0 0 2px #CCC;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .blank {
+        flex-grow: 1;
+    }
+
+    .content {
+        margin: 2rem auto;
+        width: 80vw;
+    }
+
+    .contact {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 1rem;
+    }
+
+    .nz-bg {
+        background-image: url('/file/img/eagle-neon-dark.png');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        position: relative;
+        overflow: hidden;
+        opacity: 0.6;
+    }
+
+    .blue-box {
+        display: inline-block;
+        width: 8px;
+        height: 24px;
+        background-color: #0d6efd;
+        margin-right: 12px;
+        vertical-align: middle;
+    }
+</style>
+
+<!-- Bootstrap Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script src="./Insightful Verse - Login_files/bootstrap.min.js.download"></script>
+
+<script src="chrome-extension://ajdpfmkffanmkhejnopjppegokpogffp/assets/prompt.js"></script><input type="hidden" id="_o_dbjbempljhcmhlfpfacalomonjpalpko" data-inspect-config="3"><script type="text/javascript" src="chrome-extension://odphnbhiddhdpoccbialllejaajemdio/scripts/inspector.js"></script><link type="text/css" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&amp;family=Poppins:ital,wght@0,400;0,500;0,600;0,800;1,400;1,500;1,600;1,800&amp;display=swap"></head>
+<body>
+  
+
+
+
+
+<nav class="navbar navbar-expand-md navbar-light">
+    <div class="container">
+        <a class="navbar-brand" href="http://localhost:32453/InsightfulVerse/index.run">Insightful Verse</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="http://localhost:32453/InsightfulVerse/index.run">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="http://localhost:32453/InsightfulVerse/Course.run">Course</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="http://localhost:32453/InsightfulVerse/Login.run">
+                        Login
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="http://localhost:32453/InsightfulVerse/About.run">About</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+  <div class="container my-4">
+    <form class="form-group" action="http://localhost:32453/InsightfulVerse/Login.do.run">
+        <h2 style="text-align: center;">Login</h2>
+        <label for="identifier">Id or email or phone:</label>
+        <input type="text" class="form-control" id="identifier" name="identifier"><br>
+        <label for="password">Password:</label>
+        <input type="password" class="form-control" id="password" name="password"><br>
+        <input type="submit" class="btn btnn btn-primary" value="Login">
+        <input type="reset" class="btn btnn btn-secondary" value="Reset">
+        <a type="button" class="btn btnn btn-warning" href="http://localhost:32453/InsightfulVerse/Register.run">Register</a>
+    </form>
+  </div>
+
+  <div class="blank"></div>
+
+  
+
+<footer class="text-center text-lg-start bg-body-tertiary text-muted">
+    <section>
+        <div class="container text-center text-md-start mt-5">
+            <div class="row mt-3">
+                <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
+                    <h6 class="text-uppercase fw-bold mb-4">
+                        Useful links
+                    </h6>
+                    <p>
+                        <a href="http://localhost:32453/index.run" class="text-reset link">Eagloxis Tech</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/Login.run#" class="text-reset link">None</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/Login.run#" class="text-reset link">None</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/Login.run#" class="text-reset link">None</a>
+                    </p>
+                </div>
+
+                <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
+                    <h6 class="text-uppercase fw-bold mb-4">
+                        Useful links
+                    </h6>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/Register.run" class="text-reset link">Register</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/Code.run" class="text-reset link">Code</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/Personal.run" class="text-reset link">Personal</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/About.run" class="text-reset link">About</a>
+                    </p>
+                </div>
+
+                <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
+                    <h6 class="text-uppercase fw-bold mb-4">
+                        Social media
+                    </h6>
+                    <a href="http://localhost:32453/InsightfulVerse/Login.run#" class="me-4 link-icon">
+                        <i class="bi-facebook" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                    <a href="https://www.tweiter.com/anubisyno" class="me-4 link-icon">
+                        <i class="bi-twitter-x" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                    <a href="http://localhost:32453/InsightfulVerse/Login.run#" class="me-4 link-icon">
+                        <i class="bi-google" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                    <a href="http://localhost:32453/InsightfulVerse/Login.run#" class="me-4 link-icon">
+                        <i class="bi-instagram" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                    <a href="http://localhost:32453/InsightfulVerse/Login.run#" class="me-4 link-icon">
+                        <i class="bi-linkedin" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                    <a href="https://github.com/Astronavigate" class="me-4 link-icon">
+                        <i class="bi-github" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                </div>
+
+                <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mb-md-0 mb-4">
+                    <h6 class="text-uppercase fw-bold mb-4">Contact</h6>
+                    <p><i class="bi bi-building-fill me-2" style="font-size: 1rem; color: gray;"></i> DaLian, Software Park Road, China</p>
+                    <p><i class="bi bi-envelope-open-fill me-2" style="font-size: 1rem; color: gray;"></i> <a class="link" href="mailto:arnold-lopez@auet.onmicrosoft.com">arnold-lopez@auet.onmicrosoft.com</a></p>
+                    <p><i class="bi bi-telephone-fill me-2" style="font-size: 1rem; color: gray;"></i> <a class="link" href="tel:+8615640993693">+86 156 4099 3693</a></p>
+                    <p><i class="bi bi-phone-fill me-2" style="font-size: 1rem; color: gray;"></i> <a class="link" href="tel:+14086414215">+1 408 641 4215</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="text-center p-4" style="background-color: rgba(0, 0, 0, 0.05);">
+        © 2024 Eagloxis tech. All rights reserved.
+    </div>
+</footer>
+
+
+
+<span id="PING_CONTENT_DLS_POPUP" style="display: none;"></span><div style="background-color: transparent; border: none; bottom: 15px; display: block; margin: 0px; opacity: 1; padding: 0px; position: fixed; right: 15px; z-index: 2147483647;"><template shadowrootmode="closed"><style>/*!
+ * 
+ *     MCAFEE RESTRICTED CONFIDENTIAL
+ *     Copyright (c) 2024 McAfee, LLC
+ *
+ *     The source code contained or described herein and all documents related
+ *     to the source code ("Material") are owned by McAfee or its
+ *     suppliers or licensors. Title to the Material remains with McAfee
+ *     or its suppliers and licensors. The Material contains trade
+ *     secrets and proprietary and confidential information of McAfee or its
+ *     suppliers and licensors. The Material is protected by worldwide copyright
+ *     and trade secret laws and treaty provisions. No part of the Material may
+ *     be used, copied, reproduced, modified, published, uploaded, posted,
+ *     transmitted, distributed, or disclosed in any way without McAfee's prior
+ *     express written permission.
+ *
+ *     No license under any patent, copyright, trade secret or other intellectual
+ *     property right is granted to or conferred upon you by disclosure or
+ *     delivery of the Materials, either expressly, by implication, inducement,
+ *     estoppel or otherwise. Any license under such intellectual property rights
+ *     must be expressed and approved by McAfee in writing.
+ *
+ */
+@import url(https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Poppins:ital,wght@0,400;0,500;0,600;0,800;1,400;1,500;1,600;1,800&display=swap);
+*{border:0;box-sizing:border-box;font:inherit;font-family:"mcafeeOpenSans","Poppins",Helvetica,Arial,Arial,Helvetica,sans-serif;font-size:100%;margin:0;padding:0;vertical-align:baseline;outline:none}article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block}html,body{background-color:#f5f6fa;font-family:"Poppins",Helvetica,Arial,"mcafeeOpenSans",Arial,Helvetica,sans-serif;line-height:1;height:100%;width:100%}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:after,blockquote:before,q:after,q:before{content:"";content:none}table{border-collapse:collapse;border-spacing:0}b{font-weight:bold}img{display:block}.dls__container{align-items:center;display:flex;margin:0 auto;margin-top:50px;position:relative}.dls__popup__expanded{align-items:center;overflow:hidden;border-radius:100px;cursor:pointer;display:flex;left:0;padding:15px;position:absolute;height:95px;width:383px;background-color:#fff;transition:all .3s ease-in-out}.dls__popup__expanded .dls__icon{height:65px;width:73px}.content{margin-left:12px}.content .content__images{display:flex;align-items:center;width:250px}.content .content__images .seperator__line{margin-left:5px;margin-right:10px}.content .content__images #dls_close_icon{cursor:pointer;margin-left:auto;margin-right:0px}.content p{font-family:"Poppins",Arial,Helvetica,sans-serif;font-weight:"400";font-size:14px;line-height:20px;margin-top:8px;color:#4258ff;width:250px;cursor:pointer}.shield{overflow:hidden;box-shadow:0px 2px 4px 0px rgba(33,41,52,.12),0px -1px 2px 0px rgba(0,0,0,.08);align-items:center;border-radius:100px;bottom:0;display:flex;height:95px;justify-content:center;position:absolute;right:0;width:383px;transition:all .3s ease-in-out}.shield__circle{display:flex;justify-content:center;align-items:center;width:55px;height:55px;background-color:#c01818;transition:all .6s ease-in-out .2s;z-index:1;opacity:0}
+
+/*# sourceMappingURL=../sourceMap/edge/css/download_scan_popup.css.map*/</style><div class="dls__container">
+  <div class="shield" style="background: transparent; opacity: 0.1; display: none;">
+    <div class="shield__circle" style="opacity: 1;">
+      <img src="chrome-extension://fdhgeoginicibhagdmblfikbgbkahibd/images/download_scan/mcafee_logo_white.svg?secret=unzlpv" x-mcsrc="" id="dls_ballon_icon" x-mcsrcparsed="true">
+    </div>
+    <div class="dls__popup__expanded" style="opacity: 0;">
+      <img src="chrome-extension://fdhgeoginicibhagdmblfikbgbkahibd/images/download_scan/download_scan_icon.svg?secret=unzlpv" x-mcsrc="" class="dls__icon" x-mcsrcparsed="true">
+      <div class="content">
+        <div class="content__images">
+          <img src="chrome-extension://fdhgeoginicibhagdmblfikbgbkahibd/images/download_scan/mcafee_logo_red.svg?secret=unzlpv" x-mcsrc="" id="dls_mcafee_logo" x-mcsrcparsed="true">
+          <img src="chrome-extension://fdhgeoginicibhagdmblfikbgbkahibd/images/download_scan/seperator_line.svg?secret=unzlpv" x-mcsrc="" class="seperator__line" x-mcsrcparsed="true">
+          <img src="chrome-extension://fdhgeoginicibhagdmblfikbgbkahibd/images/download_scan/webadvisor.svg?secret=unzlpv" x-mcsrc="" x-mcsrcparsed="true">
+          <img src="chrome-extension://fdhgeoginicibhagdmblfikbgbkahibd/images/download_scan/close-outline.svg?secret=unzlpv" x-mcsrc="" id="dls_close_icon" x-mcsrcparsed="true">
+        </div>
+        <p id="download_scan_popup_expanded_descriptions">Your download's being scanned. We'll let you know if there's an issue.</p>
+      </div>
+    </div>
+  </div>
+</div><style>/*!
+ * 
+ *     MCAFEE RESTRICTED CONFIDENTIAL
+ *     Copyright (c) 2024 McAfee, LLC
+ *
+ *     The source code contained or described herein and all documents related
+ *     to the source code ("Material") are owned by McAfee or its
+ *     suppliers or licensors. Title to the Material remains with McAfee
+ *     or its suppliers and licensors. The Material contains trade
+ *     secrets and proprietary and confidential information of McAfee or its
+ *     suppliers and licensors. The Material is protected by worldwide copyright
+ *     and trade secret laws and treaty provisions. No part of the Material may
+ *     be used, copied, reproduced, modified, published, uploaded, posted,
+ *     transmitted, distributed, or disclosed in any way without McAfee's prior
+ *     express written permission.
+ *
+ *     No license under any patent, copyright, trade secret or other intellectual
+ *     property right is granted to or conferred upon you by disclosure or
+ *     delivery of the Materials, either expressly, by implication, inducement,
+ *     estoppel or otherwise. Any license under such intellectual property rights
+ *     must be expressed and approved by McAfee in writing.
+ *
+ */
+.mc-interactive-balloon{position:absolute;right:-50px;bottom:8px;box-shadow:rgba(0,0,0,.12) 0px 0px 10px;height:40px;width:40px;background:#1671ee;border-radius:20px;display:flex;justify-content:center;align-items:center}
+
+/*# sourceMappingURL=../sourceMap/edge/css/interactive_balloon.css.map*/</style></template></div></body></html>

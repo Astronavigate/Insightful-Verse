@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Insightful Verse - Update User Info</title>
+  <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+  <th:block th:replace="~{common/sub/iviep/lib/verify-email :: vmail}"></th:block>
+</head>
+<body>
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+<form class="form-group" th:action="@{/InsightfulVerse/UpdateUser.do}" method="post">
+  <h2 style="text-align: center;">Update Info</h2>
+
+  <label for="username">Your Name:</label>
+  <input type="text" class="form-control" id="username" name="username"
+         th:value="${session.user.getUsername()}"><br>
+
+  <label for="email">Your Email:</label>
+  <input type="text" class="form-control" id="email" name="email"
+         th:value="${session.user.getEmail()}"><br>
+
+  <label for="phone">Your Phone:</label>
+  <input type="text" class="form-control" id="phone" name="phone"
+         th:value="${session.user.getPhone()}"><br>
+
+  <label for="password">New Password:</label>
+  <input type="password" class="form-control" id="password" name="password"><br>
+
+  <label for="rePassword">Confirm New Password:</label>
+  <input type="password" class="form-control" id="rePassword" name="rePassword"><br>
+
+  <label for="oldPassword">Old Password:</label>
+  <input type="password" class="form-control" id="oldPassword" name="oldPassword"><br>
+
+  <label for="captcha">Email Verify Code:</label>
+  <div class="input-group mb-3">
+    <input type="text" class="form-control" id="captcha" name="captcha">
+    <button type="button" class="btn btn-outline-secondary" id="getCode"
+            onclick="GetCode()">Get Code</button>
+  </div>
+
+  <input type="submit" class="btn btnn btn-warning" value="Update">
+  <input type="reset" class="btn btnn btn-secondary" value="Reset">
+</form>
+
+<div class="blank"></div>
+
+<th:block th:replace="~{common/sub/iviep/iviep-footer :: footer}"></th:block>
+</body>
+</html>

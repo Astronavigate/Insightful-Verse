@@ -1,0 +1,57 @@
+<script th:fragment="uinfo">
+    function getCookie(name) {
+        var value = "; " + document.cookie;
+        var parts = value.split("; " + name + "=");
+        if (parts.length == 2) return parts.pop().split(";").shift();
+    }
+
+    const cookieId = getCookie('IVIEPLoginId');
+    const cookieName = getCookie('IVIEPLoginName');
+
+    if (cookieId) {
+        document.getElementById("userIdPlace").innerHTML = cookieId;
+    } else {
+        document.getElementById("userIdPlace").innerHTML = "No user login";
+    }
+
+    if (cookieName) {
+        document.getElementById("userNamePlace").innerHTML = cookieName;
+    } else {
+        document.getElementById("userNamePlace").innerHTML = "No user login";
+    }
+
+    var xhrViewedFiles = new XMLHttpRequest();
+    xhrViewedFiles.open("GET", "viewedFiles?userId=" + encodeURIComponent(cookieId), true);
+    xhrViewedFiles.onreadystatechange = function() {
+        if (xhrViewedFiles.readyState === 4 && xhrViewedFiles.status === 200) {
+            var response = xhrViewedFiles.responseText;
+            // 处理服务器返回的数据
+            document.getElementById("viewListPlace").innerHTML = response;
+        }
+    };
+    xhrViewedFiles.send();
+
+    var xhrUserInfo = new XMLHttpRequest();
+    xhrUserInfo.open("GET", "userInfo?userId=" + encodeURIComponent(cookieId), true);
+    xhrUserInfo.onreadystatechange = function() {
+        if (xhrUserInfo.readyState === 4 && xhrUserInfo.status === 200) {
+            var response = xhrUserInfo.responseText;
+            // 处理服务器返回的数据
+            document.getElementById("userInfoPlace").innerHTML += response;
+        }
+    };
+    xhrUserInfo.send();
+
+    function Logout() {
+        var xhrLogout = new XMLHttpRequest();
+        xhrLogout.open("POST", "Logout", true);
+        xhrLogout.onreadystatechange = function() {
+            if (xhrLogout.readyState === XMLHttpRequest.DONE) {
+                if (xhrLogout.status === 200) {
+                    window.location.href = "index.jsp";
+                }
+            }
+        };
+        xhrLogout.send();
+    }
+</script>

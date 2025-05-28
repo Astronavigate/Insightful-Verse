@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Error</title>
+  <!-- 引入公共部分 -->
+  <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+</head>
+<body>
+<!-- 页面头部 -->
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="container my-4">
+  <header>
+    <h1>Insightful Verse Error Page</h1>
+  </header>
+
+  <!-- 显示错误信息 -->
+  <p th:text="${errorMessage}"></p>
+</div>
+
+<div class="blank"></div>
+
+<!-- 页面底部 -->
+<th:block th:replace="~{common/sub/iviep/iviep-footer :: footer}"></th:block>
+
+</body>
+</html>

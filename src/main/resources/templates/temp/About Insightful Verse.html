@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<!-- saved from url=(0048)http://localhost:32453/InsightfulVerse/About.run -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <title>About Insightful Verse</title>
+  
+
+<link rel="icon" href="http://localhost:32453/file/img/logo.png" type="image/png">
+<link href="./About Insightful Verse_files/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="./About Insightful Verse_files/bootstrap-icons.css">
+<style>
+    /* Main */
+    body {
+        background-color: #f3f3f3;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .link {
+        color: #0366d6;
+        text-decoration: none;
+    }
+
+    .link:hover {
+        text-decoration: underline;
+    }
+
+    .link-icon {
+        text-decoration: none;
+    }
+
+    /* NavBar */
+    .navbar {
+        margin-top: 1rem;
+        margin-left: 8%;
+        margin-right: 8%;
+        font-size: 1.2rem;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.117);
+        border-radius: 1.8rem;
+        z-index: 1000;
+    }
+
+    .carousel {
+        max-width: 90%;
+        margin: 0 auto;
+    }
+
+    .carousel-inner {
+        border-radius: 1rem;
+    }
+
+    .navbar-brand {
+        color: #333;
+        font-weight: bold;
+    }
+
+    .navbar-toggler {
+        border: none;
+    }
+
+    .navbar-nav .nav-link {
+        font-weight: bold;
+        transition: 0.3s;
+    }
+
+    /* MainContent */
+    .content {
+        margin-top: 6rem;
+        margin-left: 2rem;
+        margin-right: 2rem;
+        display: flex;
+    }
+
+    .contain {
+        margin-top: 2rem;
+        margin-left: 4rem;
+        margin-right: 4rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .contain table {
+        width: 80%;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    /* Footer */
+    footer {
+        background-color: #DDD;
+        box-shadow: 0 0 4px 6px rgba(240, 240, 240, 0.7);
+        padding: 1.25rem 0;
+        text-align: center;
+        margin-top: 3.125rem;
+        margin-left: 8%;
+        margin-right: 8%;
+        border-top-left-radius: 1.5rem;
+        border-top-right-radius: 1.5rem;
+    }
+
+    /* exclusivecss */
+    .rectangle-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 90%;
+        margin: 0 auto;
+    }
+
+    .rectangle {
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+        background-color: #d5d5d5;
+        border: 4px solid #f0f0f0;
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        margin-left: 1rem;
+        margin-right: 1rem;
+        min-width: 15rem;
+        text-align: center; /* 居中文本内容 */
+    }
+
+    css
+    .rectangle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between; /* 让内容和空白区域之间有空隙 */
+        background-color: #d5d5d5;
+        border: 4px solid #f0f0f0;
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        min-width: 15rem;
+        text-align: center;
+    }
+
+    .rectangle .content {
+        flex: 1; /* 这里让内容部分自动填充剩余空间 */
+    }
+
+    .rectangle img {
+        width: 100%;
+        height: auto;
+        max-height: 80%;
+        border-radius: 1.5rem;
+        max-width: 100%; /* 确保图片在小屏幕设备上不会溢出 */
+    }
+
+    .rectangle .cont {
+        margin-top: 0.5rem;
+    }
+
+    .rectangle h5 {
+        margin-top: 1rem; /* 标题与内容之间的间距 */
+    }
+
+    .rectangle .button {
+        padding: 0.5rem 1.5rem;
+        background-color: gray;
+        color: #fff;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        border: none;
+        margin-top: 1rem;
+        text-decoration: none;
+        transition: background-color 0.4s; /* 添加过渡效果 */
+    }
+
+    .rectangle .button:hover {
+        background-color: #a0a0a0;
+    }
+
+    .rectangle ul li {
+        line-height: 1.5; /* 调整列表项的行高 */
+    }
+
+    .form-group {
+        width: 80%;
+        max-width: 37.5rem;
+        margin: 2rem auto;
+        padding: 1rem;
+        background-color: #fff;
+        border-radius: 1rem;
+        box-shadow: 0 0.1rem rgba(0, 0, 0, 0.1);
+    }
+
+    form .btnn {
+        width: 100%;
+        padding: 1%;
+        margin-top: 1rem;
+        border: none;
+        border-radius: 0.1875rem;
+        cursor: pointer;
+    }
+
+    #codeArea {
+        width: 80vw;
+        height: 52vh;
+        overflow: auto;
+        resize: none;
+        border-radius: 1rem;
+        padding: 2rem 1rem 1rem;
+        background-color: #cdf3d2;
+        border: 1px solid #ddd;
+    }
+
+    #resultArea {
+        width: 80vw;
+        height: 24vh;
+        border-radius: 1rem;
+        border: 1px solid #ddd;
+        margin-top: 1rem;
+        padding: 2rem 1rem 1rem;
+        background-color: #C7EDCC;
+        overflow: auto;
+        font-size: 14px;
+    }
+
+    /* Relyer */
+    iframe {
+        margin-top: 1rem;
+    }
+
+    /* personal */
+    .contain {
+        margin-top: 2rem;
+        margin-left: 4rem;
+        margin-right: 4rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .contain table {
+        width: 80%;
+        box-shadow: 0 0 0 2px #CCC;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .blank {
+        flex-grow: 1;
+    }
+
+    .content {
+        margin: 2rem auto;
+        width: 80vw;
+    }
+
+    .contact {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 1rem;
+    }
+
+    .nz-bg {
+        background-image: url('/file/img/eagle-neon-dark.png');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        position: relative;
+        overflow: hidden;
+        opacity: 0.6;
+    }
+
+    .blue-box {
+        display: inline-block;
+        width: 8px;
+        height: 24px;
+        background-color: #0d6efd;
+        margin-right: 12px;
+        vertical-align: middle;
+    }
+</style>
+
+<!-- Bootstrap Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script src="./About Insightful Verse_files/bootstrap.min.js.download"></script>
+
+<script src="chrome-extension://ajdpfmkffanmkhejnopjppegokpogffp/assets/prompt.js"></script><input type="hidden" id="_o_dbjbempljhcmhlfpfacalomonjpalpko" data-inspect-config="3"><script type="text/javascript" src="chrome-extension://odphnbhiddhdpoccbialllejaajemdio/scripts/inspector.js"></script></head>
+<body>
+  
+
+
+
+
+<nav class="navbar navbar-expand-md navbar-light">
+    <div class="container">
+        <a class="navbar-brand" href="http://localhost:32453/InsightfulVerse/index.run">Insightful Verse</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="http://localhost:32453/InsightfulVerse/index.run">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="http://localhost:32453/InsightfulVerse/Course.run">Course</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="http://localhost:32453/InsightfulVerse/Login.run">
+                        Login
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="http://localhost:32453/InsightfulVerse/About.run">About</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+  
+  <div class="container my-4">
+    <header>
+      <h1>Insightful Verse Integrated Educating Platform</h1>
+    </header>
+    <br>
+    <main>
+     <section>
+       <h2>About Us</h2>
+       <p>
+         Insightful Verse Integrated Educating Platform (Insightful Verse or IVIEP) is a cutting-edge educational technology platform
+         that revolutionizes the way learning is conducted and knowledge is imparted.   
+         Founded with a vision to provide personalized and engaging learning experiences to students of all ages and backgrounds,
+         Insightful Verse aims to empower learners with the tools and resources they need to achieve their academic and career goals.
+       </p>
+  
+       <h3>Our Mission</h3>
+       <p>
+         Our mission is to create an inclusive and collaborative learning environment   
+         where students can explore their passions, develop critical thinking skills,   
+         and build a solid foundation for lifelong learning.  
+       </p>
+
+       <h3>Our Features</h3>
+       <ul>
+         <li>Personalized Learning Paths</li>
+         <li>Interactive Content</li>
+         <li>Collaborative Learning</li>
+         <li>Real-time Feedback</li>
+         <li>Integrated Tools</li>
+       </ul>
+  
+       <h3>Our Impact</h3>
+        <p>
+          Thousands of students have benefited from our personalized learning paths and interactive content,   
+          leading to improved academic performance and higher levels of engagement.   
+          Teachers and mentors have also reported increased efficiency and satisfaction with our platform.  
+        </p>
+ 
+        <h3>Future Outlook</h3>
+        <p>
+          Looking ahead, we plan to continue expanding its features and services
+          to meet the evolving needs of learners. We aim to incorporate more advanced technologies,   
+          such as artificial intelligence and machine learning, to further personalize learning experiences   
+          and provide students with even more effective tools for success.  
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <div class="blank"></div>
+
+  
+
+<footer class="text-center text-lg-start bg-body-tertiary text-muted">
+    <section>
+        <div class="container text-center text-md-start mt-5">
+            <div class="row mt-3">
+                <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
+                    <h6 class="text-uppercase fw-bold mb-4">
+                        Useful links
+                    </h6>
+                    <p>
+                        <a href="http://localhost:32453/index.run" class="text-reset link">Eagloxis Tech</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/About.run#" class="text-reset link">None</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/About.run#" class="text-reset link">None</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/About.run#" class="text-reset link">None</a>
+                    </p>
+                </div>
+
+                <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
+                    <h6 class="text-uppercase fw-bold mb-4">
+                        Useful links
+                    </h6>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/Register.run" class="text-reset link">Register</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/Code.run" class="text-reset link">Code</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/Personal.run" class="text-reset link">Personal</a>
+                    </p>
+                    <p>
+                        <a href="http://localhost:32453/InsightfulVerse/About.run" class="text-reset link">About</a>
+                    </p>
+                </div>
+
+                <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
+                    <h6 class="text-uppercase fw-bold mb-4">
+                        Social media
+                    </h6>
+                    <a href="http://localhost:32453/InsightfulVerse/About.run#" class="me-4 link-icon">
+                        <i class="bi-facebook" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                    <a href="https://www.tweiter.com/anubisyno" class="me-4 link-icon">
+                        <i class="bi-twitter-x" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                    <a href="http://localhost:32453/InsightfulVerse/About.run#" class="me-4 link-icon">
+                        <i class="bi-google" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                    <a href="http://localhost:32453/InsightfulVerse/About.run#" class="me-4 link-icon">
+                        <i class="bi-instagram" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                    <a href="http://localhost:32453/InsightfulVerse/About.run#" class="me-4 link-icon">
+                        <i class="bi-linkedin" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                    <a href="https://github.com/Astronavigate" class="me-4 link-icon">
+                        <i class="bi-github" style="font-size: 2rem; color: gray;"></i>
+                    </a>
+                </div>
+
+                <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mb-md-0 mb-4">
+                    <h6 class="text-uppercase fw-bold mb-4">Contact</h6>
+                    <p><i class="bi bi-building-fill me-2" style="font-size: 1rem; color: gray;"></i> DaLian, Software Park Road, China</p>
+                    <p><i class="bi bi-envelope-open-fill me-2" style="font-size: 1rem; color: gray;"></i> <a class="link" href="mailto:arnold-lopez@auet.onmicrosoft.com">arnold-lopez@auet.onmicrosoft.com</a></p>
+                    <p><i class="bi bi-telephone-fill me-2" style="font-size: 1rem; color: gray;"></i> <a class="link" href="tel:+8615640993693">+86 156 4099 3693</a></p>
+                    <p><i class="bi bi-phone-fill me-2" style="font-size: 1rem; color: gray;"></i> <a class="link" href="tel:+14086414215">+1 408 641 4215</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="text-center p-4" style="background-color: rgba(0, 0, 0, 0.05);">
+        © 2024 Eagloxis tech. All rights reserved.
+    </div>
+</footer>
+
+  
+</body></html>

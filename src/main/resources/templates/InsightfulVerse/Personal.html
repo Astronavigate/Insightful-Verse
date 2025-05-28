@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Insightful Verse Personal</title>
+  <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+</head>
+<body>
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="contain">
+  <table class="table table-striped table-hover" id="userInfoPlace">
+    <tr>
+      <td>System Version</td>
+      <td th:text="${ivVersion}"></td>
+    </tr>
+    <tr>
+      <td>User Info</td>
+      <td><a type="button" class="btn btn-warning" th:href="@{/InsightfulVerse/UpdateUser}">Change</a></td>
+    </tr>
+    <tr>
+      <td id="userNamePlace" th:text="${session.user.username}"></td>
+      <td>
+        <div class="btn-group" role="group" aria-label="Basic mixed styles">
+          <a type="button" class="btn btn-primary" th:href="@{/InsightfulVerse/Logout}">Log out</a>
+          <a type="button" class="btn btn-danger" th:href="@{/InsightfulVerse/Unregister}">Unregister</a>
+          <a th:if="${session.user.authority == 'infinite'}"
+               type="button" class="btn btn-info" th:href="@{/InsightfulVerse/NihilityZone}">
+            NoneZone
+          </a>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td>Account ID</td>
+      <td id="userIdPlace" th:text="${session.user.userId}"></td>
+    </tr>
+    <tr>
+      <td>Authority</td>
+      <td th:text="${session.user.authority}"></td>
+    </tr>
+    <tr>
+      <td>Email</td>
+      <td th:text="${session.user.email}"></td>
+    </tr>
+    <tr>
+      <td>Phone</td>
+      <td th:text="${session.user.phone}"></td>
+    </tr>
+  </table>
+</div>
+
+<div class="contain">
+  <table class="table table-striped table-hover" id="viewListPlace">
+    <tr>
+      <td>File</td>
+      <td>View Count</td>
+      <td>First View Time</td>
+      <td>Last Viewing Time</td>
+    </tr>
+
+    <!-- 显示查看记录 -->
+    <div th:if="${viewRecordList.isEmpty()}">
+      <tr>
+        <td>None</td>
+        <td>None</td>
+        <td>None</td>
+        <td>None</td>
+      </tr>
+    </div>
+    <div th:unless="${viewRecordList.isEmpty()}">
+      <tr th:each="record : ${viewRecordList}">
+        <td><a th:href="@{/InsightfulVerse/File(fileId=${record.fileId})}" style="text-decoration: none; color: black;" th:text="${record.file.fileName}" th:title="${record.file.remarks}"></a></td>
+        <td th:text="${record.viewCount}"></td>
+        <td th:text="${#dates.format(record.firstView, 'yyyy-MM-dd HH:mm:ss')}"></td>
+        <td th:text="${#dates.format(record.viewDate, 'yyyy-MM-dd HH:mm:ss')}"></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td><a th:href="@{/InsightfulVerse/ViewHistory}" style="text-decoration: none; color: black;">view all history</a></td>
+      </tr>
+    </div>
+  </table>
+</div>
+
+<div class="blank"></div>
+
+<th:block th:replace="~{common/sub/iviep/iviep-footer :: footer}"></th:block>
+
+</body>
+</html>

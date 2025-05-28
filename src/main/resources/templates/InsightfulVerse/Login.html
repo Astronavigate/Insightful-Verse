@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Insightful Verse - Login</title>
+    <!-- 引入公共模块 -->
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+</head>
+<body>
+<!-- 引入页头 -->
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="container my-4">
+    <form class="form-group" th:action="@{/InsightfulVerse/Login.do}" method="post">
+        <h2 style="text-align: center;">Login</h2>
+        <label for="identifier">ID or email or phone:</label>
+        <input type="text" class="form-control" id="identifier" name="identifier"><br>
+        <label for="password">Password:</label>
+        <input type="password" class="form-control" id="password" name="password"><br>
+        <input type="submit" class="btn btnn btn-primary" value="Login">
+        <input type="reset" class="btn btnn btn-secondary" value="Reset">
+        <a class="btn btnn btn-warning" th:href="@{/InsightfulVerse/Register}">Register</a>
+    </form>
+</div>
+
+<div class="blank"></div>
+
+<!-- 引入页脚 -->
+<th:block th:replace="~{common/sub/iviep/iviep-footer :: footer}"></th:block>
+</body>
+</html>

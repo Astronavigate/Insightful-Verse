@@ -1,0 +1,51 @@
+<script th:fragment="runjava"  th:inline="javascript">
+    function sendInfoToServer() {
+        var fileId = /*[[${fileId}]]*/ 'null';
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'Timer', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log(xhr.responseText);
+            }
+        };
+        xhr.send("fileId=" + encodeURIComponent(fileId));
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        sendInfoToServer();
+    });
+
+    function runjava() {
+        const codeArea = document.getElementById("codeArea");
+        const resultArea = document.getElementById("resultArea");
+
+        // 检查 code 是否为空
+        const code = codeArea.value.trim();
+        if (!code) {
+            resultArea.innerHTML = "Error: Code cannot be empty.";
+            return;
+        }
+
+        const xhrRunJava = new XMLHttpRequest();
+        xhrRunJava.open("POST", "/InsightfulVerse/Code.java", true);
+        xhrRunJava.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+
+        xhrRunJava.onreadystatechange = function () {
+            if (xhrRunJava.readyState === 4) {
+                if (xhrRunJava.status === 200) {
+                    const response = xhrRunJava.responseText;
+                    resultArea.innerHTML = response; // 将服务器返回的内容显示到页面
+                } else {
+                    resultArea.innerHTML = `Error: Unable to execute code. Status ${xhrRunJava.status} - ${xhrRunJava.statusText}`;
+                }
+            }
+        };
+
+        xhrRunJava.send("code=" + encodeURIComponent(code));
+    }
+
+    window.onload = function () {
+        runjava(); // 页面加载时调用 runjava 方法
+    };
+</script>

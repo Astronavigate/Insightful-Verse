@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.eagloxis.mapper.CourseDao">
+
+    <resultMap id="BaseResultMap" type="tech.eagloxis.model.iviep.Course">
+        <id property="courseId" column="course_id" jdbcType="INTEGER"/>
+        <result property="courseName" column="course_name" jdbcType="VARCHAR"/>
+        <result property="courseInfo" column="course_info" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        course_id,course_name,course_info
+    </sql>
+
+    <select id="getAllCourse" resultType="tech.eagloxis.model.iviep.Course" resultMap="BaseResultMap">
+        SELECT * FROM iviep.courses
+    </select>
+
+    <insert id="updateCourse" parameterType="tech.eagloxis.model.iviep.Course">
+        <choose>
+            <when test="courseId == null or courseId == ''">
+                INSERT INTO iviep.courses (course_name, course_info)
+                VALUES (#{courseName}, #{courseInfo})
+            </when>
+            <otherwise>
+                UPDATE iviep.courses
+                SET course_name = #{courseName}, course_info = #{courseInfo}
+                WHERE course_id = #{courseId}
+            </otherwise>
+        </choose>
+    </insert>
+
+    <delete id="deleteCourse" parameterType="string">
+        DELETE FROM iviep.courses WHERE course_id = #{courseId};
+    </delete>
+
+    <select id="getCourseByName" resultType="tech.eagloxis.model.iviep.Course" resultMap="BaseResultMap">
+        SELECT * FROM iviep.courses
+        WHERE course_name LIKE CONCAT('%', #{keyword}, '%')
+           OR course_info LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+</mapper>

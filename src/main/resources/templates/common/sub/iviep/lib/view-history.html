@@ -1,0 +1,15 @@
+<script th:fragment="viewhist" th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        var fileId = /*[[${file.fileId}]]*/ 'null';
+        console.log("fileId: "+fileId)
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/InsightfulVerse/Timer', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log(xhr.responseText);
+            }
+        };
+        xhr.send("fileId=" + encodeURIComponent(fileId));
+    });
+</script>

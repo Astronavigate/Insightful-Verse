@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.eagloxis.mapper.IVVersionDao">
+
+    <resultMap id="BaseResultMap" type="tech.eagloxis.model.iviep.IVVersion">
+            <id property="commitId" column="commit_id" jdbcType="CHAR"/>
+            <result property="version" column="version" jdbcType="VARCHAR"/>
+            <result property="updateInfo" column="update_info" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        commit_id,version,update_info
+    </sql>
+
+    <!-- 根据 fileId 获取对应版本 -->
+    <select id="getFileById" parameterType="string" resultType="IVVersion">
+        SELECT * FROM iviep.ivversion
+        WHERE file_id = #{fileId}
+    </select>
+
+    <!-- 获取最新版本 -->
+    <select id="getLatestVersion" resultType="IVVersion">
+        SELECT * FROM iviep.ivversion
+        ORDER BY version DESC
+            LIMIT 1
+    </select>
+
+    <!-- 获取所有版本 -->
+    <select id="getAllVersion" resultType="IVVersion">
+        SELECT * FROM iviep.ivversion
+        ORDER BY version DESC
+    </select>
+</mapper>

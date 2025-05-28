@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.eagloxis.mapper.FileDao">
+
+    <resultMap id="BaseResultMap" type="tech.eagloxis.model.iviep.File">
+            <id property="fileId" column="file_id" jdbcType="INTEGER"/>
+            <result property="fileName" column="file_name" jdbcType="VARCHAR"/>
+            <result property="type" column="type" jdbcType="VARCHAR"/>
+            <result property="courseId" column="course_id" jdbcType="INTEGER"/>
+            <result property="remarks" column="remarks" jdbcType="VARCHAR"/>
+            <result property="uploadUser" column="upload_user" jdbcType="INTEGER"/>
+            <result property="uploadDate" column="upload_date" jdbcType="DATE"/>
+            <result property="filePath" column="file_path" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        file_id,file_name,type,
+        course_id,remarks,upload_user,
+        upload_date,file_path
+    </sql>
+
+    <select id="getFileById" resultType="tech.eagloxis.model.iviep.File" resultMap="BaseResultMap">
+        SELECT * FROM iviep.file WHERE file_id = #{fileId} LIMIT 1
+    </select>
+
+    <select id="getFilesByCourse" resultType="tech.eagloxis.model.iviep.File" resultMap="BaseResultMap">
+        SELECT *
+        FROM iviep.file
+        WHERE course_id = #{courseId}
+    </select>
+
+    <insert id="addFile" parameterType="map">
+        <choose>
+            <when test="file.fileId == null">
+                INSERT INTO iviep.file (file_name, type, course_id, remarks, upload_user, upload_date, file_path)
+                VALUES (#{file.fileName}, #{file.type}, #{file.courseId}, #{file.remarks}, #{userId}, NOW(), #{file.filePath})
+            </when>
+            <otherwise>
+                <choose>
+                    <when test="file.filePath == null">
+                        UPDATE iviep.file
+                        SET file_name = #{file.fileName}, course_id = #{file.courseId}, remarks = #{file.remarks},
+                        upload_user = #{userId}, upload_date = NOW()
+                        WHERE file_id = #{file.fileId}
+                    </when>
+                    <otherwise>
+                        UPDATE iviep.file
+                        SET file_name = #{file.fileName}, type = #{file.type}, course_id = #{file.courseId},
+                        remarks = #{file.remarks}, upload_user = #{userId}, upload_date = NOW(), file_path = #{file.filePath}
+                        WHERE file_id = #{file.fileId}
+                    </otherwise>
+                </choose>
+            </otherwise>
+        </choose>
+    </insert>
+
+    <delete id="deleteFile">
+        DELETE FROM iviep.file WHERE file_id = #{fileId}
+    </delete>
+
+    <select id="getFileByName" resultType="tech.eagloxis.model.iviep.File" resultMap="BaseResultMap">
+        SELECT *
+        FROM iviep.file
+        WHERE file_name LIKE CONCAT('%', #{keyword}, '%')
+           OR remarks LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
+</mapper>

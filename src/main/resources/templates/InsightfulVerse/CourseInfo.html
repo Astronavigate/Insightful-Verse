@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Insightful Verse Courses - Info</title>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+</head>
+<body>
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="content">
+    <div class="list-group" id="FilePlace" style="width: 80vw">
+        <div th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
+             data-bs-toggle="modal" data-bs-target="#updFileForm"
+             class="list-group-item list-group-item-action"
+             style="display: inline-flex; align-items: center; justify-content: center; width: 80vw;" onclick="">
+            <i class="bi-plus" style="font-size: 3rem; color: gray;"></i>
+            <h5 style="margin-top: 0.5rem">Add a new file</h5>
+        </div>
+
+        <div th:each="source : ${#lists.isEmpty(sourceList) ? null : sourceList}">
+            <a class="list-group-item list-group-item-action"
+               th:href="@{/InsightfulVerse/File(fileId=${source.fileId})}">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">
+                        <button th:if="${session.user != null && (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
+                                type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#updFileForm"
+                                th:data-file-id="${source.fileId}" th:data-file-name="${source.fileName}" th:data-file-remark="${source.remarks}"
+                                onclick="updFile(this)">
+                            Edit
+                        </button>
+                        <button th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
+                                type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#delFileForm"
+                                th:data-file-id="${source.fileId}" th:data-file-name="${source.fileName}"
+                                onclick="delFile(this)">
+                            Delete
+                        </button>
+                        &nbsp;&nbsp;&nbsp;
+                        <span th:text="${source.fileName}">File Name</span>
+                    </h5>
+                    <small th:text="${#dates.format(source.uploadDate, 'yyyy-MM-dd')}">Upload Date</small>
+                </div>
+                <p class="mb-1" th:text="${source.remarks}">File Remarks</p>
+            </a>
+        </div>
+
+        <h5 th:if="${#lists.isEmpty(sourceList) && (session.user == null || session.user.authority == 'normal')}">
+            Sorry, there are no files right now.
+        </h5>
+    </div>
+</div>
+
+<div class="blank"></div>
+
+<th:block th:replace="~{common/sub/iviep/iviep-footer :: footer}"></th:block>
+
+<th:block th:if="${session.user != null && (session.user.authority == 'admin' || session.user.authority == 'infinite')}">
+    <div class="modal fade" id="delFileForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="del-file-name">Delete File</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="cleanModal()"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this file? <br>The deleted data cannot be recovered.
+                </div>
+                <form th:action="@{/InsightfulVerse/DelFile}" method="get">
+                    <input type="hidden" id="del-file-id" name="fileId" value="">
+                    <input type="hidden" name="courseId" th:value="${param.courseId}">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="cleanModal()">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="updFileForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fs-5">File Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="cleanModal()"></button>
+                </div>
+                <form th:action="@{/InsightfulVerse/UpdFile}" method="post" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" id="upd-file-id" name="fileId" value="">
+                        <input type="hidden" name="courseId" th:value="${param.courseId}">
+                        <div class="mb-3">
+                            <label for="upd-file-name" class="form-label">File Name</label>
+                            <input type="text" class="form-control" id="upd-file-name" name="fileName" value="">
+                        </div>
+                        <div class="mb-6">
+                            <label for="upd-file-remark" class="form-label">File Introduction</label>
+                            <textarea class="form-control" id="upd-file-remark" name="fileRemark" rows="5"></textarea>
+                        </div>
+                        <div class="mb-3" style="margin-top: 1rem">
+                            <input type="file" id="file" name="file">
+                            <p style="font-size: smaller" id="tips">* Not uploading files will not update files</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="cleanModal()">Cancel</button>
+                        <button type="submit" class="btn btn-warning">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+<script th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}">
+    // 等待文档完全加载
+    window.addEventListener('DOMContentLoaded', function() {
+        // 获取所有 <a> 元素
+        const links = document.querySelectorAll('a');
+
+        // 遍历每个 <a> 元素
+        links.forEach(function(link) {
+            // 获取每个 <a> 元素中的 <button> 元素
+            const buttons = link.querySelectorAll('button');
+
+            // 为每个 <button> 元素绑定点击事件
+            buttons.forEach(function(button) {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();  // 阻止按钮点击后的跳转
+                    event.stopPropagation(); // 阻止事件传播
+                    console.log('Button inside <a> intercepted!');
+                });
+            });
+        });
+    });
+
+    function updFile(button) {
+        let id = document.getElementById("upd-file-id");
+        let name = document.getElementById("upd-file-name");
+        let remark = document.getElementById("upd-file-remark");
+        id.value = button.getAttribute('data-file-id');
+        name.value = button.getAttribute('data-file-name');
+        remark.value = button.getAttribute('data-file-remark');
+    }
+
+    function delFile(button) {
+        let id = document.getElementById("del-file-id");
+        let name = document.getElementById("del-file-name")
+        id.value = button.getAttribute('data-file-id');
+        name.innerText = "Delete File " + button.getAttribute('data-file-name');
+    }
+
+    function cleanModal() {
+        let id = document.getElementById("upd-file-id");
+        let name = document.getElementById("upd-file-name");
+        let remark = document.getElementById("upd-file-remark");
+        let delId = document.getElementById("del-file-id");
+        let delName = document.getElementById("del-file-name");
+        id.value = null;
+        name.value = null;
+        remark.value = null;
+        delId.value = null;
+        delName.value = null;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Insightful Verse Painter ' + ${file != null ? ' - ' + file.fileName : ''}"></title>
+
+    <!-- Include common resources -->
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
+</head>
+<body style="background-color: #0a0a0a;">
+<!-- Include dark header -->
+<th:block th:replace="~{common/sub/iviep/iviep-header-dark :: header}"></th:block>
+<div class="contact blank">
+    <img th:src="${file != null ? file.filePath : ''}" style="max-height: 89vh; max-width: 100%;" />
+</div>
+</body>
+</html>

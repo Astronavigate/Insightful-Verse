@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.eagloxis.mapper.ViewRecordDao">
+
+    <resultMap id="BaseResultMap" type="tech.eagloxis.model.iviep.ViewRecord">
+        <id property="recordId" column="record_id" jdbcType="INTEGER"/>
+        <result property="fileId" column="file_id" jdbcType="INTEGER"/>
+        <result property="userId" column="user_id" jdbcType="INTEGER"/>
+        <result property="viewDuration" column="view_duration" jdbcType="INTEGER"/>
+        <result property="viewDate" column="view_date" jdbcType="TIMESTAMP"/>
+        <result property="firstView" column="first_view" jdbcType="TIMESTAMP"/>
+        <result property="viewCount" column="view_count" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        record_id,file_id,user_id,
+        view_duration,view_date,first_view,view_count
+    </sql>
+
+    <!-- 查询最新的8条记录 -->
+    <select id="getNewestViewRecords" parameterType="String" resultType="tech.eagloxis.model.iviep.ViewRecord" resultMap="BaseResultMap">
+        SELECT *
+        FROM iviep.fileviewrecords
+        WHERE user_id = #{userId}
+        ORDER BY view_date DESC
+            LIMIT 8
+    </select>
+
+    <!-- 查询所有记录 -->
+    <select id="getViewRecords" parameterType="String" resultType="tech.eagloxis.model.iviep.ViewRecord" resultMap="BaseResultMap">
+        SELECT *
+        FROM iviep.fileviewrecords
+        WHERE user_id = #{userId}
+        ORDER BY view_date DESC
+    </select>
+
+    <select id="getViewHistory" parameterType="String" resultType="tech.eagloxis.model.iviep.ViewRecord" resultMap="BaseResultMap">
+        SELECT *
+        FROM iviep.fileviewrecords
+        WHERE user_id = #{userId}
+        AND file_id = #{fileId}
+        LIMIT 1
+    </select>
+
+    <!-- 插入记录 -->
+    <insert id="setViewRecords" parameterType="map">
+        INSERT INTO iviep.fileviewrecords (file_id, user_id, view_duration, view_date, first_view, view_count)
+        VALUES (#{fileId}, #{userId}, 0, NOW(), NOW(), 1)
+    </insert>
+
+    <!-- 插入记录（带时长） -->
+    <insert id="setViewRecordsWithDuration" parameterType="map">
+        INSERT INTO iviep.fileviewrecords (file_id, user_id, view_duration, view_date, first_view, view_count)
+        VALUES (#{fileId}, #{userId}, #{duration}, NOW(), NOW(), 1)
+    </insert>
+
+    <!-- 更新记录 -->
+    <update id="updateViewRecords" parameterType="map">
+        UPDATE iviep.fileviewrecords
+        SET view_date = NOW(), view_count = view_count + 1
+        WHERE record_id = #{recordId}
+    </update>
+
+    <update id="updateViewRecordsWithDuration" parameterType="map">
+        UPDATE iviep.fileviewrecords
+        SET view_duration = #{duration}, view_date = NOW(), view_count = view_count + 1
+        WHERE file_id = #{fileId} AND user_id = #{userId}
+    </update>
+
+    <!-- 删除指定文件的记录 -->
+    <delete id="delRecordByFileId" parameterType="String">
+        DELETE FROM iviep.fileviewrecords
+        WHERE file_id = #{fileId}
+    </delete>
+
+    <delete id="delRecordByUserId" parameterType="String">
+        DELETE FROM iviep.fileviewrecords
+        WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

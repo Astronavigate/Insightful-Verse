@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Insightful Verse - View History</title>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+
+    <style>
+        .pager-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .pager-container .page-info {
+            font-size: 14px;
+            color: #777777;
+        }
+
+        .pager-container .pager-body {
+            margin-top: 8px;
+        }
+
+        .pager-container .pager-body .page-link {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="contain">
+    <table class="table table-striped table-hover" id="viewListPlace">
+        <tr>
+            <td>File</td>
+            <td>View Count</td>
+            <td>First View Time</td>
+            <td>Last Viewing Time</td>
+        </tr>
+
+        <tr th:if="${#lists.isEmpty(viewRecordList)}">
+            <td>None</td>
+            <td>None</td>
+            <td>None</td>
+            <td>None</td>
+        </tr>
+        <tr th:unless="${#lists.isEmpty(viewRecordList)}" th:each="record : ${viewRecordList}">
+            <td><a th:href="@{/InsightfulVerse/File(fileId=${record.file.fileId})}" style="text-decoration: none; color: black;" th:text="${record.file.fileName}" th:title="${record.file.remarks}"></a></td>
+            <td th:text="${record.viewCount}"></td>
+            <td th:text="${#dates.format(record.firstView, 'yyyy-MM-dd HH:mm:ss')}"></td>
+            <td><span th:text="${#dates.format(record.viewDate, 'yyyy-MM-dd HH:mm:ss')}"></span></td>
+        </tr>
+    </table>
+</div>
+
+<div class="blank"></div>
+
+<div class="pager-container">
+    <div class="page-info">
+        <span th:text="'There are a total of ' + ${totalItems} + ' pieces of data'"></span>
+    </div>
+    <nav class="pager-body">
+        <ul class="pagination justify-content-center">
+            <!-- Previous page link -->
+            <li class="page-item" th:if="${currentPage > 1}">
+                <a class="page-link" th:href="@{/InsightfulVerse/ViewHistory(page=${currentPage - 1}, max=${param.max})}">Previous</a>
+            </li>
+
+            <!-- Page numbers -->
+            <li class="page-item" th:each="i : ${#numbers.sequence(1, totalPages)}" th:classappend="${i == currentPage} ? ' active' : ''">
+                <a class="page-link" th:href="@{/InsightfulVerse/ViewHistory(page=${i}, max=${param.max})}" th:text="${i}"></a>
+            </li>
+
+            <!-- Next page link -->
+            <li class="page-item" th:if="${currentPage < totalPages}">
+                <a class="page-link" th:href="@{/InsightfulVerse/ViewHistory(page=${currentPage + 1}, max=${param.max})}">Next</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- 页面数量输入框 -->
+    <form action="/InsightfulVerse/ViewHistory" class="form-inline">
+        <div class="input-group mb-3">
+            <span class="input-group-text" id="inputGroup-sizing-default">Displayed per page:</span>
+            <input type="number" class="form-control" min="1" name="max" placeholder="Please enter the quantity" th:value="${param.max != null ? param.max : 15}">
+            <button class="btn btn-outline-secondary" type="submit">Refresh</button>
+        </div>
+    </form>
+</div>
+
+<th:block th:replace="~{common/sub/iviep/iviep-footer :: footer}"></th:block>
+
+</body>
+</html>

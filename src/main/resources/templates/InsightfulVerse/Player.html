@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Insightful Verse Painter ' + ${file != null ? ' - ' + file.fileName : ''}"></title>
+
+    <!-- Include common resources -->
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
+</head>
+<body style="background-color: #0a0a0a;">
+<!-- Include dark header -->
+<th:block th:replace="~{common/sub/iviep/iviep-header-dark :: header}"></th:block>
+
+<div class="contact blank">
+    <!-- 视频文件 -->
+    <div th:if="${file != null and (file.type == 'mp4' or file.type == 'mkv' or file.type == 'mov' or file.type == 'wmv')}">
+        <video style="width: auto; max-width: 100vw; height: auto; max-height: 88vh;" controls autoplay>
+            <source th:src="${file.filePath}" th:type="'video/' + ${file.type}" />
+            <p>Your browser does not support video playback.</p>
+        </video>
+    </div>
+
+    <!-- 音频文件 -->
+    <div th:if="${file != null and (file.type == 'mp3' or file.type == 'wma' or file.type == 'flac' or file.type == 'm4a')}">
+        <audio style="max-width: 80vw; max-height: 10vh;" controls autoplay
+               th:src="${file.filePath}" th:type="'audio/' + ${file.type}">
+        </audio>
+    </div>
+
+    <!-- 不支持的文件类型 -->
+    <div th:if="${file == null or !(file.type == 'mp4' or file.type == 'mkv' or file.type == 'mov' or file.type == 'wmv' or file.type == 'mp3' or file.type == 'wma' or file.type == 'flac' or file.type == 'm4a')}">
+        <p>Unsupported file type.</p><br>
+        <a type="button" class="btn btn-dark" th:href="${file != null} ? ${file.filePath} : ''">Download</a>
+    </div>
+</div>
+</body>
+</html>
+

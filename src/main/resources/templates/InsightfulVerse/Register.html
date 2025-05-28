@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Insightful Verse - Register</title>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/verify-email :: vmail}"></th:block>
+</head>
+<body>
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<form class="form-group" th:action="@{/InsightfulVerse/Register.do}" method="post">
+    <h2 style="text-align: center;">Register</h2>
+
+    <label for="username">Your name:</label>
+    <input type="text" class="form-control" id="username" name="username"><br>
+
+    <label for="email">Your email:</label>
+    <input type="text" class="form-control" id="email" name="email"><br>
+
+    <label for="phone">Your Phone:</label>
+    <input type="text" class="form-control" id="phone" name="phone"><br>
+
+    <label for="password">Your password:</label>
+    <input type="password" class="form-control" id="password" name="password"><br>
+
+    <label for="rePassword">Confirm password:</label>
+    <input type="password" class="form-control" id="rePassword" name="rePassword"><br>
+
+    <label for="captcha">Email Verify Code:</label>
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" id="captcha" name="captcha">
+        <button type="button" class="btn btn-outline-secondary" id="getCode" th:onclick="GetCode()">Get Code</button>
+    </div>
+
+    <input type="submit" class="btn btnn btn-warning" value="Register">
+    <input type="reset" class="btn btnn btn-secondary" value="Reset">
+</form>
+
+<div class="blank"></div>
+
+<th:block th:replace="~{common/sub/iviep/iviep-footer :: footer}"></th:block>
+</body>
+</html>

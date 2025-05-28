@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title th:text="'Insightful Verse Reader ' + ${file != null ? ' - ' + file.fileName : ''}"></title>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
+</head>
+<body style="background-color: #0a0a0a;">
+<th:block th:replace="~{common/sub/iviep/iviep-header-dark :: header}"></th:block>
+<div class="contact blank">
+    <iframe th:src="${file != null ? file.filePath : ''}" style="height: 89vh; width: 100%;"></iframe>
+</div>
+</body>
+</html>

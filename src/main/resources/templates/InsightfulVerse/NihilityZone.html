@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Insightful Verse - Nihility Zone</title>
+  <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+</head>
+<body class="nz-bg">
+<th:block th:replace="~{common/sub/iviep/iviep-header-dark :: header}"></th:block>
+
+<div class="content" style="flex-direction: column; align-items: center; justify-content: center; margin-top: 2rem;">
+  <form action="/InsightfulVerse/Halo" method="post">
+    <div>
+      <div class="form-floating mb-3">
+        <textarea id="codeArea" class="form-control" style="background-color: #1a1d20; color: white; height: 15vh" name="code" th:text="${codeContent}"></textarea>
+        <label for="codeArea">SQL code</label>
+      </div>
+      <button type="submit" class="btn btn-secondary">Run</button>
+    </div>
+    <div>
+      <div class="form-floating mb-3">
+        <div id="resultArea" class="form-control" style="background-color: #1a1d20; color: white; height: 60vh">
+          <table class="table" style="border-collapse: separate; border-radius: 1rem; overflow: hidden;">
+            <tbody>
+            <tr th:each="resultLine : ${resultList}">
+              <th th:each="result : ${resultLine}" th:text="${result}"></th>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <label for="resultArea">Result</label>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="blank"></div>
+</body>
+</html>

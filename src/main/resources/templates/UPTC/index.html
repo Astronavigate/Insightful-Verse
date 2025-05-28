@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<head>
+  <!-- 修复了部分已知的bug、改进了性能和稳定性，优化用户体验。  Fixed some known bugs, improved performance and stability, and optimized user experience. -->
+  <!-- Integrate Product Traceability System   version 1.0.152   release data: 3/2/2024   update cannal: Release    bootstrap5 & html5-qrcode -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="mainTitle">Integrate Products Check</title>
+  <link rel="icon" sizes="180x180" href="./IPTSLogo.png">
+  <link rel="stylesheet" href="../../../lib/bootstrap-5.3.0-alpha1-dist/css/bootstrap.min.css">
+  <script src="./html5-qrcode.min.js"></script>
+  <script src="./lib/radixConvert.js"></script>
+  <link rel="stylesheet" href="../../../lib/fancybox-3.5.7/jquery.fancybox.min.css">
+  <style>
+    /** Common CSS for all buttons & selector. **/
+
+    /* region */
+    button.html5-qrcode-element,
+    select.html5-qrcode-element,
+    button.scanapp-button {
+      appearance: none;
+      background-color: #FAFBFC;
+      border: 1px solid rgba(27, 31, 35, 0.15);
+
+      border-radius: 6px;
+      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+      box-sizing: border-box;
+      color: #24292E;
+      cursor: pointer;
+      display: inline-block;
+      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 20px;
+      list-style: none;
+      padding: 6px 16px;
+      position: relative;
+      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      vertical-align: middle;
+      white-space: nowrap;
+      word-wrap: break-word;
+      margin-bottom: 5px;
+    }
+
+    button.html5-qrcode-element:hover,
+    select.html5-qrcode-element:hover,
+    button.scanapp-button:hover {
+      background-color: #F3F4F6;
+      text-decoration: none;
+      transition-duration: 0.1s;
+    }
+
+    button.html5-qrcode-element:disabled,
+    select.html5-qrcode-element:disabled,
+    button.scanapp-button:disabled {
+      background-color: #FAFBFC;
+      border-color: rgba(27, 31, 35, 0.15);
+      color: #959DA5;
+      cursor: default;
+    }
+
+    button.html5-qrcode-element:active,
+    select.html5-qrcode-element:active,
+    button.scanapp-button:hover {
+      background-color: #EDEFF2;
+      box-shadow: rgba(225, 228, 232, 0.2) 0 1px 0 inset;
+      transition: none 0s;
+    }
+
+    button.html5-qrcode-element:focus,
+    select.html5-qrcode-element:focus,
+    button.scanapp-button:focus {
+      outline: 1px transparent;
+    }
+
+    button.html5-qrcode-element:before,
+    select.html5-qrcode-element:before,
+    button.scanapp-button::before {
+      display: none;
+    }
+
+    button.html5-qrcode-element:-webkit-details-marker,
+    select.html5-qrcode-element:-webkit-details-marker,
+    button.scanapp-button:-webkit-details-marker {
+      display: none;
+    }
+
+    /* Torch button. */
+    button#html5-qrcode-button-torch.html5-qrcode-button-torch-on,
+    button.scanapp-button.enticing {
+      background-color: #fff000;
+      color: #000;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 200ms;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    button#html5-qrcode-button-torch.html5-qrcode-button-torch-on:not(:disabled):hover,
+    button#html5-qrcode-button-torch.html5-qrcode-button-torch-on:not(:disabled):focus,
+    button.scanapp-button.enticing:not(:disabled):hover,
+    button.scanapp-button.enticing:not(:disabled):focus
+    {
+      outline: 0;
+      background: #f4e603;
+    }
+
+    button#html5-qrcode-button-torch.html5-qrcode-button-torch-on:disabled,
+    button.scanapp-button.enticing:disabled
+    {
+      filter: saturate(0.2) opacity(0.5);
+      -webkit-filter: saturate(0.2) opacity(0.5);
+      cursor: not-allowed;
+    }
+
+    video {
+      max-height: 80vh;
+    }
+
+    /* block info ico */
+    img[src^="data:image/svg+xml;base64,PHN2ZyB"] {
+      display: none !important;
+    }
+
+    #pills-tabContent {
+      flex-grow: 1;
+      overflow: scroll; /* 如果内容超出则允许滚动 */
+      max-height: 74vh;
+    }
+
+    .show-pic {
+      height: 100%;
+      width: 100%;
+    }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%; /* 确保html和body元素占满整个视口高度 */
+    }
+
+    #main {
+      display: flex;
+      flex-direction: column; /* 设置主轴方向为垂直 */
+    }
+
+    footer {
+      height: 2vh; /* 设置页脚高度为2vh */
+    }
+
+    #result-div {
+      flex-grow: 1; /* 使内容区域自适应并填充剩余空间 */
+    }
+    
+    a {
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    nav a:hover {
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-sm bg-body-tertiary">
+    <div class="container-fluid">
+      <img  class="navbar-brand" src="./IPTSLogo.png" style="width: 36px; margin-right: 1vw;" alt="Logo">
+      <a class="navbar-brand" href="./" id="navTitle">Integrate Products Trace</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-sm-0">
+          <li class="nav-item">
+            <a type="button" class="nav-link" id="navAbout" data-bs-toggle="modal" data-bs-target="#Modal1">About</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" id="navLink">Link</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="https://eagloxis.tech" id="linkEagloxis">Eagloxis Technology</a></li>
+              <li><a type="button" class="dropdown-item" id="navSponsor" data-bs-toggle="modal" data-bs-target="#Modal2">Sponsor</a></li>
+            </ul>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="mailto:Astronavigate@auet.onmicrosoft.com?subject=IPTS%20Feedback&body=%0A%0APlease%20do%20not%20modify%20the%20title." id="navFeedback">Feedback</a>
+          </li>
+        </ul>
+        <ul class="navbar-nav d-flex">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" id="navSwLang">
+              <img src="../../../lib/bootstrap-icons-1.11.2/globe.svg">
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" title="Click to switch languages" id="swEng">English</a></li>
+              <li><a class="dropdown-item" title="点击以切换语言" id="swZhs">简体中文</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+
+  <div id="main" style=" margin-top: 1vh; margin-left: 2vw; margin-right: 2vw;">
+    <div id="input-div" style="margin-top: 2vh;">
+      <div class="rounded border p-3">
+        <nav>
+          <div class="nav nav-tabs mb-3" id="nav-tab" role="tablist">
+            <a class="nav-link" id="nav-input-tab" data-bs-toggle="tab" data-bs-target="#nav-input" type="button" role="tab" aria-controls="nav-input" aria-selected="true">Input IPT Code</a>
+            <a class="nav-link active" id="nav-scan-tab" data-bs-toggle="tab" data-bs-target="#nav-scan" type="button" role="tab" aria-controls="nav-scan" aria-selected="false">Scan QRCode</a>
+          </div>
+        </nav>
+        <div class="tab-content" id="nav-tabContent">
+          <div class="tab-pane fade" id="nav-input" role="tabpanel" aria-labelledby="nav-input-tab">
+            <form id="codeGetForm" class="row g-3">
+              <div>
+                <label for="input-IPT" class="form-label" id="inputLabel">Integrate Products Traceability Code</label>
+                <input type="text" class="form-control" id="input-IPT" required>
+              </div>
+              <div>
+                <button type="submit-IPT" class="btn btn-primary" id="submit-IPT">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="tab-content" id="nav-tabContent">
+          <div class="tab-pane fade active show" id="nav-scan" role="tabpanel" aria-labelledby="nav-scan-tab">
+            <div id="reader"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="rounded border p-3" id="result-div"  style="margin-top: 2vh; display: none;">
+      <ul class="nav nav-pills nav-fill" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="pills-info-tab" data-bs-toggle="pill" data-bs-target="#pills-info" type="button" role="tab" aria-controls="pills-info" aria-selected="true">Basic</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="pills-spec-tab" data-bs-toggle="pill" data-bs-target="#pills-spec" type="button" role="tab" aria-controls="pills-spec" aria-selected="false">Spec</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="pills-stuff-tab" data-bs-toggle="pill" data-bs-target="#pills-stuff" type="button" role="tab" aria-controls="pills-stuff" aria-selected="false">Stuff</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="pills-source-tab" data-bs-toggle="pill" data-bs-target="#pills-source" type="button" role="tab" aria-controls="pills-source" aria-selected="false">Source</button>
+        </li>
+      </ul>
+      <div class="tab-content" id="pills-tabContent" style="margin-top: 1vh;">
+        <div class="tab-pane fade active show table-responsive" id="pills-info" role="tabpanel" aria-labelledby="pills-info-tab" tabindex="0">
+          <!-- 内容 -->
+        </div>
+        <div class="tab-pane fade table-responsive" id="pills-spec" role="tabpanel" aria-labelledby="pills-spec-tab" tabindex="0">
+          <!-- 内容 -->
+        </div>
+        <div class="tab-pane fade table-responsive" id="pills-stuff" role="tabpanel" aria-labelledby="pills-stuff-tab" tabindex="0">
+          <!-- 内容 -->
+        </div>
+        <div class="tab-pane fade table-responsive" id="pills-source" role="tabpanel" aria-labelledby="pills-source-tab" tabindex="0">
+          <!-- 内容 -->
+        </div>
+        <div style="text-align: center; margin-top: 1vh">
+          <button id="re-input" type="button" class="btn btn-secondary">Rescan or input</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="modal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="modalLabel"></h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeModal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal1 -->
+  <div class="modal fade" id="Modal1" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modal1-Label">About IPTS</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modal1-body">
+          Welcome to IPTS! IPTS is the Integrate Products Traceability Code Query System.<br>
+          Through IPTS, you can enter or scan the product's traceability code to obtain detailed information about the product. This includes important data such as manufacturer, production date, source of raw materials, and production process.<br>
+          Our goal is to provide consumers with more transparency and traceability, ensuring product quality and safety.<br>
+          To apply for IPT Code, please call:<br><a href="tel:+14086414215">+1 408 641 4215</a> (United States) or <a href="tel:+8615640993693">+86 156 4099 3693</a> (China)<br>
+          If there is no answer on the phone, please send an email to:<br><a href="mailto:Astronavigate@auet.onmicrosoft.com?subject=IPTS%20Apply&body=%0A%0APlease%20do%20not%20modify%20the%20title." id="navFeedback">Astronavigate@auet.onmicrosoft.com</a> (Please make sure the email title is IPTS Apply)
+        </div>
+        <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 2vh;">
+          <button type="button" class="btn btn-primary" id="IPTs-version" data-bs-toggle="modal" data-bs-target="#Modal3">Release Note</button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="modal1-Close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal2 -->
+  <div class="modal fade" id="Modal2" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modal2-Label">Sponsor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modal2-body" style="display: flex; justify-content: center; align-items: center;">
+          <a href="https://paypal.me/eagloxis">
+            <img src="../../../img/index/pp_fc_hl.svg" style="margin: 2vh;">
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal3 -->
+  <div class="modal fade" id="Modal3" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modal3-Label">Release Note</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modal3-body">
+          Current Version: 1.0.152<br>Release Date: 3/2/2024<br>Release Note:<br>Fixed some known bugs, optimized user experience, and improved IPT coding logic.<br><br>Version: 1.0.126<br>Release Date: 1/21/2024<br>Release Note:<br>UPTS has officially launched, providing the function of scanning or inputting UPT information and displaying it.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="modal3-Close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer></footer>
+
+  <script src="../../../lib/bootstrap-5.3.0-alpha1-dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../../lib/jquery-3.7.1.min.js"></script>
+  <script src="../../../lib/fancybox-3.5.7/jquery.fancybox.min.js"></script>
+
+  <script>
+    // 36radix 3TY2VXRIV
+    // 10radix 10810075656343
+
+    //>--- 初始化数据 ---<//
+    var lang = "eng";
+    var modalStart = new bootstrap.Modal(document.getElementById('modal'));
+    var modalTitle = document.getElementById("modalLabel");
+    var modalContent = document.getElementById("modalBody");
+    var modalClose = document.getElementById("closeModal");
+    var targetData = false;
+    var proBIeng, proBIzhs, proSOeng, proSOzhs, proSPeng, proSPzhs, proSTeng, proSTzhs;
+
+
+    //>--- 错误弹窗 ---<//
+    function errorModalShow(ermtitle, ermcontent, ermclose) {
+      modalTitle.textContent = ermtitle;
+      modalContent.innerHTML = ermcontent;
+      modalClose.textContent = ermclose;
+      modalStart.show();
+    }
+
+    //>--- 再次扫描监听 ---<//
+    document.getElementById('re-input').addEventListener('click', function() {
+      document.getElementById('input-div').style.display = 'block';
+      document.getElementById('result-div').style.display = 'none';
+      if (document.getElementById('html5-qrcode-button-camera-start') != null) {
+        document.getElementById('html5-qrcode-button-camera-start').click();
+      }
+    })
+
+    //>--- 扫描处理 ---<//
+    function getQRBoxSize() {
+      var qrboxSize = Math.min(Math.round(window.innerHeight * 0.5), Math.round(window.innerWidth * 0.5));
+      return qrboxSize;
+    }
+    var qrCodeScanner = new Html5QrcodeScanner("reader", { fps: 60, qrbox: getQRBoxSize(), disableFlip: false, autostart: false, fadeIn: false });
+    qrCodeScanner.render(onScanSuccess);
+    const form = document.getElementById('codeGetForm');
+    var targetData = null;
+    var engBI, engSP, engST, engSO, zhsBI, zhsSP, zhsST, zhsSO;
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      qrCodeMessage = document.getElementById('input-IPT').value;
+      onScanSuccess(qrCodeMessage);
+    });
+
+    function onScanSuccess(qrCodeMessage) {
+      if (document.getElementById('html5-qrcode-button-camera-stop') != null) {
+        document.getElementById('html5-qrcode-button-camera-stop').click();
+      }
+      if (/^https:\/\/eagloxis\.tech\/products\/software\/IPTS\/\?code=\w{20}$/.test(qrCodeMessage)) {
+        find(qrCodeMessage.slice(-20), 'Infinite');
+      } else if (/^[A-Za-z0-9]{20}$/.test(qrCodeMessage)) {
+        find(qrCodeMessage, 'Infinite');
+      } else if (/^https:\/\/eagloxis\.tech\/products\/software\/IPTS\/\?code=\w{15}$/.test(qrCodeMessage)) {
+        find(qrCodeMessage.slice(-15), 'Full');
+      } else if (/^[A-Za-z0-9]{15}$/.test(qrCodeMessage)) {
+        find(qrCodeMessage, 'Full');
+      } else if (/^https:\/\/eagloxis\.tech\/products\/software\/IPTS\/\?code=\w{10}$/.test(qrCodeMessage)) {
+        find(qrCodeMessage.slice(-10), 'Basic');
+      } else if (/^[A-Za-z0-9]{10}$/.test(qrCodeMessage)) {
+        find(qrCodeMessage, 'Basic');
+      } else {
+        if (lang == 'zhs') {
+          errorModalShow('错误', '无效的追溯码!<br>错误代码: SC_R3_'+qrCodeMessage, '关闭');
+        } else {
+          errorModalShow('ERROR', 'Invalid traceability code!<br>Error Code: SC_R3_'+qrCodeMessage, 'Close');
+        }
+        return;
+      }
+    }
+
+    $(document).ready(function() {
+      var urlParams = new URLSearchParams(window.location.search);
+      var code = urlParams.get('code');
+      if (code) {
+        if (/^[A-Za-z0-9]{20}$/.test(code)) {
+          find(code, 'Infinite');
+        } else if (/^[A-Za-z0-9]{15}$/.test(code)) {
+          find(code, 'Full')
+        } else if (/^[A-Za-z0-9]{10}$/.test(code)) {
+          find(code, 'Basic');
+        } else {
+          if (lang == 'zhs') {
+            errorModalShow('错误', '无效的追溯码!<br>错误代码: SC_R0_'+qrCodeMessage, '关闭');
+          } else {
+            errorModalShow('ERROR', 'Invalid traceability code!<br>Error Code: SC_R0_'+qrCodeMessage, 'Close');
+          }
+          return;
+        }
+      }
+    });
+    
+    // 查找文件
+    function find(qrNum, qrType) {
+      // QR Number
+      var proArea = qrNum.slice(0, 2);
+      const areaCode1 = qrNum.slice(0, 1);
+      const areaCode2 = qrNum.slice(1, 2);
+      const partOne = qrNum.slice(0, 10);
+      const partTwo = qrNum.slice(10, 15);
+      const checkNum = qrNum.slice(15, 20);
+      // 判断编码
+      if (areaCode1 == '0') {
+        // 使用 EAN 和 UPC 码
+        var UniCode = radix36To10(partOne);
+        if (UniCode >= 10000000000000) {
+          proArea = 'UPC';
+          UniCode = UniCode - 10000000000000n;
+        } else {
+          proArea = 'EAN';
+        }
+      } else if (isNaN(areaCode1) && areaCode1 != null && areaCode1 != '') {
+
+      } else if (isNaN(areaCode2) && areaCode2 != null && areaCode2 != '') {
+
+      } else {
+        // 推荐使用 Eagloxis Tech 的 IPT 编码解析
+        if (convertToNumber((qrNum.slice(0,1))*3+convertToNumber(qrNum.slice(1,2))*4+convertToNumber(qrNum.slice(2,3))*5
+        +convertToNumber(qrNum.slice(3,4))*6+convertToNumber(qrNum.slice(4,5))*7+convertToNumber(qrNum.slice(5,6))*8+
+        convertToNumber(qrNum.slice(6,7))*9+convertToNumber(qrNum.slice(7,8))*10+convertToNumber(qrNum.slice(8,9))*11) 
+        % 36 != convertToNumber(qrNum.slice(9,10))) {
+          if (lang == 'zhs') {
+            errorModalShow('错误', '溯源码错误!<br>错误代码: FS_CC_NOTVERIFY', '关闭');
+          } else {
+            errorModalShow('ERROR', 'Traceability code is error!<br>Error Code: FS_CC_NOTVERIFY', 'Close');
+          }
+          return;
+        }
+        const UniCode = partOne;
+        const proArea = qrNum.slice(0, 2);
+      }
+      // 解析日期及生产批次
+      const proDate = String(radix36To10(partTwo)).padStart(7, '0');
+      const proYear = proDate.slice(0, 2);
+      const proWeek = proDate.slice(2, 4);
+      var fileUrl;
+      // 根据代码长度进行不同解析
+      if (qrType == 'Infinite') {
+        if ((qrNum.slice(9,10)*3+(qrNum.slice(10,11)+qrNum.slice(11,12))*4+(qrNum.slice(12,13)+qrNum.slice(13,14)+qrNum.slice(14,15))*5
+          +qrNum.slice(15,16)*6+qrNum.slice(16,17)*7+qrNum.slice(17,18)*8+qrNum.slice(18,19)*9)%36 != qrNum.slice(19,20)) {
+            if (lang == 'zhs') {
+              errorModalShow('错误', '溯源码错误!<br>错误代码: FS_CC_NOTVERIFY', '关闭');
+            } else {
+              errorModalShow('ERROR', 'Traceability code is error!<br>Error Code: FS_CC_NOTVERIFY', 'Close');
+            }
+            return;
+          }
+        fileUrl = './database/' + proArea + '/' + proYear + '/' + proWeek + '/' + qrNum.slice(0, 15) + '/' + checkNum + '-info.txt';
+      } else if (qrType == 'Full') {
+        fileUrl = './database/' + proArea + '/' + proYear + '/' + proWeek + '/' + qrNum + '/info.txt'
+      } else if (qrType == 'Basic') {
+        fileUrl = './database/' + proArea + '/UniDiv/' + qrNum + '/info.txt';
+      } else {
+        return;
+      }
+      fetch(fileUrl)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('HttpError: status is ' + response.status);
+          }
+        return response.text()})
+        .then(data => {
+          // 遍历每一行数据
+          const lines = data.split('\n');
+          proBIeng = lines[0];
+          proSPeng = lines[1];
+          proSTeng = lines[2];
+          proSOeng = lines[3];
+          proBIzhs = lines[4];
+          proSPzhs = lines[5];
+          proSTzhs = lines[6];
+          proSOzhs = lines[7];
+          // 如果 ID 匹配，则保存其他 8 段数据
+          if (proBIeng.isNaN) {
+            if (lang == 'zhs') {
+              errorModalShow('错误', '无法找到符合溯源码的商品信息!<br>错误代码: FS_FI_NOTFOUND', '关闭');
+            } else {
+              errorModalShow('ERROR', 'Unable to find product information that matches the traceability code!<br>Error Code: FS_FI_NOTFOUND', 'Close');
+            }
+            return;
+          }
+          targetData = true;
+          //显示方法
+          if (lang == 'zhs') {
+            document.getElementById("pills-info").innerHTML = proBIzhs;
+            document.getElementById("pills-spec").innerHTML = proSPzhs;
+            document.getElementById("pills-stuff").innerHTML = proSTzhs;
+            document.getElementById("pills-source").innerHTML = proSOzhs;
+          } else {
+            document.getElementById("pills-info").innerHTML = proBIeng;
+            document.getElementById("pills-spec").innerHTML = proSPeng;
+            document.getElementById("pills-stuff").innerHTML = proSTeng;
+            document.getElementById("pills-source").innerHTML = proSOeng;
+          }
+          document.getElementById('input-div').style.display = 'none';
+          document.getElementById('result-div').style.display = 'block';
+          return;
+        })
+        .catch(error => {
+          if (lang == 'zhs') {
+            errorModalShow('错误', '数据读取错误!<br>这可能不是程序错误, 而是由于以下原因之一：<br> - 信息不存在或无法访问<br> - 网络连接中断<br> - 服务器响应超时<br> - 其他外部因素导致的数据读取问题<br>错误代码: FS_NF_'+error, '关闭');
+          } else {
+            errorModalShow('ERROR', 'Data reading error!<br>This may not be a program error, but one of the following reasons:<br> - Information does not exist or cannot be accessed<br> - Network connection interrIPTed<br> - Server response timeout<br> - Data reading problem caused by other external factors<br>Error code: FS_NF_'+error, 'Close');
+          }
+        });
+    }
+
+
+    //>--- 自动宽度 ---<//
+    function adjustWidth() {
+      var mainBox = document.getElementById('main');
+      var windowWidth = window.innerWidth;
+      if (document.getElementById('html5-qrcode-button-camera-stop') != null) {
+        document.getElementById('html5-qrcode-button-camera-stop').click();
+      }
+      if (windowWidth >= 480 && windowWidth < 720) {
+        mainBox.style.width = '84vw';
+        mainBox.style.marginLeft = '8vw';
+        mainBox.style.marginRight = '8vw';
+      } else if (windowWidth >= 720 && windowWidth < 960) {
+        mainBox.style.width = '78vw';
+        mainBox.style.marginLeft = '11vw';
+        mainBox.style.marginRight = '11vw';
+      } else if (windowWidth >= 960 && windowWidth < 1280) {
+        mainBox.style.width = '72vw';
+        mainBox.style.marginLeft = '14vw';
+        mainBox.style.marginRight = '14vw';
+      } else if (windowWidth >= 1280 && windowWidth < 1600) {
+        mainBox.style.width = '66vw';
+        mainBox.style.marginLeft = '17vw';
+        mainBox.style.marginRight = '17vw';
+      } else if (windowWidth >= 1600) {
+        mainBox.style.width = '60vw';
+        mainBox.style.marginLeft = '20vw';
+        mainBox.style.marginRight = '20vw'; 
+      } else {
+        mainBox.style.width = '90vw';
+        mainBox.style.marginLeft = '5vw';
+        mainBox.style.marginRight = '5vw';
+      }
+    }
+    function adjustRatio() {
+      var winWidth = window.innerWidth;
+      var winHeight = window.innerHeight;
+      var winRatio = winWidth/winHeight;
+      //alert(winRatio)
+      winRatio = 0.92 - Math.pow(Math.abs(winRatio - 1.24), 13)
+      //alert(winRatio)
+      document.getElementById('pills-tabContent').style.maxHeight = 80*winRatio + 'vh';
+    }
+    window.onload = adjustWidth();
+    window.onload = adjustRatio();
+    var previousWidth = window.innerWidth;
+    var previousHeight = window.innerHeight;
+    window.addEventListener('resize', function() {
+      adjustRatio();
+    });
+    window.addEventListener('resize', function() {
+      var currentWidth = window.innerWidth;
+      var currentHeight = window.innerHeight;
+      var widthChange = Math.abs(currentWidth - previousWidth);
+      var heightChange = Math.abs(currentHeight - previousHeight);
+      var widthThreshold = previousWidth * 0.2;
+      var heightThreshold = previousHeight * 0.2;
+      if (widthChange > widthThreshold || heightChange > heightThreshold) {
+        adjustWidth();
+        // 更新先前的宽度和高度
+        previousWidth = currentWidth;
+        previousHeight = currentHeight;
+      }
+    });
+
+
+    //>--- 切换语言 ---<//
+
+    // 获取按钮元素
+    var switchEngButton = document.getElementById('swEng');
+    var switchZhsButton = document.getElementById('swZhs');
+    var typeSwitch = 0;
+
+    document.getElementById('reader__dashboard_section_csr').nextElementSibling.querySelector('div').id = 'dropBox';
+    document.getElementById('html5-qrcode-anchor-scan-type-change').addEventListener('click', function() {
+      typeSwitch++;
+    });
+
+    function TypeChangeClick() {
+      document.getElementById('html5-qrcode-anchor-scan-type-change').textContent = '使用图片扫描';
+      if (typeSwitch%2 == 1) {
+        document.getElementById('html5-qrcode-anchor-scan-type-change').textContent = '使用摄像头扫描';
+        document.getElementById('html5-qrcode-button-file-selection').textContent = '选择图片 - 未选择图片';
+      } else if (typeSwitch%2 == 0) {
+        document.getElementById('html5-qrcode-anchor-scan-type-change').textContent = '使用图片扫描';
+      } else {
+        document.getElementById("html5-qrcode-anchor-scan-type-change").textContent = '切换扫描模式';
+      }
+    };
+
+    function FileSelected() {
+      const selectFElement = document.getElementById('selectCamera');
+      const childNodes = selectFElement.childNodes;
+      for (let i = 0; i < childNodes.length; i++) {
+        const node = childNodes[i];
+        if (node.nodeType === Node.TEXT_NODE) {
+          const originalText = node.textContent;
+          const newText = originalText.replace('Choose Another', '选择其他图片');
+          node.textContent = newText;
+        }
+      }
+    };
+
+    function startScanBtn() {
+      document.getElementById('html5-qrcode-button-camera-start').textContent = '开始扫描';
+    }
+
+    // 绑定点击事件
+
+    // 切换为英文
+    function switchEng() {
+      lang = 'eng';
+      if (document.getElementById('selectCamera')) {document.querySelector('#html5-qrcode-select-camera').parentElement.id = 'selectCamera';};
+      document.getElementById('mainTitle').textContent = 'Integrate Products Check';
+      document.getElementById('navTitle').textContent = 'Integrate Products Trace';
+      document.getElementById('navAbout').textContent = 'About';
+      document.getElementById('navLink').textContent = 'Link';
+      document.getElementById('navSponsor').textContent = 'Sponsor';
+      document.getElementById('linkEagloxis').textContent = 'Eagloxis Technology';
+      document.getElementById('navFeedback').textContent = 'Feedback';
+      document.getElementById('navFeedback').href = 'mailto:Astronavigate@auet.onmicrosoft.com?subject=IPTS%20Feedback&body=%0A%0APlease%20do%20not%20modify%20the%20title.';
+      document.getElementById('nav-input-tab').textContent = 'Input IPT Code';
+      document.getElementById('nav-scan-tab').textContent = 'Scan QRCode';
+      document.getElementById('pills-info-tab').textContent = 'Basic';
+      document.getElementById('pills-spec-tab').textContent = 'Spec';
+      document.getElementById('pills-stuff-tab').textContent = 'Stuff';
+      document.getElementById('pills-source-tab').textContent = 'Source';
+      document.getElementById('inputLabel').textContent = 'Integrate Products Traceability Code';
+      document.getElementById('submit-IPT').textContent = 'Submit';
+      document.getElementById('modal1-Label').textContent = 'About IPTS';
+      document.getElementById('modal1-body').innerHTML = 'Welcome to IPTS! IPTS is the Integrate Products Traceability Code Query System.<br>Through IPTS, you can enter or scan the product\'s traceability code to obtain detailed information about the product. This includes important data such as manufacturer, production date, source of raw materials, and production process.<br>Our goal is to provide consumers with more transparency and traceability, ensuring product quality and safety.<br>To apply for IPT Code, please call:<br><a href="tel:+14086414215">+1 408 641 4215</a> \(United States\) or <a href="tel:+8615640993693">+86 156 4099 3693</a> \(China\)<br>If there is no answer on the phone, please send an email to:<br><a href="mailto:Astronavigate@auet.onmicrosoft.com?subject=IPTS%20Apply&body=%0A%0APlease%20do%20not%20modify%20the%20title." id="navFeedback">Astronavigate@auet.onmicrosoft.com</a> \(Please make sure the email title is IPTS Apply\)';
+      document.getElementById('modal1-Close').textContent = 'Close';
+      document.getElementById('modal2-Label').textContent = 'Sponsor';
+      document.getElementById('IPTs-version').textContent = 'Release Note';
+      document.getElementById('modal3-Label').textContent = 'Release Note';
+      document.getElementById('modal3-body').innerHTML = 'Current Version: 1.0.152<br>Release Date: 3/2/2024<br>Release Note:<br>Fixed some known bugs, optimized user experience, and improved IPT coding logic.<br><br>Version: 1.0.126<br>Release Date: 1/21/2024<br>Release Note:<br>UPTS has officially launched, providing the function of scanning or inputting UPT information and displaying it.';
+      document.getElementById('modal3-Close').textContent = 'Close';
+      document.getElementById('re-input').textContent = 'Rescan or input';
+      document.getElementById('html5-qrcode-anchor-scan-type-change').removeEventListener('click', TypeChangeClick);
+      if (targetData == true) {
+        document.getElementById("pills-info").innerHTML = proBIeng;
+        document.getElementById("pills-spec").innerHTML = proSPeng;
+        document.getElementById("pills-stuff").innerHTML = proSTeng;
+        document.getElementById("pills-source").innerHTML = proSOeng;
+      }
+      if (typeSwitch%2 == 1) {
+        document.getElementById('html5-qrcode-anchor-scan-type-change').textContent = 'Scan using camera directly';
+        document.getElementById('html5-qrcode-button-file-selection').textContent = 'Choose Image - No image choosen';
+      } else if (typeSwitch%2 == 0) {
+        document.getElementById('html5-qrcode-anchor-scan-type-change').textContent = 'Scan an Image File';
+      } else {
+        document.getElementById('html5-qrcode-anchor-scan-type-change').textContent = 'Scan Type Change';
+      }
+      document.getElementById('dropBox').textContent = 'Or drop an image to scan';
+      document.getElementById('html5-qrcode-anchor-scan-type-change').textContent = 'Scan an Image File';
+      document.getElementById('html5-qrcode-button-file-selection').textContent = 'Choose Image - No image choosen';
+      document.getElementById('html5-qrcode-button-file-selection').removeEventListener('click', FileSelected);
+      if (document.getElementById('html5-qrcode-button-camera-permission')) {
+        document.getElementById('html5-qrcode-button-camera-permission').textContent = 'Request Camera Permission';
+      }
+      const selectCameraElement = document.getElementById('selectCamera');
+      const childNodes = selectCameraElement.childNodes;
+      for (let i = 0; i < childNodes.length; i++) {
+        const node = childNodes[i];
+        if (node.nodeType === Node.TEXT_NODE) {
+          const originalText = node.textContent;
+          const newText = originalText.replace('选择摄像头', 'Select Camera');
+          node.textContent = newText;
+        }
+      }
+      document.getElementById('html5-qrcode-button-camera-stop').removeEventListener('click', startScanBtn);
+      document.getElementById('html5-qrcode-button-camera-stop').textContent = 'Stop Scanning';
+    };
+    switchEngButton.addEventListener('click', switchEng);
+
+    // 切换为中文
+    function switchZhs() {
+      lang = 'zhs';
+      document.getElementById('mainTitle').textContent = '通用商品检查';
+      document.getElementById('navTitle').textContent = '通用商品追溯';
+      document.getElementById('navAbout').textContent = '关于';
+      document.getElementById('navLink').textContent = '链接';
+      document.getElementById('linkEagloxis').textContent = '奥戈洛斯科技';
+      document.getElementById('navSponsor').textContent = '赞助';
+      document.getElementById('navFeedback').textContent = '反馈';
+      document.getElementById('navFeedback').href = 'mailto:Astronavigate@auet.onmicrosoft.com?subject=IPTS%20Feedback&body=%0A%0A请勿修改标题。';
+      document.getElementById('nav-input-tab').textContent = '输入追溯码';
+      document.getElementById('nav-scan-tab').textContent = '扫描追溯码';
+      document.getElementById('pills-info-tab').textContent = '基本信息';
+      document.getElementById('pills-spec-tab').textContent = '规格';
+      document.getElementById('pills-stuff-tab').textContent = '原料';
+      document.getElementById('pills-source-tab').textContent = '来源';
+      document.getElementById('inputLabel').textContent = '通用商品追溯码';
+      document.getElementById('submit-IPT').textContent = '提交';
+      document.getElementById('html5-qrcode-anchor-scan-type-change').textContent = '使用图片扫描';
+      document.getElementById('dropBox').textContent = '或拖入图片扫描';
+      document.getElementById('modal1-Label').textContent = '关于 IPTS';
+      document.getElementById('modal1-body').innerHTML = '欢迎使用 IPTS! IPTS 是 Integrate Products Traceability Code \(通用产品追溯码\) 查询系统。<br>通过 IPTS, 您可以输入或扫描产品的追溯码, 获取有关该产品的详细信息。这包括生产商、生产日期、原材料来源、生产过程等重要数据。<br>我们的目标是为消费者提供更多的透明度和可追溯性，确保产品的质量和安全。<br>申请IPT Code请拨打电话:<br><a href="tel:+14086414215">+1 408 641 4215</a> \(美国\) 或 <a href="tel:+8615640993693">+86 156 4099 3693</a> \(中国\)如果电话无人接听，请发送邮件至:<br><a href="mailto:Astronavigate@auet.onmicrosoft.com?subject=IPTS%20Apply&body=%0A%0A请勿修改标题" id="navFeedback">Astronavigate@auet.onmicrosoft.com</a> \(请务必确保邮件标题为IPTS Apply\)';
+      document.getElementById('modal1-Close').textContent = '关闭';
+      document.getElementById('modal2-Label').textContent = '赞助';
+      document.getElementById('IPTs-version').textContent = '版本说明';
+      document.getElementById('modal3-Label').textContent = '版本说明';
+      document.getElementById('modal3-body').innerHTML = '当前版本: 1.0.152<br>发布日期: 2024/3/2<br>版本说明:<br>修复了部分已知的bug，优化用户体验，完善通用追溯编码逻辑。<br><br>版本号: 1.0.126<br>发布日期: 2024/1/21<br>版本说明:<br>UPTS正式上线，提供UPT码扫描或输入并显示UPT信息的功能。';
+      document.getElementById('modal3-Close').textContent = '关闭';
+      document.getElementById('re-input').textContent = '重新扫描或输入';
+      document.getElementById('html5-qrcode-button-file-selection').addEventListener('click', FileSelected);
+      if (targetData != null) {
+        document.getElementById("pills-info").innerHTML = proBIzhs;
+        document.getElementById("pills-spec").innerHTML = proSPzhs;
+        document.getElementById("pills-stuff").innerHTML = proSTzhs;
+        document.getElementById("pills-source").innerHTML = proSOzhs;
+      }
+      if (document.getElementById('html5-qrcode-button-camera-permission')) {
+        document.getElementById('html5-qrcode-button-camera-permission').textContent = '获取摄像头权限';
+        const intervalId = setInterval(() => {
+          if (document.getElementById('html5-qrcode-button-camera-stop')) {
+            clearInterval(intervalId);
+            switchZhsButton.click();
+          }
+        }, 10);
+      };
+      document.getElementById('html5-qrcode-anchor-scan-type-change').addEventListener('click', TypeChangeClick);
+      document.getElementById('html5-qrcode-select-camera').parentElement.id = 'selectCamera';
+      const selectCameraElement = document.getElementById('selectCamera');
+      const childNodes = selectCameraElement.childNodes;
+      for (let i = 0; i < childNodes.length; i++) {
+        const node = childNodes[i];
+        if (node.nodeType === Node.TEXT_NODE) {
+          const originalText = node.textContent;
+          const newText = originalText.replace('Select Camera', '选择摄像头');
+          node.textContent = newText;
+        }
+      }
+      document.getElementById('html5-qrcode-button-camera-stop').addEventListener('click', startScanBtn);
+      document.getElementById('html5-qrcode-button-camera-stop').textContent = '停止扫描';
+    };
+    switchZhsButton.addEventListener('click', switchZhs);
+    // 自动切换语言
+    window.onload = function() {
+      if (navigator.language == 'zh-CN') {
+        try {
+          switchZhs();
+        } catch (error) {
+          setTimeout(function() {
+            try {
+              switchZhs();
+            } catch (error) {
+              setTimeout(function() {
+                try {
+                  switchZhs();
+                } catch (error) {
+                  console.log('Switch Zhs When Open ' + error);
+                }
+              }, 700)
+            }
+          }, 300);
+        }
+      } else {
+        switchEng();
+      }
+    }
+  </script>
+</body>
+
+</html>

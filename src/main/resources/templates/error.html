@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Eagloxis - ERROR</title>
+    <th:block></th:block>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+</head>
+<body>
+
+<div class="container my-4">
+    <header>
+        <h1>Eagloxis Error Page</h1>
+    </header>
+
+    <!-- 显示错误信息 -->
+    <p th:text="${error}"></p>
+
+</div>
+</body>
+</html>
