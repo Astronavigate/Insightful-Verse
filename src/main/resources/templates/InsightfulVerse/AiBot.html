@@ -64,6 +64,24 @@
       display: inline-block;
       line-height: 1.4;
     }
+    /* 新增的可折叠内容样式 */
+    .collapsible-content {
+      max-height: 4.2em; /* 约 3 行文字 (1.4 * 3 = 4.2) */
+      overflow: hidden;
+      position: relative;
+    }
+    .collapsible-content.expanded {
+      max-height: none;
+      overflow: visible;
+    }
+    .show-more-button {
+      color: #007bff;
+      cursor: pointer;
+      margin-left: 0.5rem;
+      font-size: 0.9em;
+      text-decoration: underline;
+    }
+
     .input-area {
       padding: 1rem 2rem;
       background: #C0C0C0; /* 介于浅灰色和灰色之间 */
@@ -99,13 +117,14 @@
 <div class="input-area">
   <textarea id="prompt" class="form-control" placeholder="Type your message..."></textarea>
   <button class="btn btn-primary" onclick="sendPrompt()">Send</button>
-  <button class="btn btn-danger" onclick="clearResponse()">Clear</button>
+  <button class="btn btn-warning" onclick="interruptGeneration()">Stop</button> <button class="btn btn-danger" onclick="clearResponse()">Clear</button>
   <button class="btn btn-secondary" onclick="exportChat()">Export Chat</button>
 </div>
 
 <script>
   const promptEl = document.getElementById("prompt");
   const initialMinHeight = window.getComputedStyle(promptEl).minHeight;
+  let currentEventSource = null; // 用于存储当前的 EventSource 实例
 
   promptEl.addEventListener("input", function() {
     this.style.height = 'auto';
@@ -136,6 +155,7 @@
 
     const chatHistory = document.getElementById("chat-history");
 
+    // 添加用户消息到聊天历史
     const userDiv = document.createElement("div");
     userDiv.className = "message";
     const userTextNode = document.createTextNode(text);
@@ -149,6 +169,7 @@
     userDiv.appendChild(userContent);
     chatHistory.appendChild(userDiv);
 
+    // 添加 AI 消息容器 (流式接收内容)
     const aiDiv = document.createElement("div");
     aiDiv.className = "message";
     const aiContentId = "ai-" + Date.now();
@@ -156,7 +177,7 @@
     aiPrefix.className = "ai";
     aiPrefix.textContent = "AiBot: ";
     const aiContentSpan = document.createElement("span");
-    aiContentSpan.className = "content";
+    aiContentSpan.className = "content collapsible-content"; // 添加可折叠类
     aiContentSpan.id = aiContentId;
     aiDiv.appendChild(aiPrefix);
     aiDiv.appendChild(aiContentSpan);
@@ -164,40 +185,145 @@
 
     chatHistory.scrollTop = chatHistory.scrollHeight;
 
-    try {
-      const res = await fetch("/stream_generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: text, stream: true, max_tokens: 2048 })
-      });
+    // 如果有旧的 EventSource 实例在运行，先关闭它
+    if (currentEventSource) {
+      console.warn("Closing previous EventSource before starting a new one.");
+      currentEventSource.close();
+      currentEventSource = null; // 清除旧的引用
+    }
 
-      const contentEl = document.getElementById(aiContentId);
-      if (!res.ok) {
-        contentEl.textContent = "[Error connecting to AI: " + res.status + " " + res.statusText + "]";
-        return;
+    // 使用 EventSource 连接 SSE 端点
+    // URL 路径匹配 Java Controller 的 @RequestMapping 和 @GetMapping
+    // prompt 作为查询参数传递，因为 Controller 是 GET 请求
+    const url = `/InsightfulVerse/AiBot/stream?prompt=${encodeURIComponent(text)}`;
+    currentEventSource = new EventSource(url);
+
+    let fullAiResponse = ""; // 累积完整的AI响应
+
+    // 监听 SSE 接收到的消息
+    currentEventSource.onmessage = function(event) {
+      const textChunk = event.data; // 接收到的数据
+      // 检查服务器发送的中断标记
+      if (textChunk === "[STOP]") {
+        console.log("AI stream stopped by server due to interruption.");
+        aiContentSpan.textContent += " [Generation Stopped]"; // 提示用户
+        currentEventSource.close(); // 收到停止标记，关闭 EventSource
+        return; // 立即返回，不再处理后续数据
       }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        contentEl.textContent += decoder.decode(value, { stream: true });
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-      }
-    } catch (error) {
-      const contentEl = document.getElementById(aiContentId);
-      if (contentEl) {
-        contentEl.textContent = "[Error during AI communication: " + error.message + "]";
-      } else {
-        console.error("Failed to display AI error, content element not found.");
-      }
+      fullAiResponse += textChunk;
+      aiContentSpan.textContent = fullAiResponse; // 更新内容
+      chatHistory.scrollTop = chatHistory.scrollHeight; // 滚动到底部
+    };
+
+    // 监听 SSE 错误
+    currentEventSource.onerror = function(error) {
+      console.error('EventSource failed:', error);
+      aiContentSpan.textContent += " [Error occurred or connection closed]";
+      currentEventSource.close(); // 发生错误时关闭连接
       chatHistory.scrollTop = chatHistory.scrollHeight;
+    };
+
+    // 监听 SSE 连接打开
+    currentEventSource.onopen = function() {
+      console.log('EventSource connected.');
+    };
+
+    // 监听 SSE 连接关闭
+    currentEventSource.onclose = function() {
+      console.log('EventSource disconnected.');
+      // Stream 完成或被中断后，检查最终内容是否需要折叠
+      checkAndApplyCollapsible(aiContentSpan, aiDiv);
+      currentEventSource = null; // 清除引用
+    };
+  }
+
+  // 新增的中断函数
+  async function interruptGeneration() {
+    if (currentEventSource) {
+      // 先关闭客户端的 EventSource 连接，停止接收数据
+      currentEventSource.close();
+      console.log("Client-side EventSource closed.");
+      // 然后向后端发送中断信号，通知Java后端，进而通知Python后端停止生成
+      try {
+        const res = await fetch("/InsightfulVerse/AiBot/interrupt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}) // 发送空JSON体
+        });
+        const data = await res.json();
+        console.log("Interrupt API response:", data.message);
+      } catch (error) {
+        console.error("Error sending interrupt signal to backend:", error);
+      } finally {
+        currentEventSource = null; // 清除引用
+      }
+    } else {
+      console.log("No active AI stream to interrupt.");
     }
   }
 
+  // 检查并应用/移除折叠功能 (从之前的代码复制过来)
+  function checkAndApplyCollapsible(contentElement, parentMessageDiv) {
+    // 确保在内容完全渲染后才检查scrollHeight
+    setTimeout(() => {
+      // 如果内容高度超过了设定最大高度（4.2em）
+      const lineHeight = parseFloat(window.getComputedStyle(contentElement).lineHeight);
+      const maxHeightLines = 3; // 设置为3行
+      const maxHeightPx = lineHeight * maxHeightLines;
+
+      // 暂时移除 max-height 样式，以便正确计算 scrollHeight
+      const originalMaxHeight = contentElement.style.maxHeight;
+      const originalOverflow = contentElement.style.overflow;
+      contentElement.style.maxHeight = 'none';
+      contentElement.style.overflow = 'visible';
+
+      const currentScrollHeight = contentElement.scrollHeight;
+
+      // 恢复原始样式
+      contentElement.style.maxHeight = originalMaxHeight;
+      contentElement.style.overflow = originalOverflow;
+
+
+      if (currentScrollHeight > maxHeightPx) {
+        if (!contentElement.classList.contains("collapsible-content")) {
+          contentElement.classList.add("collapsible-content"); // 确保类存在
+        }
+        // 检查是否已经有 "Show More" 按钮
+        let showMoreBtn = parentMessageDiv.querySelector(".show-more-button");
+        if (!showMoreBtn) {
+          showMoreBtn = document.createElement("span");
+          showMoreBtn.className = "show-more-button";
+          showMoreBtn.textContent = "Show More";
+          showMoreBtn.onclick = function() {
+            contentElement.classList.toggle("expanded");
+            if (contentElement.classList.contains("expanded")) {
+              showMoreBtn.textContent = "Show Less";
+            } else {
+              showMoreBtn.textContent = "Show More";
+            }
+            document.getElementById("chat-history").scrollTop = document.getElementById("chat-history").scrollHeight;
+          };
+          parentMessageDiv.appendChild(showMoreBtn); // 将按钮添加到消息的父div
+        }
+      } else {
+        // 如果内容没超过高度，移除折叠样式和按钮
+        contentElement.classList.remove("collapsible-content", "expanded");
+        let showMoreBtn = parentMessageDiv.querySelector(".show-more-button");
+        if (showMoreBtn) {
+          showMoreBtn.remove();
+        }
+      }
+    }, 50); // 小延迟确保渲染
+  }
+
+
   function clearResponse() {
     document.getElementById("chat-history").innerHTML = "";
+    if (currentEventSource) {
+      currentEventSource.close(); // 清除时也关闭 EventSource 连接
+      currentEventSource = null;
+    }
   }
 
   function exportChat() {
@@ -208,12 +334,21 @@
     for (let i = 0; i < messages.length; i++) {
       const messageElement = messages[i];
       const speakerElement = messageElement.querySelector(".user, .ai");
+      // 获取折叠前的原始内容，而不是当前的显示内容
       const contentElement = messageElement.querySelector(".content");
+      let actualContent = contentElement.textContent;
+
+      // 移除可能添加的 "[Generation Stopped]" 等标记
+      if (actualContent.endsWith(" [Generation Stopped]")) {
+        actualContent = actualContent.slice(0, -21);
+      } else if (actualContent.endsWith(" [Error occurred or connection closed]")) {
+        actualContent = actualContent.slice(0, -37);
+      }
 
       if (speakerElement && contentElement) {
         let speakerText = speakerElement.textContent;
         if (!speakerText.endsWith(" ")) speakerText += " ";
-        chatContent += speakerText + contentElement.textContent + "\n\n";
+        chatContent += speakerText + actualContent + "\n\n";
       }
     }
 

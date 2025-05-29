@@ -6,6 +6,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tech.ravon.model.iviep.Course;
 import tech.ravon.model.iviep.File;
 import tech.ravon.model.iviep.User;
@@ -32,6 +33,8 @@ public class InsightfulVerseController {
     ViewRecordService viewRecordService;
     @Autowired
     IVVersionService iVVersionService;
+    @Autowired
+    AiBotService aiBotService;
     @Autowired
     MailService mailService;
     @Autowired
@@ -461,5 +464,91 @@ public class InsightfulVerseController {
     @RequestMapping("/InsightfulVerse/AiBot")
     public String AiBot(HttpServletRequest request) {
         return "InsightfulVerse/AiBot";
+    }
+
+    /**
+     * 处理流式 AI 文本生成请求。
+     * 使用 SseEmitter 实现服务器发送事件 (Server-Sent Events)
+     * 将 AI 模型的流式输出实时推送到客户端。
+     *
+     * @param prompt 用户输入的提示词
+     * @param session HttpSession 对象，用于获取会话ID作为流的唯一标识符
+     * @return SseEmitter 对象，用于将数据流式传输到客户端
+     */
+    @RequestMapping("/InsightfulVerse/AiBot/stream")
+    public SseEmitter streamAiResponse(@RequestParam String prompt, HttpSession session) {
+        String sessionId = session.getId();
+        System.out.println("New stream request for session: " + sessionId + " with prompt: " + prompt);
+
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE); // 单位：毫秒，Long.MAX_VALUE 表示几乎永不超时
+
+        // 设置完成、超时和错误回调，以正确管理 SseEmitter 的生命周期
+        emitter.onCompletion(() -> {
+            System.out.println("SSE stream completed for session: " + sessionId);
+            // 这里可以添加清理逻辑，例如从 Service 的 activeStreamThreads 中移除
+            // 但因为 Service 层的 finally 块中已经处理了移除，这里可以省略或用于额外清理
+        });
+
+        emitter.onTimeout(() -> {
+            System.out.println("SSE stream timed out for session: " + sessionId);
+            emitter.complete(); // 超时时关闭连接
+            // 尝试中断后端流
+            aiBotService.interruptClientStream(sessionId);
+        });
+
+        emitter.onError(error -> {
+            System.err.println("SSE stream error for session: " + sessionId + ": " + error.getMessage());
+            emitter.completeWithError(error); // 错误时关闭连接并传递错误
+            // 尝试中断后端流
+            aiBotService.interruptClientStream(sessionId);
+        });
+
+        // 调用 Service 层的方法进行流式生成
+        // 传入 sessionId 以便 Service 层跟踪和管理线程
+        aiBotService.streamGenerateText(sessionId, prompt, 2048, new AiBotService.TextStreamCallback() {
+            @Override
+            public void onNewText(String textChunk) {
+                try {
+                    emitter.send(SseEmitter.event().data(textChunk));
+                } catch (IOException e) {
+                    System.err.println("Failed to send SSE event for session " + sessionId + ": " + e.getMessage());
+                    emitter.completeWithError(e); // 发送失败时完成 SseEmitter
+                }
+            }
+
+            @Override
+            public void onComplete() {
+                emitter.complete(); // 流正常完成
+                System.out.println("AI Stream to client completed for session: " + sessionId);
+            }
+
+            @Override
+            public void onError(Throwable error) {
+                emitter.completeWithError(error); // 错误时完成 SseEmitter
+                System.err.println("AI Stream error for session " + sessionId + ": " + error.getMessage());
+            }
+        });
+
+        return emitter;
+    }
+
+    /**
+     * 处理中断 AI 文本生成请求。
+     * 前端通过 POST 请求调用此接口来中断正在进行的流。
+     *
+     * @param session HttpSession 对象，用于获取会话ID，以中断对应的流
+     * @return 成功或失败消息的 JSON 字符串
+     */
+    @RequestMapping("/InsightfulVerse/AiBot/interrupt") // 例如：POST /InsightfulVerse/AiBot/interrupt
+    public String interruptAiGeneration(HttpSession session) {
+        String sessionId = session.getId();
+        System.out.println("Interrupt request received for session: " + sessionId);
+        // 尝试中断客户端线程，并会同时调用 Llama.cpp 后端的中断API
+        boolean interrupted = aiBotService.interruptClientStream(sessionId);
+        if (interrupted) {
+            return "{\"message\": \"Interruption signal sent for session " + sessionId + ".\"}";
+        } else {
+            return "{\"message\": \"No active stream to interrupt for session " + sessionId + ".\"}";
+        }
     }
 }

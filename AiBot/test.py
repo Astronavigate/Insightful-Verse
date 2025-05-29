@@ -7,8 +7,6 @@ import torch
 SERVER_URL = "http://127.0.0.1:2268"
 USE_STREAM = True  # 修改为 False 走非流式 /generate
 
-print(torch.cuda.is_available())
-
 example_prompts = [
     "请解释量子纠缠的基本原理。",
     "你对人工智能未来发展的看法是什么？",
