@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="tech.eagloxis.mapper.ViewRecordDao">
+<mapper namespace="tech.ravon.mapper.ViewRecordDao">
 
-    <resultMap id="BaseResultMap" type="tech.eagloxis.model.iviep.ViewRecord">
+    <resultMap id="BaseResultMap" type="tech.ravon.model.iviep.ViewRecord">
         <id property="recordId" column="record_id" jdbcType="INTEGER"/>
         <result property="fileId" column="file_id" jdbcType="INTEGER"/>
         <result property="userId" column="user_id" jdbcType="INTEGER"/>
@@ -20,7 +20,7 @@
     </sql>
 
     <!-- 查询最新的8条记录 -->
-    <select id="getNewestViewRecords" parameterType="String" resultType="tech.eagloxis.model.iviep.ViewRecord" resultMap="BaseResultMap">
+    <select id="getNewestViewRecords" parameterType="String" resultType="tech.ravon.model.iviep.ViewRecord" resultMap="BaseResultMap">
         SELECT *
         FROM iviep.fileviewrecords
         WHERE user_id = #{userId}
@@ -29,14 +29,14 @@
     </select>
 
     <!-- 查询所有记录 -->
-    <select id="getViewRecords" parameterType="String" resultType="tech.eagloxis.model.iviep.ViewRecord" resultMap="BaseResultMap">
+    <select id="getViewRecords" parameterType="String" resultType="tech.ravon.model.iviep.ViewRecord" resultMap="BaseResultMap">
         SELECT *
         FROM iviep.fileviewrecords
         WHERE user_id = #{userId}
         ORDER BY view_date DESC
     </select>
 
-    <select id="getViewHistory" parameterType="String" resultType="tech.eagloxis.model.iviep.ViewRecord" resultMap="BaseResultMap">
+    <select id="getViewHistory" parameterType="String" resultType="tech.ravon.model.iviep.ViewRecord" resultMap="BaseResultMap">
         SELECT *
         FROM iviep.fileviewrecords
         WHERE user_id = #{userId}

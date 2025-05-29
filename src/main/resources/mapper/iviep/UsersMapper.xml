@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="tech.eagloxis.mapper.UserDao">
+<mapper namespace="tech.ravon.mapper.UserDao">
 
-    <resultMap id="BaseResultMap" type="tech.eagloxis.model.iviep.User">
+    <resultMap id="BaseResultMap" type="tech.ravon.model.iviep.User">
             <id property="userId" column="user_id" jdbcType="INTEGER"/>
             <result property="username" column="username" jdbcType="VARCHAR"/>
             <result property="email" column="email" jdbcType="VARCHAR"/>
@@ -30,7 +30,7 @@
     </sql>
 
     <!-- 根据 identifier 和 password 验证用户登录 -->
-    <select id="checkUserLogin" resultType="tech.eagloxis.model.iviep.User" resultMap="BaseResultMap">
+    <select id="checkUserLogin" resultType="tech.ravon.model.iviep.User" resultMap="BaseResultMap">
         SELECT *
         FROM iviep.users
         WHERE (email = #{identifier} OR phone = #{identifier} OR user_id = #{identifier})
@@ -39,7 +39,7 @@
     </select>
 
     <!-- 根据 identifier 获取用户信息 -->
-    <select id="getUserInfo" resultType="tech.eagloxis.model.iviep.User" resultMap="BaseResultMap">
+    <select id="getUserInfo" resultType="tech.ravon.model.iviep.User" resultMap="BaseResultMap">
         SELECT *
         FROM iviep.users
         WHERE user_id = #{identifier} OR email = #{identifier} OR phone = #{identifier}
@@ -63,7 +63,7 @@
 
 
     <!-- 根据 email 查询刚插入的用户信息 -->
-    <select id="getUserByEmail" resultType="tech.eagloxis.model.iviep.User" resultMap="BaseResultMap">
+    <select id="getUserByEmail" resultType="tech.ravon.model.iviep.User" resultMap="BaseResultMap">
         SELECT *
         FROM iviep.users
         WHERE email = #{email}

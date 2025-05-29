@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="tech.eagloxis.mapper.FileDao">
+<mapper namespace="tech.ravon.mapper.FileDao">
 
-    <resultMap id="BaseResultMap" type="tech.eagloxis.model.iviep.File">
+    <resultMap id="BaseResultMap" type="tech.ravon.model.iviep.File">
             <id property="fileId" column="file_id" jdbcType="INTEGER"/>
             <result property="fileName" column="file_name" jdbcType="VARCHAR"/>
             <result property="type" column="type" jdbcType="VARCHAR"/>
@@ -21,11 +21,11 @@
         upload_date,file_path
     </sql>
 
-    <select id="getFileById" resultType="tech.eagloxis.model.iviep.File" resultMap="BaseResultMap">
+    <select id="getFileById" resultType="tech.ravon.model.iviep.File" resultMap="BaseResultMap">
         SELECT * FROM iviep.file WHERE file_id = #{fileId} LIMIT 1
     </select>
 
-    <select id="getFilesByCourse" resultType="tech.eagloxis.model.iviep.File" resultMap="BaseResultMap">
+    <select id="getFilesByCourse" resultType="tech.ravon.model.iviep.File" resultMap="BaseResultMap">
         SELECT *
         FROM iviep.file
         WHERE course_id = #{courseId}
@@ -60,7 +60,7 @@
         DELETE FROM iviep.file WHERE file_id = #{fileId}
     </delete>
 
-    <select id="getFileByName" resultType="tech.eagloxis.model.iviep.File" resultMap="BaseResultMap">
+    <select id="getFileByName" resultType="tech.ravon.model.iviep.File" resultMap="BaseResultMap">
         SELECT *
         FROM iviep.file
         WHERE file_name LIKE CONCAT('%', #{keyword}, '%')

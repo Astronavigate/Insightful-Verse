@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="tech.eagloxis.mapper.StuAssignmentDao">
+<mapper namespace="tech.ravon.mapper.StuAssignmentDao">
 
-    <resultMap id="BaseResultMap" type="tech.eagloxis.model.iviep.StuAssignment">
+    <resultMap id="BaseResultMap" type="tech.ravon.model.iviep.StuAssignment">
             <id property="submissionId" column="submission_id" jdbcType="INTEGER"/>
             <result property="testId" column="test_id" jdbcType="INTEGER"/>
             <result property="userId" column="user_id" jdbcType="INTEGER"/>
