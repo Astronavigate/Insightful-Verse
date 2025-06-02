@@ -13,6 +13,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      font-family: Arial, sans-serif;
     }
     .chat-container {
       flex: 1;
@@ -83,29 +84,52 @@
     }
 
     .input-area {
-      padding: 1rem 2rem;
       background: #C0C0C0; /* 介于浅灰色和灰色之间 */
       border-top: 1px solid #ced4da;
       display: flex;
+      flex-direction: column;
+      padding: 1rem 2rem;
+    }
+    .file-upload-area {
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+    }
+    .file-upload-area input[type="file"] {
+      padding: 0.5rem;
+      background: #ffffff;
+      border: 1px solid #ced4da;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .message-input-area {
+      display: flex;
+      width: 100%;
       align-items: flex-start;
     }
-    .input-area textarea {
+    .message-input-area textarea {
       flex: 1;
       resize: none;
-      min-height: 3rem;
-      max-height: 10rem;
+      min-height: 6rem;
+      max-height: 12rem;
       overflow-y: hidden;
       margin-right: 1rem;
       padding: 0.5rem 0.75rem;
       line-height: 1.5;
       box-sizing: border-box;
+      border: 1px solid #ced4da;
+      border-radius: 5px;
     }
-    .input-area button {
-      margin-left: 0.5rem;
-      align-self: flex-end;
-      margin-bottom: 0.375rem;
+    .button-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .button-group .btn {
+      margin-bottom: 0.5rem;
     }
   </style>
+  <!-- Mammoth.js for .docx parsing -->
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
 </head>
 <body>
 <th:block th:replace="~{common/sub/iviep/iviep-header-intel.html}"></th:block>
@@ -115,16 +139,30 @@
 </div>
 
 <div class="input-area">
-  <textarea id="prompt" class="form-control" placeholder="Type your message..."></textarea>
-  <button class="btn btn-primary" onclick="sendPrompt()">Send</button>
-  <button class="btn btn-warning" onclick="interruptGeneration()">Stop</button> <button class="btn btn-danger" onclick="clearResponse()">Clear</button>
-  <button class="btn btn-secondary" onclick="exportChat()">Export Chat</button>
+  <!-- 文本输入和按钮 -->
+  <div class="message-input-area">
+    <textarea id="prompt" class="form-control" placeholder="Type your message..."></textarea>
+    <div>
+      <!-- File upload controls -->
+      <div class="file-upload-area">
+        <input type="file" id="fileInput" accept=".txt,.md,.csv,.doc,.docx">
+      </div>
+      <div class="button-group" style="display: inline-block; align-items: center;">
+        <button class="btn btn-primary" style="display: inline;" onclick="sendPrompt()">Send</button>
+        <button class="btn btn-warning" style="display: inline;" onclick="interruptGeneration()">Stop</button>
+        <button class="btn btn-danger" style="display: inline;" onclick="clearResponse()">Clear</button>
+        <button class="btn btn-secondary" style="display: inline;" onclick="exportChat()">Export Chat</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
   const promptEl = document.getElementById("prompt");
+  const fileInput = document.getElementById("fileInput");
   const initialMinHeight = window.getComputedStyle(promptEl).minHeight;
   let currentEventSource = null; // 用于存储当前的 EventSource 实例
+  let docContent = ""; // 存储文档文本
 
   promptEl.addEventListener("input", function() {
     this.style.height = 'auto';
@@ -145,9 +183,62 @@
     }
   });
 
+  // 处理文件上传
+  fileInput.addEventListener('change', async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const filename = file.name;
+    const extension = filename.split('.').pop().toLowerCase();
+
+    try {
+      if (extension === 'docx') {
+        // 使用 mammoth 解析 docx
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+        docContent = result.value;
+      } else if (['txt', 'md', 'csv'].includes(extension)) {
+        // 以文本方式读取
+        docContent = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsText(file);
+        });
+      } else if (extension === 'doc') {
+        // 对 .doc 文件浏览器环境下无法直接解析，提示用户
+        alert('DOC 格式暂不支持内容解析，请转换为 DOCX。');
+        clearFile();
+        return;
+      } else {
+        alert('Unsupported file type');
+        clearFile();
+        return;
+      }
+      // 控制最大字符数为 1000
+      if (docContent.length > 1000) {
+        docContent = docContent.slice(0, 1000);
+      }
+    } catch (error) {
+      console.error('Error reading file:', error);
+      alert('读取文件时出错');
+      clearFile();
+    }
+  });
+
+  function clearFile() {
+    fileInput.value = '';
+    docContent = '';
+  }
+
   async function sendPrompt() {
-    const text = promptEl.value.trim();
-    if (!text) return;
+    let userText = promptEl.value.trim();
+    if (!userText && !docContent) return;
+
+    // 如果存在文档内容，将其附加到用户输入前面
+    let combinedText = userText;
+    if (docContent) {
+      combinedText = `promot 以下是用户附带文档内容：【${docContent}】\n${userText}`;
+    }
 
     promptEl.value = "";
     promptEl.style.height = initialMinHeight;
@@ -158,16 +249,18 @@
     // 添加用户消息到聊天历史
     const userDiv = document.createElement("div");
     userDiv.className = "message";
-    const userTextNode = document.createTextNode(text);
     const userPrefix = document.createElement("span");
     userPrefix.className = "user";
     userPrefix.textContent = "You: ";
     const userContent = document.createElement("span");
     userContent.className = "content";
-    userContent.appendChild(userTextNode);
+    userContent.textContent = combinedText;
     userDiv.appendChild(userPrefix);
     userDiv.appendChild(userContent);
     chatHistory.appendChild(userDiv);
+
+    // 重置文档内容
+    clearFile();
 
     // 添加 AI 消息容器 (流式接收内容)
     const aiDiv = document.createElement("div");
@@ -193,9 +286,7 @@
     }
 
     // 使用 EventSource 连接 SSE 端点
-    // URL 路径匹配 Java Controller 的 @RequestMapping 和 @GetMapping
-    // prompt 作为查询参数传递，因为 Controller 是 GET 请求
-    const url = `/InsightfulVerse/AiBot/stream?prompt=${encodeURIComponent(text)}`;
+    const url = `/InsightfulVerse/AiBot/stream?prompt=${encodeURIComponent(combinedText)}`;
     currentEventSource = new EventSource(url);
 
     let fullAiResponse = ""; // 累积完整的AI响应
@@ -208,7 +299,7 @@
         console.log("AI stream stopped by server due to interruption.");
         aiContentSpan.textContent += " [Generation Stopped]"; // 提示用户
         currentEventSource.close(); // 收到停止标记，关闭 EventSource
-        return; // 立即返回，不再处理后续数据
+        return;
       }
 
       fullAiResponse += textChunk;
@@ -241,38 +332,33 @@
   // 新增的中断函数
   async function interruptGeneration() {
     if (currentEventSource) {
-      // 先关闭客户端的 EventSource 连接，停止接收数据
       currentEventSource.close();
       console.log("Client-side EventSource closed.");
-      // 然后向后端发送中断信号，通知Java后端，进而通知Python后端停止生成
       try {
         const res = await fetch("/InsightfulVerse/AiBot/interrupt", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}) // 发送空JSON体
+          body: JSON.stringify({})
         });
         const data = await res.json();
         console.log("Interrupt API response:", data.message);
       } catch (error) {
         console.error("Error sending interrupt signal to backend:", error);
       } finally {
-        currentEventSource = null; // 清除引用
+        currentEventSource = null;
       }
     } else {
       console.log("No active AI stream to interrupt.");
     }
   }
 
-  // 检查并应用/移除折叠功能 (从之前的代码复制过来)
+  // 检查并应用/移除折叠功能
   function checkAndApplyCollapsible(contentElement, parentMessageDiv) {
-    // 确保在内容完全渲染后才检查scrollHeight
     setTimeout(() => {
-      // 如果内容高度超过了设定最大高度（4.2em）
       const lineHeight = parseFloat(window.getComputedStyle(contentElement).lineHeight);
-      const maxHeightLines = 3; // 设置为3行
+      const maxHeightLines = 3;
       const maxHeightPx = lineHeight * maxHeightLines;
 
-      // 暂时移除 max-height 样式，以便正确计算 scrollHeight
       const originalMaxHeight = contentElement.style.maxHeight;
       const originalOverflow = contentElement.style.overflow;
       contentElement.style.maxHeight = 'none';
@@ -280,16 +366,13 @@
 
       const currentScrollHeight = contentElement.scrollHeight;
 
-      // 恢复原始样式
       contentElement.style.maxHeight = originalMaxHeight;
       contentElement.style.overflow = originalOverflow;
 
-
       if (currentScrollHeight > maxHeightPx) {
         if (!contentElement.classList.contains("collapsible-content")) {
-          contentElement.classList.add("collapsible-content"); // 确保类存在
+          contentElement.classList.add("collapsible-content");
         }
-        // 检查是否已经有 "Show More" 按钮
         let showMoreBtn = parentMessageDiv.querySelector(".show-more-button");
         if (!showMoreBtn) {
           showMoreBtn = document.createElement("span");
@@ -304,26 +387,25 @@
             }
             document.getElementById("chat-history").scrollTop = document.getElementById("chat-history").scrollHeight;
           };
-          parentMessageDiv.appendChild(showMoreBtn); // 将按钮添加到消息的父div
+          parentMessageDiv.appendChild(showMoreBtn);
         }
       } else {
-        // 如果内容没超过高度，移除折叠样式和按钮
         contentElement.classList.remove("collapsible-content", "expanded");
         let showMoreBtn = parentMessageDiv.querySelector(".show-more-button");
         if (showMoreBtn) {
           showMoreBtn.remove();
         }
       }
-    }, 50); // 小延迟确保渲染
+    }, 50);
   }
-
 
   function clearResponse() {
     document.getElementById("chat-history").innerHTML = "";
     if (currentEventSource) {
-      currentEventSource.close(); // 清除时也关闭 EventSource 连接
+      currentEventSource.close();
       currentEventSource = null;
     }
+    clearFile();
   }
 
   function exportChat() {
@@ -334,11 +416,8 @@
     for (let i = 0; i < messages.length; i++) {
       const messageElement = messages[i];
       const speakerElement = messageElement.querySelector(".user, .ai");
-      // 获取折叠前的原始内容，而不是当前的显示内容
       const contentElement = messageElement.querySelector(".content");
       let actualContent = contentElement.textContent;
-
-      // 移除可能添加的 "[Generation Stopped]" 等标记
       if (actualContent.endsWith(" [Generation Stopped]")) {
         actualContent = actualContent.slice(0, -21);
       } else if (actualContent.endsWith(" [Error occurred or connection closed]")) {
