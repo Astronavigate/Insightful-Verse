@@ -1,35 +1,46 @@
-# 知章智能教育平台（IVIEP）
+# 🌌 Insightful Verse Intelligent Education Platform (IVIEP)
 
-## 📘 项目简介
+> Empowering literature exploration and knowledge management with AI.
 
-**知章智能教育平台**（Insightful Verse Intelligent Education Platform, 简称 **IVIEP**）是一个融合 AI 增强技术的教育型平台，专注于文献阅读与知识管理的智能化升级。  
-平台聚焦于提升学习效率、知识提取深度与个性化学习体验，适用于学术研究、课程学习与信息整理等场景。
+[![License](https://img.shields.io/github/license/Astronavigate/Insightful-Verse?style=flat-square)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/Astronavigate/Insightful-Verse?style=flat-square)](https://github.com/Astronavigate/Insightful-Verse/stargazers)
 
-## 🔧 核心功能
+## 📘 Overview
 
-- 📄 **文献智能解析**  
-  支持自动提取 PDF、DOCX、HTML 等文档结构与内容，构建个人知识图谱。
+**Insightful Verse Intelligent Education Platform (IVIEP)** is an AI-enhanced educational platform for intelligent literature reading and knowledge management.  
+Designed for **researchers**, **students**, and **knowledge workers**, IVIEP combines **semantic understanding**, **multi-modal integration**, and **AI-driven interactions** to deliver a personalized and efficient learning experience.
 
-- 🧠 **AI 问答与总结**  
-  基于大语言模型的智能对话系统，快速生成摘要、答疑与关联信息。
+## 🔧 Key Features
 
-- 🧩 **多模态学习资源支持**  
-  一体化管理文本、图像、音频、视频、代码等多种学习形式。
+- 📄 **Smart Document Parsing**  
+  Parse PDFs, DOCX, and HTML documents to extract structured knowledge and construct interactive knowledge graphs.
 
-- 🔍 **语义搜索与推荐**  
-  提供语义级上下文检索、个性化推荐与相关概念联想服务。
+- 🧠 **AI Q&A and Summarization**  
+  Use large language models to generate contextual answers, summaries, and concept-related content.
 
-- 🔐 **隐私保护与数据加密**  
-  支持本地运行、全加密数据存储与可控的云端同步机制。
+- 🧩 **Multi-modal Resource Integration**  
+  Support for text, images, audio, video, and source code in a unified workspace.
 
-## 🚀 快速开始
+- 🔍 **Semantic Search & Recommendation**  
+  Perform context-aware retrieval and receive intelligent recommendations based on learning goals.
+
+- 🔐 **Data Privacy & Encryption**  
+  Local-first architecture with optional encrypted storage and selective cloud sync to ensure user control and data privacy.
+
+## 🚀 Getting Started
 
 ```bash
-git clone https://github.com/your-username/iviep.git
-cd iviep
-# 请根据 INSTALL.zh.md 配置环境并运行
-````
+git clone https://github.com/Astronavigate/Insightful-Verse.git
+cd Insightful-Verse
+# Follow INSTALL.md to configure and run the environment
+```
 
-## 🤝 加入我们
+## 🤝 Join the Mission
 
-欢迎教育工作者、科研人员、AI 开发者与开源爱好者加入我们，共建未来教育平台。
+We welcome **educators**, **researchers**, **AI developers**, and **open-source contributors** to collaborate with us.
+
+📬 For collaboration or contribution guidelines, check out [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon).
+
+---
+
+> _“With intelligence comes insight; with insight, enlightenment.”_
