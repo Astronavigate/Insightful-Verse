@@ -1,29 +1,18 @@
-/*
-package tech.eagloxis.lib;
-
-import java.util.Scanner;
-
-import de.mkammerer.argon2.Argon2;
-import de.mkammerer.argon2.Argon2Factory;
-import org.apache.commons.codec.digest.DigestUtils;
-
-public class Hash {
-    public static void main(String[] args) {
-        try (
-        	Scanner in = new Scanner(System.in)) {
-			String pwd = in.nextLine();
-			System.out.println(calculate(pwd));
-		}
-    }
-
-    public static String calculate(String pwd) {
-    	pwd = DigestUtils.sha3_512Hex(DigestUtils.sha3_512Hex(pwd));
-		System.out.println(pwd);
-    	return pwd;
-    }
-}
-Hash Pwd f586dda44df3da412755507f4b0bd4cc3926cf7aca65322f6f0d7197a9d2fdf81dbc04980654bbbbc2cfd223f8802c709f0b5fa0dbcdf627bbd894115c438990
-*/
+/**
+ * Copyright 2025 Astronavigate
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package tech.ravon.lib;
 
