@@ -2,7 +2,7 @@
 
 > Empowering literature exploration and knowledge management with AI.
 
-[![License](https://img.shields.io/github/license/Astronavigate/Insightful-Verse?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/github/license/Astronavigate/Insightful-Verse?style=flat-square)](LICENSE.txt)
 [![GitHub stars](https://img.shields.io/github/stars/Astronavigate/Insightful-Verse?style=flat-square)](https://github.com/Astronavigate/Insightful-Verse/stargazers)
 
 ## 📘 Overview
