@@ -45,10 +45,10 @@ public class DatabaseBackupService {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("windows")) {
             DUMP_PATH = Paths.get(FOLDER, "mysqldump.exe").toString();
-            System.out.println("Detected OS: Windows");
+            System.out.println("Detected OS: Windows\nUse " + DUMP_PATH);
         } else {
             DUMP_PATH = Paths.get(FOLDER, "mysqldump").toString();
-            System.out.println("Detected OS: Unix-like");
+            System.out.println("Detected OS: Unix-like\nUse " + DUMP_PATH);
         }
     }
 

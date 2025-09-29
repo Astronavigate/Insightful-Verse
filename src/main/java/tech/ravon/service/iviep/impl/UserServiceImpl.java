@@ -50,6 +50,9 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User>
         String password = request.getParameter("password");
         User user = null;
         user = userDao.getUserInfo(identifier);
+        if (user == null){
+            return null;
+        }
         if (Hash.verify(user.getPassword(), password)) {
             return user;
         } else {

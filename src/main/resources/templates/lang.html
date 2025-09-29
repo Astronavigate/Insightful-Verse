@@ -1,0 +1,530 @@
+<!--
+语言代码一览
+1. English (en)
+2. 简体中文 (zhs)
+3. Español (es)
+4. Français (fr)
+5. Deutsch (de)
+6. 日本語 (ja)
+7. Português (pt)
+8. Русский (ru)
+9. العربية (ar)
+10. 繁體中文 (zht)
+11. हिन्दी (hi)
+12. 한국어 (ko)
+13. Italiano (it)
+14. Nederlands (nl)
+15. Polski (pl)
+16. Türkçe (tr)
+17. Svenska (sv)
+18. Čeština (cs)
+19. Română (ro)
+20. Dansk (da)
+21. Suomi (fi)
+22. Norsk (no)
+23. ไทย (th)
+24. Tiếng Việt (vi)
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Language</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #4dabf7;
+            --secondary-blue: #339af0;
+            --light-blue: #e7f5ff;
+            --accent-blue: #74c0fc;
+            --text-dark: #343a40;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .language-card {
+            max-width: 1000px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(77, 171, 247, 0.15);
+            border: none;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .card-header {
+            border-radius: 20px 20px 0 0 !important;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            border-bottom: none;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='0.1' d='M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,192C1248,192,1344,128,1392,96L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+            background-size: cover;
+        }
+
+        .language-btn {
+            transition: all 0.3s ease;
+            text-align: left;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-weight: 500;
+            border: 1px solid #e1e8ed;
+            background-color: white;
+            color: var(--text-dark);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            font-size: 0.95rem;
+            height: 100%;
+        }
+
+        .language-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(77, 171, 247, 0.2);
+            background-color: var(--light-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .language-icon {
+            font-size: 1.1rem;
+            margin-right: 8px;
+            color: var(--primary-blue);
+        }
+
+        .modal-content {
+            border-radius: 20px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            color: white;
+            border-bottom: none;
+            padding: 20px 25px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(77, 171, 247, 0.4);
+        }
+
+        .btn-secondary {
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 500;
+        }
+
+        .earth-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: white;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1.6rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .language-card {
+                margin: 10px;
+            }
+
+            .card-body {
+                padding: 20px !important;
+            }
+
+            .language-btn {
+                font-size: 0.9rem;
+                padding: 10px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card shadow language-card mx-auto">
+        <div class="card-header bg-primary text-white text-center py-4">
+            <div class="position-relative z-1">
+                <i class="bi bi-globe-central-south-asia earth-icon"></i>
+                <h2 class="card-title">Select Language</h2>
+                <p class="card-subtitle">Choose your preferred language</p>
+            </div>
+        </div>
+
+        <div class="card-body p-4 p-md-5">
+            <!-- 所有语言按指定顺序排列，一行四列 -->
+            <div class="row g-3">
+                <!-- English -->
+                <div class="col-sm-6 col-lg-3">
+                    <form action="/ChangeLang.do" method="post" class="h-100">
+                        <input type="hidden" name="lang" value="en">
+                        <button type="submit" class="btn language-btn w-100">
+                            <i class="bi bi-translate language-icon"></i> English
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 简体中文 -->
+                <div class="col-sm-6 col-lg-3">
+                    <form action="/ChangeLang.do" method="post" class="h-100">
+                        <input type="hidden" name="lang" value="zhs">
+                        <button type="submit" class="btn language-btn w-100">
+                            <i class="bi bi-translate language-icon"></i> 简体中文
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Español -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Notificación"
+                            data-message="La interfaz española aún se está perfeccionando y se dirigirá a la interfaz en inglés."
+                            data-cancel="Cancelar"
+                            data-confirm="Confirmar">
+                        <i class="bi bi-translate language-icon"></i> Español
+                    </button>
+                </div>
+
+                <!-- Français -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Avis"
+                            data-message="L'interface française est encore en cours d'amélioration et basculera vers l'interface anglaise."
+                            data-cancel="Annuler"
+                            data-confirm="Confirmer">
+                        <i class="bi bi-translate language-icon"></i> Français
+                    </button>
+                </div>
+
+                <!-- Deutsch -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Hinweis"
+                            data-message="Die deutsche Schnittstelle wird noch verbessert und wird zur englischen Schnittstelle weitergeleitet."
+                            data-cancel="Abbrechen"
+                            data-confirm="Bestätigen">
+                        <i class="bi bi-translate language-icon"></i> Deutsch
+                    </button>
+                </div>
+
+                <!-- 日本語 -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="通知"
+                            data-message="日本語インターフェースはまだ改良中なので、英語インターフェースにジャンプします。"
+                            data-cancel="キャンセル"
+                            data-confirm="確認">
+                        <i class="bi bi-translate language-icon"></i> 日本語
+                    </button>
+                </div>
+
+                <!-- Português -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Aviso"
+                            data-message="A interface portuguesa ainda está em desenvolvimento e será direcionada para a interface em inglês."
+                            data-cancel="Cancelar"
+                            data-confirm="Confirmar">
+                        <i class="bi bi-translate language-icon"></i> Português
+                    </button>
+                </div>
+
+                <!-- Русский -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Уведомление"
+                            data-message="Русский интерфейс все еще совершенствуется и перейдет на английский интерфейс."
+                            data-cancel="Отмена"
+                            data-confirm="Подтвердить">
+                        <i class="bi bi-translate language-icon"></i> Русский
+                    </button>
+                </div>
+
+                <!-- العربية -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="إشعار"
+                            data-message="واجهة العربية لا تزال قيد التحسين وسيتم التحويل إلى الواجهة الإنجليزية."
+                            data-cancel="إلغاء"
+                            data-confirm="تأكيد">
+                        <i class="bi bi-translate language-icon"></i> العربية
+                    </button>
+                </div>
+
+                <!-- 繁體中文 -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="通知"
+                            data-message="繁體中文介面仍在建構中，將會導向英文介面。"
+                            data-cancel="取消"
+                            data-confirm="確認">
+                        <i class="bi bi-translate language-icon"></i> 繁體中文
+                    </button>
+                </div>
+
+                <!-- हिन्दी (印地语) -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="अधिसूचना"
+                            data-message="हिन्दी इंटरफेस अभी भी सुधार किया जा रहा है और अंग्रेजी इंटरफेस पर रीडायरेक्ट करेगा।"
+                            data-cancel="रद्द करें"
+                            data-confirm="पुष्टि करें">
+                        <i class="bi bi-translate language-icon"></i> हिन्दी
+                    </button>
+                </div>
+
+                <!-- 한국어 -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="알림"
+                            data-message="한국어 인터페이스는 아직 개발 중이므로 영어 인터페이스로 이동합니다."
+                            data-cancel="취소"
+                            data-confirm="확인">
+                        <i class="bi bi-translate language-icon"></i> 한국어
+                    </button>
+                </div>
+
+                <!-- Italiano -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Avviso"
+                            data-message="L'interfaccia italiana è ancora in fase di miglioramento e verrà reindirizzata all'interfaccia inglese."
+                            data-cancel="Annulla"
+                            data-confirm="Conferma">
+                        <i class="bi bi-translate language-icon"></i> Italiano
+                    </button>
+                </div>
+
+                <!-- Nederlands -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Notificatie"
+                            data-message="De Nederlandse interface wordt nog verbeterd en zal worden omgeleid naar de Engelse interface."
+                            data-cancel="Annuleren"
+                            data-confirm="Bevestigen">
+                        <i class="bi bi-translate language-icon"></i> Nederlands
+                    </button>
+                </div>
+
+                <!-- Polski -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Powiadomienie"
+                            data-message="Polski interfejs jest wciąż ulepszany i przekieruje do interfejsu angielskiego."
+                            data-cancel="Anuluj"
+                            data-confirm="Potwierdź">
+                        <i class="bi bi-translate language-icon"></i> Polski
+                    </button>
+                </div>
+
+                <!-- Türkçe -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Bildirim"
+                            data-message="Türkçe arayüz hala geliştiriliyor ve İngilizce arayüze yönlendirilecektir."
+                            data-cancel="İptal"
+                            data-confirm="Onayla">
+                        <i class="bi bi-translate language-icon"></i> Türkçe
+                    </button>
+                </div>
+
+                <!-- Svenska -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Notifikation"
+                            data-message="Det svenska gränssnittet förbättras fortfarande och kommer att omdirigeras till det engelska gränssnittet."
+                            data-cancel="Avbryt"
+                            data-confirm="Bekräfta">
+                        <i class="bi bi-translate language-icon"></i> Svenska
+                    </button>
+                </div>
+
+                <!-- Čeština (捷克语) -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Oznámení"
+                            data-message="České rozhraní se stále vylepšuje a bude přesměrováno na anglické rozhraní."
+                            data-cancel="Zrušit"
+                            data-confirm="Potvrdit">
+                        <i class="bi bi-translate language-icon"></i> Čeština
+                    </button>
+                </div>
+
+                <!-- Română (罗马尼亚语) -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Notificare"
+                            data-message="Interfața română este încă în curs de îmbunătățire și va redirecționa către interfața engleză."
+                            data-cancel="Anulează"
+                            data-confirm="Confirmă">
+                        <i class="bi bi-translate language-icon"></i> Română
+                    </button>
+                </div>
+
+                <!-- Dansk -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Meddelelse"
+                            data-message="Det danske interface er stadig under forbedring og vil blive omdirigeret til det engelske interface."
+                            data-cancel="Annuller"
+                            data-confirm="Bekræft">
+                        <i class="bi bi-translate language-icon"></i> Dansk
+                    </button>
+                </div>
+
+                <!-- Suomi -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Ilmoitus"
+                            data-message="Suomenkielistä käyttöliittymää parannetaan edelleen, ja se ohjautuu englanninkieliseen käyttöliittymään."
+                            data-cancel="Peruuta"
+                            data-confirm="Vahvista">
+                        <i class="bi bi-translate language-icon"></i> Suomi
+                    </button>
+                </div>
+
+                <!-- Norsk -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Melding"
+                            data-message="Det norske grensesnittet forbedres fortsatt og vil bli omdirigert til det engelske grensesnittet."
+                            data-cancel="Avbryt"
+                            data-confirm="Bekreft">
+                        <i class="bi bi-translate language-icon"></i> Norsk
+                    </button>
+                </div>
+
+                <!-- ไทย -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="แจ้งเตือน"
+                            data-message="อินเทอร์เฟซภาษาไทยยังอยู่ระหว่างการปรับปรุงและจะไปยังอินเทอร์เฟซภาษาอังกฤษ."
+                            data-cancel="ยกเลิก"
+                            data-confirm="ยืนยัน">
+                        <i class="bi bi-translate language-icon"></i> ไทย
+                    </button>
+                </div>
+
+                <!-- Tiếng Việt -->
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button" class="btn language-btn w-100"
+                            data-bs-toggle="modal" data-bs-target="#langModal"
+                            data-title="Thông báo"
+                            data-message="Giao diện tiếng Việt vẫn đang được hoàn thiện và sẽ chuyển sang giao diện tiếng Anh."
+                            data-cancel="Hủy"
+                            data-confirm="Xác nhận">
+                        <i class="bi bi-translate language-icon"></i> Tiếng Việt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="langModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="/ChangeLang.do" method="post" id="otherLangForm">
+                <input type="hidden" name="lang" value="en">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Notification</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4" id="modalMessage">
+                    This interface is still being improved and will redirect to the English interface.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="modalCancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const langModal = document.getElementById('langModal');
+    langModal.addEventListener('show.bs.modal', event => {
+        const button = event.relatedTarget;
+        const title = button.getAttribute('data-title');
+        const message = button.getAttribute('data-message');
+        const cancelText = button.getAttribute('data-cancel');
+        const confirmText = button.getAttribute('data-confirm');
+
+        const modalTitle = langModal.querySelector('#modalTitle');
+        const modalMessage = langModal.querySelector('#modalMessage');
+        const modalCancelBtn = langModal.querySelector('#modalCancelBtn');
+        const modalConfirmBtn = langModal.querySelector('#modalConfirmBtn');
+
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modalCancelBtn.textContent = cancelText;
+        modalConfirmBtn.textContent = confirmText;
+    });
+</script>
+</body>
+</html>

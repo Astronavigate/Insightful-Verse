@@ -117,7 +117,7 @@ public class MailServiceImpl implements MailService {
             message.setContent(content, "text/html");
 
             Transport.send(message);
-
+            System.out.println("Send captcha is " +  Captcha);
             System.out.println("Email sent successfully to " + email);
             return null;
 

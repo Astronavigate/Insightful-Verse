@@ -27,7 +27,6 @@ import tech.ravon.model.iviep.Course;
 import tech.ravon.model.iviep.File;
 import tech.ravon.model.iviep.User;
 import tech.ravon.model.iviep.ViewRecord;
-import tech.ravon.model.iviep.IVVersion;
 import tech.ravon.service.iviep.*;
 
 import java.io.BufferedReader;
@@ -37,7 +36,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Controller
-public class InsightfulVerseController {
+public class InsightfulVerseZhsController {
 
     @Autowired
     UserService userService;
@@ -60,22 +59,22 @@ public class InsightfulVerseController {
     @Autowired
     HaloService haloService;
 
-    @RequestMapping("/InsightfulVerse/")
+    @RequestMapping("/InsightfulVerse/zh-cn/")
     public String IVIEPMain() {
-        return "redirect:/InsightfulVerse/en/";
+        return "InsightfulVerse/zh-cn/index";
     }
 
-    @RequestMapping("/InsightfulVerse/index")
+    @RequestMapping("/InsightfulVerse/zh-cn/index")
     public String IVIEPIndex() {
-        return "redirect:/InsightfulVerse/en/index";
+        return "InsightfulVerse/zh-cn/index";
     }
 
-    @RequestMapping("/InsightfulVerse/About")
+    @RequestMapping("/InsightfulVerse/zh-cn/About")
     public String IVIEPAbout() {
-        return "redirect:/InsightfulVerse/en/About";
+        return "InsightfulVerse/zh-cn/About";
     }
 
-    @RequestMapping("/InsightfulVerse/Code")
+    @RequestMapping("/InsightfulVerse/zh-cn/Code")
     public String IVIEPCode(HttpServletRequest request) {
         File file = null;
         if (request.getSession().getAttribute("codeFile") != null) {
@@ -101,11 +100,11 @@ public class InsightfulVerseController {
             request.setAttribute("fileId", file.getFileId());
             request.setAttribute("codeContent", sb.toString());
         }
-        return "InsightfulVerse/en/Code";
+        return "InsightfulVerse/zh-cn/Code";
     }
 
     @ResponseBody
-    @RequestMapping("/InsightfulVerse/Code.java")
+    @RequestMapping("/InsightfulVerse/zh-cn/Code.java")
     public String IVIEPXCode(HttpServletRequest request, HttpServletResponse response) {
         String result;
         try {
@@ -113,12 +112,12 @@ public class InsightfulVerseController {
         } catch (Exception e) {
             e.printStackTrace();
             request.getSession().setAttribute("errorMessage", e.getMessage());
-            return "redirect:/InsightfulVerse/en/Error";
+            return "redirect:/InsightfulVerse/zh-cn/Error";
         }
         return result;
     }
 
-    @RequestMapping("/InsightfulVerse/Course")
+    @RequestMapping("/InsightfulVerse/zh-cn/Course")
     public String IVIEPCourse(HttpServletRequest request) {
         List<Course> courseList = courseService.allCourse();
         request.setAttribute("courseList", courseList);
@@ -126,145 +125,145 @@ public class InsightfulVerseController {
         if (user != null && user.getUserId() != null) {
             if (user.getAuthority() == "infinite" && (boolean) request.getSession().getAttribute("authorize")) {
                 request.getSession().setAttribute("lastUrl", request.getRequestURL());
-                return "redirect:/InsightfulVerse/en/VerifyPerm";
+                return "redirect:/InsightfulVerse/zh-cn/VerifyPerm";
             }
         }
-        return "InsightfulVerse/en/Course";
+        return "InsightfulVerse/zh-cn/Course";
     }
 
-    @RequestMapping("/InsightfulVerse/CourseInfo")
+    @RequestMapping("/InsightfulVerse/zh-cn/CourseInfo")
     public String IVIEPCourseInfo(HttpServletRequest request) {
         String courseId = request.getParameter("courseId");
         User user = (User) request.getSession().getAttribute("user");
         if (user != null && user.getUserId() != null) {
             if (user.getAuthority() == "infinite" && (boolean) request.getSession().getAttribute("authorize")) {
                 request.getSession().setAttribute("lastUrl", request.getRequestURL());
-                return "redirect:/InsightfulVerse/en/VerifyPerm";
+                return "redirect:/InsightfulVerse/zh-cn/VerifyPerm";
             }
         }
         List<File> sourceList = fileService.getCourseFiles(courseId);
         request.setAttribute("sourceList", sourceList);
-        return "InsightfulVerse/en/CourseInfo";
+        return "InsightfulVerse/zh-cn/CourseInfo";
     }
 
-    @RequestMapping("/InsightfulVerse/Error")
+    @RequestMapping("/InsightfulVerse/zh-cn/Error")
     public String error(HttpServletRequest request) {
         request.setAttribute("errorMessage", request.getSession().getAttribute("errorMessage"));
-        return "InsightfulVerse/en/Error";
+        return "InsightfulVerse/zh-cn/Error";
     }
 
-    @RequestMapping("/InsightfulVerse/Login")
+    @RequestMapping("/InsightfulVerse/zh-cn/Login")
     public String IVIEPLogin() {
-        return "InsightfulVerse/en/Login";
+        return "InsightfulVerse/zh-cn/Login";
     }
 
-    @RequestMapping("/InsightfulVerse/Login.do")
+    @RequestMapping("/InsightfulVerse/zh-cn/Login.do")
     public String IVIEPXLogin(HttpServletRequest request, HttpServletResponse response) {
         User user = userService.Login(request, response);
         if (user == null || user.getUserId() == null) {
             request.getSession().setAttribute("errorMessage", "Login failed, please check your username and password and try again.");
-            return "redirect:/InsightfulVerse/en/Error";
+            return "redirect:/InsightfulVerse/zh-cn/Error";
         } else {
             request.getSession().setAttribute("user", user);
-            return "redirect:/InsightfulVerse/en/index";
+            return "redirect:/InsightfulVerse/zh-cn/index";
         }
     }
 
-    @RequestMapping("/InsightfulVerse/Logout")
+    @RequestMapping("/InsightfulVerse/zh-cn/Logout")
     public String IVIEPLogout(HttpServletRequest request, HttpServletResponse response) {
         request.getSession().removeAttribute("user");
         userService.Logout(request, response);
-        return "redirect:/InsightfulVerse/index";
+        return "redirect:/InsightfulVerse/zh-cn/index";
     }
 
-    @RequestMapping("/InsightfulVerse/Personal")
+    @RequestMapping("/InsightfulVerse/zh-cn/Personal")
     public String IVIEPersonal(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("user");
         if (user == null) {
-            return "redirect:/InsightfulVerse/en/Login";
+            return "redirect:/InsightfulVerse/zh-cn/Login";
         }
         List<ViewRecord> viewRecordList = viewRecordService.recentViewedFile(String.valueOf(user.getUserId()));
         request.setAttribute("viewRecordList", viewRecordList);
         request.setAttribute("ivVersion", iVVersionService.getLatestVersion());
-        return "InsightfulVerse/en/Personal";
+        return "InsightfulVerse/zh-cn/Personal";
     }
 
-    @RequestMapping("/InsightfulVerse/Player")
+    @RequestMapping("/InsightfulVerse/zh-cn/Player")
     public String IVIEPPlayer(HttpServletRequest request) {
         File file = (File) request.getSession().getAttribute("file");
         request.setAttribute("file", file);
         System.out.println(file);
-        return "/InsightfulVerse/en/Player";
+        return "/InsightfulVerse/zh-cn/Player";
     }
 
-    @RequestMapping("/InsightfulVerse/Reader")
+    @RequestMapping("/InsightfulVerse/zh-cn/Reader")
     public String IVIEPReader(HttpServletRequest request) {
         File file = (File) request.getSession().getAttribute("file");
         request.setAttribute("file", file);
-        return "InsightfulVerse/en/Reader";
+        return "InsightfulVerse/zh-cn/Reader";
     }
 
-    @RequestMapping("/InsightfulVerse/Painter")
+    @RequestMapping("/InsightfulVerse/zh-cn/Painter")
     public String IVIEPPainter(HttpServletRequest request) {
         File file = (File) request.getSession().getAttribute("file");
         request.setAttribute("file", file);
-        return "/InsightfulVerse/en/Painter";
+        return "/InsightfulVerse/zh-cn/Painter";
     }
 
-    @RequestMapping("/InsightfulVerse/Register")
+    @RequestMapping("/InsightfulVerse/zh-cn/Register")
     public String IVIEPRegister() {
-        return "InsightfulVerse/en/Register";
+        return "InsightfulVerse/zh-cn/Register";
     }
 
-    @RequestMapping("/InsightfulVerse/Register.do")
+    @RequestMapping("/InsightfulVerse/zh-cn/Register.do")
     public String IVIEPXRegister(HttpServletRequest request, HttpServletResponse response) {
         String message = userService.Register(request, response);
         if (message == null) {
-            return "redirect:/InsightfulVerse/en/index";
+            return "redirect:/InsightfulVerse/zh-cn/index";
         } else {
             HttpSession session = request.getSession();
             session.setAttribute("errorMessage", message);
-            return "redirect:/InsightfulVerse/en/Error";
+            return "redirect:/InsightfulVerse/zh-cn/Error";
         }
     }
 
-    @RequestMapping("/InsightfulVerse/Unregister")
+    @RequestMapping("/InsightfulVerse/zh-cn/Unregister")
     public String IVIEPUnregister() {
-        return "InsightfulVerse/en/Unregister";
+        return "InsightfulVerse/zh-cn/Unregister";
     }
 
-    @RequestMapping("/InsightfulVerse/Unregister.do")
+    @RequestMapping("/InsightfulVerse/zh-cn/Unregister.do")
     public String IVIEPXUnregister(HttpServletRequest request, HttpServletResponse response) {
         String message = userService.Unregister(request, response);
         if (message != null) {
             request.getSession().setAttribute("errorMessage", message);
-            return "redirect:/InsightfulVerse/en/Error";
+            return "redirect:/InsightfulVerse/zh-cn/Error";
         }
         request.getSession().removeAttribute("user");
-        return "redirect:/InsightfulVerse/en/index";
+        return "redirect:/InsightfulVerse/zh-cn/index";
     }
 
-    @RequestMapping("/InsightfulVerse/UpdateUser")
+    @RequestMapping("/InsightfulVerse/zh-cn/UpdateUser")
     public String IVIEPUpdateUser(HttpServletRequest request) {
         User user = userService.Userinfo(request);
         request.setAttribute("user", user);
-        return "InsightfulVerse/en/UpdateInfo";
+        return "InsightfulVerse/zh-cn/UpdateInfo";
     }
 
-    @RequestMapping("/InsightfulVerse/UpdateUser.do")
+    @RequestMapping("/InsightfulVerse/zh-cn/UpdateUser.do")
     public String IVIEPXUpdateUser(HttpServletRequest request, HttpServletResponse response) {
         String message = userService.UpdateUser(request, response);
         System.out.println(message == null ? "null-message" : message);
         if (message != null) {
             request.getSession().setAttribute("errorMessage", message);
-            return "redirect:/InsightfulVerse/en/Error";
+            return "redirect:/InsightfulVerse/zh-cn/Error";
         }
         User user = userService.Userinfo(request);
         request.getSession().setAttribute("user", user);
-        return "redirect:/InsightfulVerse/en/Personal";
+        return "redirect:/InsightfulVerse/zh-cn/Personal";
     }
 
-    @RequestMapping("/InsightfulVerse/NihilityZone")
+    @RequestMapping("/InsightfulVerse/zh-cn/NihilityZone")
     public String IVIEPNihilityZone(HttpServletRequest request) {
         String codeContent = (String) request.getSession().getAttribute("codeContent");
         List<List<String>> resultList = (List<List<String>>) request.getSession().getAttribute("resultList");
@@ -274,41 +273,41 @@ public class InsightfulVerseController {
         request.setAttribute("codeContent", codeContent);
         User user = (User) request.getSession().getAttribute("user");
         if (user == null || user.getUserId() == null) {
-            return "redirect:/InsightfulVerse/";
+            return "redirect:/InsightfulVerse/zh-cn/";
         } else {
             if (user.getAuthority().equals("infinite") && (request.getSession().getAttribute("authorize") == null || !(boolean) request.getSession().getAttribute("authorize"))) {
-                return "redirect:/InsightfulVerse/en/VerifyPerm";
+                return "redirect:/InsightfulVerse/zh-cn/VerifyPerm";
             } else if (!user.getAuthority().equals("infinite")) {
-                return "redirect:/InsightfulVerse/en/Personal";
+                return "redirect:/InsightfulVerse/zh-cn/Personal";
             }
         }
-        return "InsightfulVerse/NihilityZone";
+        return "InsightfulVerse/zh-cn/NihilityZone";
     }
 
     @ResponseBody
-    @RequestMapping("/InsightfulVerse/VerifyCode")
+    @RequestMapping("/InsightfulVerse/zh-cn/VerifyCode")
     public String IVIEPVerifyCode(HttpServletRequest request) {
         return mailService.getCaptcha(request);
     }
 
-    @RequestMapping("/InsightfulVerse/File")
+    @RequestMapping("/InsightfulVerse/zh-cn/File")
     public String IVIEPFile(HttpServletRequest request, HttpServletResponse response) {
         String fileId = request.getParameter("fileId");
         File file = fileService.getFileById(fileId);
         request.getSession().setAttribute("file", file);
         switch (file.getType().toLowerCase()) {
             case "pdf", "ppt", "xls", "xlsx", "doc", "docx" -> {
-                return "redirect:/InsightfulVerse/en/Reader";
+                return "redirect:/InsightfulVerse/zh-cn/Reader";
             }
             case "mp4", "mkv", "mov", "wmv", "wma", "mp3", "flac", "m4a" -> {
-                return "redirect:/InsightfulVerse/en/Player";
+                return "redirect:/InsightfulVerse/zh-cn/Player";
             }
             case "jpg", "jpeg", "heif", "raw", "png", "gif", "webp" -> {
-                return "redirect:/InsightfulVerse/en/Painter";
+                return "redirect:/InsightfulVerse/zh-cn/Painter";
             }
             case "cpp", "py", "c", "java", "html", "css", "js", "jsp", "php", "aspx" -> {
                 request.getSession().setAttribute("codeFile", true);
-                return "redirect:/InsightfulVerse/en/Code";
+                return "redirect:/InsightfulVerse/zh-cn/Code";
             }
             default -> {
                 return "../../" + file.getFilePath();
@@ -317,14 +316,14 @@ public class InsightfulVerseController {
     }
 
     @ResponseBody
-    @RequestMapping("/InsightfulVerse/Timer")
+    @RequestMapping("/InsightfulVerse/zh-cn/Timer")
     public String IVIEPTimer(HttpServletRequest request) {
         System.out.println("User viewing file " + request.getParameter("fileId"));
         viewRecordService.saveViewRecord(request);
-        return "OK";
+        return null;
     }
 
-    @RequestMapping("/InsightfulVerse/UpdFile")
+    @RequestMapping("/InsightfulVerse/zh-cn/UpdFile")
     public String IVIEPUpdFile(HttpServletRequest request, HttpServletResponse response) {
         String courseId = request.getParameter("courseId");
         User user = (User) request.getSession().getAttribute("user");
@@ -335,19 +334,19 @@ public class InsightfulVerseController {
         return "redirect:" + request.getHeader("Referer");
     }
 
-    @RequestMapping("/InsightfulVerse/DelFile")
+    @RequestMapping("/InsightfulVerse/zh-cn/DelFile")
     public String IVIEPDelFile(HttpServletRequest request) {
         String fileId = request.getParameter("fileId");
         String courseId = request.getParameter("courseId");
         User user = (User) request.getSession().getAttribute("user");
         if (user == null || user.getUserId() == null || (!user.getAuthority().equals("infinite") && !user.getAuthority().equals("admin"))) {
-            return "redirect:/InsightfulVerse/en/CourseInfo?courseId=" + courseId;
+            return "redirect:/InsightfulVerse/zh-cn/CourseInfo?courseId=" + courseId;
         }
         fileService.deleteFile(fileId);
         return "redirect:" + request.getHeader("Referer");
     }
 
-    @RequestMapping("/InsightfulVerse/UpdCourse")
+    @RequestMapping("/InsightfulVerse/zh-cn/UpdCourse")
     public String IVIEPUpdCourse(@RequestParam(required = false) String courseId,
                                  @RequestParam(required = false) String courseName,
                                  @RequestParam(required = false) String courseInfo,
@@ -358,7 +357,7 @@ public class InsightfulVerseController {
         }
         if (courseName == null || courseName.isEmpty()) {
             request.getSession().setAttribute("errorMessage", "Please check your input.");
-            return "redirect:/InsightfulVerse/en/Error";
+            return "redirect:/InsightfulVerse/zh-cn/Error";
         }
         Course course = new Course();
         if (courseId != null && !courseId.isEmpty()) {
@@ -370,74 +369,116 @@ public class InsightfulVerseController {
         return "redirect:" + request.getHeader("Referer");
     }
 
-    @RequestMapping("/InsightfulVerse/DelCourse")
+    @RequestMapping("/InsightfulVerse/zh-cn/DelCourse")
     public String IVIEPDelCourse(@RequestParam String courseId, HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("user");
         if (user != null && user.getUserId() != null) {
             if (user.getAuthority() == "infinite" && (boolean) request.getSession().getAttribute("authorize")) {
-                request.getSession().setAttribute("lastUrl", "/InsightfulVerse/en/CourseInfo?courseId=" + courseId);
-                return "redirect:/InsightfulVerse/en/VerifyPerm";
+                request.getSession().setAttribute("lastUrl", "/InsightfulVerse/zh-cn/CourseInfo?courseId=" + courseId);
+                return "redirect:/InsightfulVerse/zh-cn/VerifyPerm";
             }
         }
         courseService.deleteCourse(courseId);
-        return "redirect:/InsightfulVerse/en/Course";
+        return "redirect:/InsightfulVerse/zh-cn/Course";
     }
 
-    @RequestMapping("/InsightfulVerse/VerifyPerm")
+    @RequestMapping("/InsightfulVerse/zh-cn/VerifyPerm")
     public String IVIEPVerifyPerm(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("user");
         if (user == null || !user.getAuthority().equals("infinite")) {
-            return "redirect:/InsightfulVerse/en/";
+            return "redirect:/InsightfulVerse/zh-cn/";
         }
-        return "/InsightfulVerse/en/VerifyPermissions";
+        return "/InsightfulVerse/zh-cn/VerifyPermissions";
     }
 
-    @RequestMapping("/InsightfulVerse/VerifyPerm.do")
+    @RequestMapping("/InsightfulVerse/zh-cn/VerifyPerm.do")
     public String IVIEPXVerifyPerm(HttpServletRequest request, HttpServletResponse response) {
         User user = userService.verifyPerm(request, response);
         if (user != null && user.getAuthority().equals("infinite")) {
             request.getSession().setAttribute("authorize", true);
         } else {
-            return "redirect:/InsightfulVerse/en/index";
+            return "redirect:/InsightfulVerse/zh-cn/index";
         }
-        return "redirect:/InsightfulVerse/en/Personal";
+        return "redirect:/InsightfulVerse/zh-cn/Personal";
     }
 
-    @RequestMapping("/InsightfulVerse/Halo")
+    @RequestMapping("/InsightfulVerse/zh-cn/Halo")
     public String IVIEPHalo(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("user");
         if (user != null && user.getUserId() != null) {
             if (user.getAuthority().equals("infinite") && (request.getSession().getAttribute("authorize") != null && !(boolean) request.getSession().getAttribute("authorize"))) {
-                request.getSession().setAttribute("lastUrl", "/InsightfulVerse/NihilityZone");
-                return "redirect:/InsightfulVerse/VerifyPerm";
+                request.getSession().setAttribute("lastUrl", "/InsightfulVerse/zh-cn/NihilityZone");
+                return "redirect:/InsightfulVerse/zh-cn/VerifyPerm";
             } else if (user.getAuthority().equals("infinite") && (boolean) request.getSession().getAttribute("authorize")) {
                 String code = request.getParameter("code");
                 List<List<String>> resultList = haloService.runSQL(code);
                 System.out.println(resultList);
                 request.getSession().setAttribute("resultList", resultList);
                 request.getSession().setAttribute("codeContent", code);
-                return "redirect:/InsightfulVerse/NihilityZone";
+                return "redirect:/InsightfulVerse/zh-cn/NihilityZone";
             } else {
-                return "redirect:/InsightfulVerse/en/Personal";
+                return "redirect:/InsightfulVerse/zh-cn/Personal";
             }
         } else {
-            return "redirect:/InsightfulVerse/en/Personal";
+            return "redirect:/InsightfulVerse/zh-cn/Personal";
         }
     }
 
-    @RequestMapping("/InsightfulVerse/ViewHistory")
+    @RequestMapping("/InsightfulVerse/zh-cn/ViewHistory")
     public String IVIEPViewHistory(HttpServletRequest request) {
-        return "redirect:/InsightfulVerse/en/ViewHistory";
+        int max = request.getParameter("max") == null || request.getParameter("max").isEmpty() ? 15 : Integer.parseInt(request.getParameter("max"));
+        int page = request.getParameter("page") == null || request.getParameter("page").isEmpty() ? 1 : Integer.parseInt(request.getParameter("page"));
+        User user = (User) request.getSession().getAttribute("user");
+        String userId = null;
+        if (user != null) {
+            userId = String.valueOf(user.getUserId());
+        }
+        if (userId == null) {
+            request.getSession().setAttribute("errorMessage", "Please check your login statement and try again.");
+            return "redirect:/InsightfulVerse/zh-cn/Error";
+        }
+        List<ViewRecord> viewRecordList = viewRecordService.viewedFile(userId);
+        List<ViewRecord> pagedList = pageService.pageList(viewRecordList, page, max);
+        int totalPages = (viewRecordList.size() + max - 1) / max;
+        request.setAttribute("viewRecordList", pagedList);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalItems", viewRecordList.size());
+        request.setAttribute("currentPage", page);
+        return "InsightfulVerse/zh-cn/ViewHistory";
     }
 
-    @RequestMapping("/InsightfulVerse/Search")
+    @RequestMapping("/InsightfulVerse/zh-cn/Search")
     public String Search(HttpServletRequest request) {
-        return "redirect:/InsightfulVerse/en/Search";
+        User user = (User) request.getSession().getAttribute("user");
+        if (user != null && user.getUserId() != null) {
+            if (user.getAuthority() == "infinite" && (boolean) request.getSession().getAttribute("authorize")) {
+                request.getSession().setAttribute("lastUrl", request.getRequestURL());
+                return "redirect:/InsightfulVerse/zh-cn/VerifyPerm";
+            }
+        }
+        String type = request.getParameter("type");
+        String keyword = request.getParameter("keyword");
+        if (!Objects.equals(type, "all") && !Objects.equals(type, "course") && !Objects.equals(type, "file")) {
+            type = "all";
+        }
+        if (type.equals("course") || type.equals("all")) {
+            List<Course> courseList = courseService.getCourseByName(keyword);
+            System.out.println(courseList.size());
+            request.setAttribute("courseList", courseList);
+        }
+        if (type.equals("file") || type.equals("all")) {
+            List<File> fileList = fileService.getFileByName(keyword);
+            System.out.println(fileList.size());
+            request.setAttribute("fileList", fileList);
+        }
+        request.setAttribute("type", type);
+        request.setAttribute("keyword", keyword);
+        return "InsightfulVerse/zh-cn/Search";
     }
 
-    @RequestMapping("/InsightfulVerse/AiBot")
+    @RequestMapping("/InsightfulVerse/zh-cn/AiBot")
     public String AiBot(HttpServletRequest request) {
-        return "redirect:/InsightfulVerse/en/AiBot";
+        return "InsightfulVerse/zh-cn/AiBot";
     }
 
     /**
@@ -449,7 +490,7 @@ public class InsightfulVerseController {
      * @param session HttpSession 对象，用于获取会话ID作为流的唯一标识符
      * @return SseEmitter 对象，用于将数据流式传输到客户端
      */
-    @RequestMapping("/InsightfulVerse/AiBot/stream")
+    @RequestMapping("/InsightfulVerse/zh-cn/AiBot/stream")
     public SseEmitter streamAiResponse(@RequestParam String prompt, HttpSession session) {
         String sessionId = session.getId();
         System.out.println("New stream request for session: " + sessionId + " with prompt: " + prompt);
@@ -513,7 +554,7 @@ public class InsightfulVerseController {
      * @param session HttpSession 对象，用于获取会话ID，以中断对应的流
      * @return 成功或失败消息的 JSON 字符串
      */
-    @RequestMapping("/InsightfulVerse/AiBot/interrupt") // 例如：POST /InsightfulVerse/en/AiBot/interrupt
+    @RequestMapping("/InsightfulVerse/zh-cn/AiBot/interrupt") // 例如：POST /InsightfulVerse/zh-cn/AiBot/interrupt
     public String interruptAiGeneration(HttpSession session) {
         String sessionId = session.getId();
         System.out.println("Interrupt request received for session: " + sessionId);
