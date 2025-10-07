@@ -26,31 +26,31 @@
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
 <form class="form-group" th:action="@{/InsightfulVerse/Register.do}" method="post">
-    <h2 style="text-align: center;">Register</h2>
+    <h2 style="text-align: center;" th:text="#{insightful.register.title}">Register</h2>
 
-    <label for="username">Your name:</label>
+    <label for="username" th:text="#{insightful.register.username}">Your name:</label>
     <input type="text" class="form-control" id="username" name="username"><br>
 
-    <label for="email">Your email:</label>
+    <label for="email" th:text="#{insightful.register.email}">Your email:</label>
     <input type="text" class="form-control" id="email" name="email"><br>
 
-    <label for="phone">Your Phone:</label>
+    <label for="phone" th:text="#{insightful.register.phone}">Your Phone:</label>
     <input type="text" class="form-control" id="phone" name="phone"><br>
 
-    <label for="password">Your password:</label>
+    <label for="password" th:text="#{insightful.register.password}">Your password:</label>
     <input type="password" class="form-control" id="password" name="password"><br>
 
-    <label for="rePassword">Confirm password:</label>
+    <label for="rePassword" th:text="#{insightful.register.confirmPassword}">Confirm password:</label>
     <input type="password" class="form-control" id="rePassword" name="rePassword"><br>
 
-    <label for="captcha">Email Verify Code:</label>
+    <label for="captcha" th:text="#{insightful.register.emailCode}">Email Verify Code:</label>
     <div class="input-group mb-3">
         <input type="text" class="form-control" id="captcha" name="captcha">
-        <button type="button" class="btn btn-outline-secondary" id="getCode" th:onclick="GetCode()">Get Code</button>
+        <button type="button" class="btn btn-outline-secondary" id="getCode" th:onclick="GetCode()" th:text="#{insightful.register.getCode}">Get Code</button>
     </div>
 
-    <input type="submit" class="btn btnn btn-warning" value="Register">
-    <input type="reset" class="btn btnn btn-secondary" value="Reset">
+    <input type="submit" class="btn btnn btn-warning" th:value="#{insightful.register.submit}" value="Register">
+    <input type="reset" class="btn btnn btn-secondary" th:value="#{insightful.register.reset}" value="Reset">
 </form>
 
 <div class="blank"></div>

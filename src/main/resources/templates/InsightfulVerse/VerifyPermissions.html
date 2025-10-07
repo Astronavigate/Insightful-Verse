@@ -25,18 +25,22 @@
 </head>
 <body>
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
 <div class="container my-4">
     <form class="form-group" th:action="@{/InsightfulVerse/VerifyPerm.do}" method="post">
-        <h2 style="text-align: center;">Verify Permission</h2>
+        <h2 style="text-align: center;" th:text="#{insightful.perm.verify.title}">Verify Permission</h2>
+
         <!-- 验证权限等级 -->
         <div th:if="${session.user.getAuthority() == 'infinite'}">
-            <label for="captcha">Email Verify Code:</label>
+            <label for="captcha" th:text="#{insightful.perm.verify.email}">Email Verify Code:</label>
             <div class="input-group mb-3">
                 <input type="text" class="form-control" id="captcha" name="captcha">
-                <button type="button" class="btn btn-outline-secondary" id="getCode" onclick="GetCode()">Get Code</button>
+                <button type="button" class="btn btn-outline-secondary" id="getCode"
+                        onclick="GetCode()" th:text="#{insightful.perm.verify.getcode}">Get Code</button>
             </div>
         </div>
-        <input type="submit" class="btn btnn btn-primary" value="Verify">
+
+        <input type="submit" class="btn btnn btn-primary" th:value="#{insightful.perm.verify.submit}" value="Verify">
     </form>
 </div>
 

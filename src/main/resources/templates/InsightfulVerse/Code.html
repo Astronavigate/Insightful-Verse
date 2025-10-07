@@ -23,21 +23,21 @@
 </head>
 <body style="background-color: #cce8cf;">
   <th:block th:replace="~{common/sub/iviep/iviep-header-green :: header}"></th:block>
-  
+
   <div class="content" style="flex-direction: column; align-items: center; justify-content: center; margin-top: 2rem;">
-    <div>
-      <div class="form-floating mb-3">
-        <textarea id="codeArea" class="form-control" th:text="${codeContent}"></textarea>
-        <label for="codeArea">Java code</label>
+      <div>
+          <div class="form-floating mb-3">
+              <textarea id="codeArea" class="form-control" th:text="${codeContent}"></textarea>
+              <label for="codeArea" th:text="#{insightful.code.inputLabel}">Java code</label>
+          </div>
+          <button id="runBtn" type="button" class="btn btn-secondary" th:text="#{insightful.code.runButton}" onclick="runjava()">Run</button>
       </div>
-      <button id="runBtn" type="button" class="btn btn-secondary" onclick="runjava()">Run</button>
-    </div>
-    <div>
-      <div class="form-floating mb-3">
-        <div id="resultArea" class="form-control"></div>
-        <label for="resultArea">Result</label>
+      <div>
+          <div class="form-floating mb-3">
+              <div id="resultArea" class="form-control"></div>
+              <label for="resultArea" th:text="#{insightful.code.resultLabel}">Result</label>
+          </div>
       </div>
-    </div>
   </div>
 
 </body>

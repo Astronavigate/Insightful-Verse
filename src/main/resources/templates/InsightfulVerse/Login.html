@@ -28,14 +28,17 @@
 
 <div class="container my-4">
     <form class="form-group" th:action="@{/InsightfulVerse/Login.do}" method="post">
-        <h2 style="text-align: center;">Login</h2>
-        <label for="identifier">ID or email or phone:</label>
+        <h2 style="text-align: center;" th:text="#{insightful.login.title}">Login</h2>
+
+        <label for="identifier" th:text="#{insightful.login.identifier}">ID or email or phone:</label>
         <input type="text" class="form-control" id="identifier" name="identifier"><br>
-        <label for="password">Password:</label>
+
+        <label for="password" th:text="#{insightful.login.password}">Password:</label>
         <input type="password" class="form-control" id="password" name="password"><br>
-        <input type="submit" class="btn btnn btn-primary" value="Login">
-        <input type="reset" class="btn btnn btn-secondary" value="Reset">
-        <a class="btn btnn btn-warning" th:href="@{/InsightfulVerse/Register}">Register</a>
+
+        <input type="submit" class="btn btn-primary" th:value="#{insightful.login.submit}" value="Login">
+        <input type="reset" class="btn btn-secondary" th:value="#{insightful.login.reset}" value="Reset">
+        <a class="btn btn-warning" th:href="@{/InsightfulVerse/Register}" th:text="#{insightful.login.register}">Register</a>
     </form>
 </div>
 

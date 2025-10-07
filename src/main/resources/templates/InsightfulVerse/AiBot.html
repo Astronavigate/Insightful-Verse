@@ -155,22 +155,24 @@
 </div>
 
 <div class="input-area">
-  <!-- 文本输入和按钮 -->
-  <div class="message-input-area">
-    <textarea id="prompt" class="form-control" placeholder="Type your message..."></textarea>
-    <div>
-      <!-- File upload controls -->
-      <div class="file-upload-area">
-        <input type="file" id="fileInput" accept=".txt,.md,.csv,.doc,.docx">
-      </div>
-      <div class="button-group" style="display: inline-block; align-items: center;">
-        <button class="btn btn-primary" style="display: inline;" onclick="sendPrompt()">Send</button>
-        <button class="btn btn-warning" style="display: inline;" onclick="interruptGeneration()">Stop</button>
-        <button class="btn btn-danger" style="display: inline;" onclick="clearResponse()">Clear</button>
-        <button class="btn btn-secondary" style="display: inline;" onclick="exportChat()">Export Chat</button>
-      </div>
+    <!-- 文本输入和按钮 -->
+    <div class="message-input-area">
+    <textarea id="prompt" class="form-control"
+              placeholder="#{insightful.chat.placeholder}"></textarea>
+        <div>
+            <!-- File upload controls -->
+            <div class="file-upload-area">
+                <input type="file" id="fileInput" accept=".txt,.md,.csv,.doc,.docx">
+                <label for="fileInput" th:text="#{insightful.chat.uploadFile}"></label>
+            </div>
+            <div class="button-group" style="display: inline-block; align-items: center;">
+                <button class="btn btn-primary" style="display: inline;" th:text="#{insightful.chat.send}" onclick="sendPrompt()"></button>
+                <button class="btn btn-warning" style="display: inline;" th:text="#{insightful.chat.stop}" onclick="interruptGeneration()"></button>
+                <button class="btn btn-danger" style="display: inline;" th:text="#{insightful.chat.clear}" onclick="clearResponse()"></button>
+                <button class="btn btn-secondary" style="display: inline;" th:text="#{insightful.chat.export}" onclick="exportChat()"></button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <script>

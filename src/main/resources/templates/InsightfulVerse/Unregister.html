@@ -28,18 +28,20 @@
 
 <div class="container my-4">
     <form class="form-group" th:action="@{/InsightfulVerse/Unregister.do}" method="post">
-        <h2 style="text-align: center;">Account Deletion</h2>
-        <label for="password">Password:</label>
+        <h2 style="text-align: center;" th:text="#{insightful.account.delete.title}">Account Deletion</h2>
+
+        <label for="password" th:text="#{insightful.account.delete.password}">Password:</label>
         <input type="password" class="form-control" id="password" name="password"><br>
 
-        <label for="captcha">Email Verification Code:</label>
+        <label for="captcha" th:text="#{insightful.account.delete.captcha}">Email Verification Code:</label>
         <div class="input-group mb-3">
             <input type="text" class="form-control" id="captcha" name="captcha">
-            <button type="button" class="btn btn-outline-secondary" id="getCode" onclick="GetCode()">Get Code</button>
+            <button type="button" class="btn btn-outline-secondary" id="getCode" onclick="GetCode()"
+                    th:text="#{insightful.account.delete.getcode}">Get Code</button>
         </div>
 
-        <input type="submit" class="btn btnn btn-danger" value="Delete Account">
-        <input type="reset" class="btn btnn btn-secondary" value="Reset">
+        <input type="submit" class="btn btnn btn-danger" th:value="#{insightful.account.delete.submit}" value="Delete Account">
+        <input type="reset" class="btn btnn btn-secondary" th:value="#{insightful.account.delete.reset}" value="Reset">
     </form>
 </div>
 

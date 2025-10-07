@@ -1,0 +1,52 @@
+Glassy Boi but Web
+Liquid Glass container effect for React. With settings and effects and stuff.
+
+⚠️ This doesn't fully work in Safari and Firefox. You will not see edge refraction on non-chromium browsers.
+
+User Info Card
+Switch Button
+Refraction Mode
+
+Standard
+
+Polar
+
+Prominent
+
+Shader (Experimental)
+Controls the refraction calculation method
+
+Displacement Scale
+100
+
+Controls the intensity of edge distortion
+
+Blur Amount
+0.0
+
+Controls backdrop blur intensity
+
+Saturation
+140%
+
+Controls color saturation of the backdrop
+
+Chromatic Aberration
+2
+
+Controls RGB channel separation intensity
+
+Elasticity
+0.10
+
+Controls how much the glass reaches toward the cursor
+
+Corner Radius
+32px
+
+Controls the roundness of the glass corners
+
+Over Light
+
+Tint liquid glass dark (use for bright backgrounds)
+Makes the glass darker for better visibility on light backgrounds

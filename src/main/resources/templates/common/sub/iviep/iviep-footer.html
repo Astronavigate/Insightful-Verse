@@ -18,84 +18,59 @@
     <section>
         <div class="container text-center text-md-start mt-5">
             <div class="row mt-3">
+                <!-- 第一列 -->
                 <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
-                    <h6 class="text-uppercase fw-bold mb-4">
-                        Useful links
-                    </h6>
-                    <p>
-                        <a href="/" class="text-reset link">Ravon Tech</a>
-                    </p>
-                    <p>
-                        <a href="/InsightfulVerse/AiBot" class="text-reset link">Astronav AiBot</a>
-                    </p>
-                    <p>
-                        <a href="#" class="text-reset link">None</a>
-                    </p>
-                    <p>
-                        <a href="#" class="text-reset link">None</a>
-                    </p>
+                    <h6 class="text-uppercase fw-bold mb-4" th:text="#{insightful.footer.usefulLinks}">Useful links</h6>
+                    <p><a href="/" class="text-reset link" th:text="#{insightful.footer.link1}">Ravon Tech</a></p>
+                    <p><a href="/InsightfulVerse/AiBot" class="text-reset link" th:text="#{insightful.footer.link2}">Astronav AiBot</a></p>
+                    <p><a href="#" class="text-reset link" th:text="#{insightful.footer.link3}">None</a></p>
+                    <p><a href="#" class="text-reset link" th:text="#{insightful.footer.link4}">None</a></p>
                 </div>
 
+                <!-- 第二列 -->
                 <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
-                    <h6 class="text-uppercase fw-bold mb-4">
-                        Useful links
-                    </h6>
-                    <p>
-                        <a href="/InsightfulVerse/Register" class="text-reset link">Register</a>
-                    </p>
-                    <p>
-                        <a href="/InsightfulVerse/Code" class="text-reset link">Code</a>
-                    </p>
-                    <p>
-                        <a href="/InsightfulVerse/Personal" class="text-reset link">Personal</a>
-                    </p>
-                    <p>
-                        <a href="/InsightfulVerse/About" class="text-reset link">About</a>
-                    </p>
+                    <h6 class="text-uppercase fw-bold mb-4" th:text="#{insightful.footer.usefulLinks2}">Useful links</h6>
+                    <p><a href="/InsightfulVerse/Register" class="text-reset link" th:text="#{insightful.footer.register}">Register</a></p>
+                    <p><a href="/InsightfulVerse/Code" class="text-reset link" th:text="#{insightful.footer.code}">Code</a></p>
+                    <p><a href="/InsightfulVerse/Personal" class="text-reset link" th:text="#{insightful.footer.personal}">Personal</a></p>
+                    <p><a href="/InsightfulVerse/About" class="text-reset link" th:text="#{insightful.footer.about}">About</a></p>
                 </div>
 
+                <!-- 第三列 -->
                 <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
-                    <h6 class="text-uppercase fw-bold mb-4">
-                        Social media
-                    </h6>
-                    <a href="#" class="me-4 link-icon">
-                        <i class="bi-facebook" style="font-size: 2rem; color: gray;"></i>
-                    </a>
-                    <a href="https://www.tweiter.com/anubisyno" class="me-4 link-icon">
-                        <i class="bi-twitter-x" style="font-size: 2rem; color: gray;"></i>
-                    </a>
-                    <a href="#" class="me-4 link-icon">
-                        <i class="bi-google" style="font-size: 2rem; color: gray;"></i>
-                    </a>
-                    <a href="#" class="me-4 link-icon">
-                        <i class="bi-instagram" style="font-size: 2rem; color: gray;"></i>
-                    </a>
-                    <a href="#" class="me-4 link-icon">
-                        <i class="bi-linkedin" style="font-size: 2rem; color: gray;"></i>
-                    </a>
-                    <a href="https://github.com/Astronavigate" class="me-4 link-icon">
-                        <i class="bi-github" style="font-size: 2rem; color: gray;"></i>
-                    </a>
-                    <br>
-                    <br>
+                    <h6 class="text-uppercase fw-bold mb-4" th:text="#{insightful.footer.socialMedia}">Social media</h6>
+                    <a href="#" class="me-4 link-icon"><i class="bi-facebook" style="font-size: 2rem; color: gray;"></i></a>
+                    <a href="https://www.tweiter.com/anubisyno" class="me-4 link-icon"><i class="bi-twitter-x" style="font-size: 2rem; color: gray;"></i></a>
+                    <a href="#" class="me-4 link-icon"><i class="bi-google" style="font-size: 2rem; color: gray;"></i></a>
+                    <a href="#" class="me-4 link-icon"><i class="bi-instagram" style="font-size: 2rem; color: gray;"></i></a>
+                    <a href="#" class="me-4 link-icon"><i class="bi-linkedin" style="font-size: 2rem; color: gray;"></i></a>
+                    <a href="https://github.com/Astronavigate" class="me-4 link-icon"><i class="bi-github" style="font-size: 2rem; color: gray;"></i></a>
+                    <br><br>
                     <a href="/ChangeLang" class="me-4 link-icon" style="text-decoration: none; text-align: center;">
                         <i class="bi-globe-americas" style="font-size: 1.24rem; color: gray;"></i>
-                        <p style="display: inline; font-size: 1.17rem; color: gray; margin: 0;">Language</p>
+                        <p style="display: inline; font-size: 1.17rem; color: gray; margin: 0;" th:text="#{insightful.footer.language}">Language</p>
                     </a>
                 </div>
 
+                <!-- 第四列 -->
                 <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mb-md-0 mb-4">
-                    <h6 class="text-uppercase fw-bold mb-4">Contact</h6>
-                    <p><i class="bi bi-building-fill me-2" style="font-size: 1rem; color: gray;"></i> DaLian, Software Park Road, China</p>
-                    <p><i class="bi bi-envelope-open-fill me-2" style="font-size: 1rem; color: gray;"></i> <a class="link" href="mailto:arnold-lopez@auet.onmicrosoft.com">arnold-lopez@auet.onmicrosoft.com</a></p>
-                    <p><i class="bi bi-telephone-fill me-2" style="font-size: 1rem; color: gray;"></i> <a class="link" href="tel:+8615640993693">+86 156 4099 3693</a></p>
-                    <p><i class="bi bi-phone-fill me-2" style="font-size: 1rem; color: gray;"></i> <a class="link" href="tel:+14086414215">+1 408 641 4215</a></p>
+                    <h6 class="text-uppercase fw-bold mb-4" th:text="#{insightful.footer.contact}">Contact</h6>
+                    <p><i class="bi bi-building-fill me-2" style="font-size: 1rem; color: gray;"></i><span th:text="#{insightful.footer.address}">DaLian, Software Park Road, China</span></p>
+                    <p><i class="bi bi-envelope-open-fill me-2" style="font-size: 1rem; color: gray;"></i>
+                        <a class="link" th:href="'mailto:' + #{insightful.footer.email}" th:text="#{insightful.footer.email}">arnold-lopez@auet.onmicrosoft.com</a>
+                    </p>
+                    <p><i class="bi bi-telephone-fill me-2" style="font-size: 1rem; color: gray;"></i>
+                        <a class="link" th:href="'tel:' + #{insightful.footer.phoneCN}" th:text="#{insightful.footer.phoneCN}">+86 156 4099 3693</a>
+                    </p>
+                    <p><i class="bi bi-phone-fill me-2" style="font-size: 1rem; color: gray;"></i>
+                        <a class="link" th:href="'tel:' + #{insightful.footer.phoneUS}" th:text="#{insightful.footer.phoneUS}">+1 408 283 6259</a>
+                    </p>
                 </div>
             </div>
         </div>
     </section>
 
-    <div class="text-center p-4" style="background-color: rgba(0, 0, 0, 0.05);">
-        &copy; 2024 Eagloxis tech. All rights reserved.
+    <div class="text-center p-4" style="background-color: rgba(0, 0, 0, 0.05);" th:text="#{insightful.footer.copyright}">
+        &copy; 2025 Ravon tech. All rights reserved.
     </div>
 </footer>

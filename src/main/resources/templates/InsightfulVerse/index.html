@@ -36,25 +36,25 @@
             <div class="carousel-item active">
                 <img th:src="@{/image/carousel-01.png}" class="d-block w-100" alt="carousel 01">
                 <div class="carousel-caption d-none d-md-block">
-                    <h5>There is no royal road to learning</h5>
-                    <p>Quicker and easier learning through Insightful Verse Integrated Educating Platform.</p>
+                    <h5 th:text="#{insightful.carousel.slide1.title}">There is no royal road to learning</h5>
+                    <p th:text="#{insightful.carousel.slide1.text}">Quicker and easier learning through Insightful Verse Integrated Educating Platform.</p>
                 </div>
             </div>
             <div class="carousel-item">
                 <img th:src="@{/image/carousel-02.png}" class="d-block w-100" alt="carousel 02">
                 <div class="carousel-caption d-none d-md-block">
-                    <h5>Books are the ladder of human progress</h5>
-                    <p>Insightful Verse IEP has tons of resources, both titles and books.</p>
+                    <h5 th:text="#{insightful.carousel.slide2.title}">Books are the ladder of human progress</h5>
+                    <p th:text="#{insightful.carousel.slide2.text}">Insightful Verse IEP has tons of resources, both titles and books.</p>
                 </div>
             </div>
         </div>
         <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Previous</span>
+            <span class="visually-hidden" th:text="#{insightful.carousel.prev}">Previous</span>
         </button>
         <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="next">
             <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Next</span>
+            <span class="visually-hidden" th:text="#{insightful.carousel.next}">Next</span>
         </button>
     </div>
 
@@ -68,12 +68,12 @@
                 <path fill-rule="evenodd" d="M9.218 2h2.402L16 12.987h-2.402zM4.379 2h2.512l4.38 10.987H8.82l-.895-2.308h-4.58l-.896 2.307H0L4.38 2.001zm2.755 6.64L5.635 4.777 4.137 8.64z"/>
             </svg>
             <div class="cont" style="color: black;">
-                <h5>Astronav AiBot</h5>
-                <p>An intelligent assistant for interactive reading and research</p>
+                <h5 th:text="#{insightful.aibot.title}">Astronav AiBot</h5>
+                <p th:text="#{insightful.aibot.description}">An intelligent assistant for interactive reading and research</p>
                 <ul>
-                    <li><p>File Upload: Analyze and ask questions based on your documents</p></li>
-                    <li><p>Export History: Save chat records for future reference</p></li>
-                    <li><p>Self-Hosted Models: Run on your own infrastructure for full control</p></li>
+                    <li><p th:text="#{insightful.aibot.feature1}">File Upload: Analyze and ask questions based on your documents</p></li>
+                    <li><p th:text="#{insightful.aibot.feature2}">Export History: Save chat records for future reference</p></li>
+                    <li><p th:text="#{insightful.aibot.feature3}">Self-Hosted Models: Run on your own infrastructure for full control</p></li>
                 </ul>
             </div>
         </a>
@@ -81,9 +81,9 @@
         <div class="rectangle">
             <div style="background-color: #f0f0f0; border-radius: 1rem; padding: 1rem;">
                 <div class="cont" style="margin-top: 2rem;">
-                    <h5 th:text="${session.user != null ? 'Coding' : 'Login'}"></h5>
-                    <p th:text="${session.user != null ? 'Start writing Java code.' : 'Login to your Insightful Verse Account.'}"></p>
-                    <a type="button" th:href="${session.user != null ? '/InsightfulVerse/Code' : '/InsightfulVerse/Login'}" class="button">Go</a>
+                    <h5 th:text="${session.user != null ? #messages.msg('insightful.code.title') : #messages.msg('insightful.login.title')}">Coding / Login</h5>
+                    <p th:text="${session.user != null ? #messages.msg('insightful.code.description') : #messages.msg('insightful.login.description')}">Start writing Java code / Login message</p>
+                    <a type="button" th:href="${session.user != null ? '/InsightfulVerse/Code' : '/InsightfulVerse/Login'}" class="button" th:text="#{insightful.go}">Go</a>
                 </div>
             </div>
 
@@ -91,13 +91,12 @@
 
             <div style="background-color: #f0f0f0; border-radius: 1rem; padding: 1rem;">
                 <div class="cont" style="margin-top: 2rem;">
-                    <h5 th:text="${session.user != null ? 'Personal Page' : 'Register'}"></h5>
-                    <p th:text="${session.user != null ? 'View your personal information.' : 'Register a Insightful Verse Account.'}"></p>
-                    <a type="button" th:href="${session.user != null ? '/InsightfulVerse/Personal' : '/InsightfulVerse/Register'}" class="button">Go</a>
+                    <h5 th:text="${session.user != null ? #messages.msg('insightful.personal.title') : #messages.msg('insightful.register.title')}">Personal / Register</h5>
+                    <p th:text="${session.user != null ? #messages.msg('insightful.personal.description') : #messages.msg('insightful.register.description')}">Description text</p>
+                    <a type="button" th:href="${session.user != null ? '/InsightfulVerse/Personal' : '/InsightfulVerse/Register'}" class="button" th:text="#{insightful.go}">Go</a>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 

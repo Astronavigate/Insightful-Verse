@@ -31,7 +31,7 @@
              class="list-group-item list-group-item-action"
              style="display: inline-flex; align-items: center; justify-content: center; width: 80vw;" onclick="">
             <i class="bi-plus" style="font-size: 3rem; color: gray;"></i>
-            <h5 style="margin-top: 0.5rem">Add a new file</h5>
+            <h5 style="margin-top: 0.5rem" th:text="#{insightful.file.add}">Add a new file</h5>
         </div>
 
         <div th:each="source : ${#lists.isEmpty(sourceList) ? null : sourceList}">
@@ -42,12 +42,14 @@
                         <button th:if="${session.user != null && (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
                                 type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#updFileForm"
                                 th:data-file-id="${source.fileId}" th:data-file-name="${source.fileName}" th:data-file-remark="${source.remarks}"
+                                th:text="#{insightful.file.edit}"
                                 onclick="updFile(this)">
                             Edit
                         </button>
                         <button th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
                                 type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#delFileForm"
                                 th:data-file-id="${source.fileId}" th:data-file-name="${source.fileName}"
+                                th:text="#{insightful.file.delete}"
                                 onclick="delFile(this)">
                             Delete
                         </button>
@@ -60,7 +62,8 @@
             </a>
         </div>
 
-        <h5 th:if="${#lists.isEmpty(sourceList) && (session.user == null || session.user.authority == 'normal')}">
+        <h5 th:if="${#lists.isEmpty(sourceList) && (session.user == null || session.user.authority == 'normal')}"
+            th:text="#{insightful.file.none}">
             Sorry, there are no files right now.
         </h5>
     </div>

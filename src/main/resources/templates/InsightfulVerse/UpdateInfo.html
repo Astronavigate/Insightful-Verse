@@ -24,39 +24,40 @@
 </head>
 <body>
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
 <form class="form-group" th:action="@{/InsightfulVerse/UpdateUser.do}" method="post">
-  <h2 style="text-align: center;">Update Info</h2>
+    <h2 style="text-align: center;" th:text="#{insightful.user.update.title}">Update Info</h2>
 
-  <label for="username">Your Name:</label>
-  <input type="text" class="form-control" id="username" name="username"
-         th:value="${session.user.getUsername()}"><br>
+    <label for="username" th:text="#{insightful.user.update.username}">Your Name:</label>
+    <input type="text" class="form-control" id="username" name="username"
+           th:value="${session.user.getUsername()}"><br>
 
-  <label for="email">Your Email:</label>
-  <input type="text" class="form-control" id="email" name="email"
-         th:value="${session.user.getEmail()}"><br>
+    <label for="email" th:text="#{insightful.user.update.email}">Your Email:</label>
+    <input type="text" class="form-control" id="email" name="email"
+           th:value="${session.user.getEmail()}"><br>
 
-  <label for="phone">Your Phone:</label>
-  <input type="text" class="form-control" id="phone" name="phone"
-         th:value="${session.user.getPhone()}"><br>
+    <label for="phone" th:text="#{insightful.user.update.phone}">Your Phone:</label>
+    <input type="text" class="form-control" id="phone" name="phone"
+           th:value="${session.user.getPhone()}"><br>
 
-  <label for="password">New Password:</label>
-  <input type="password" class="form-control" id="password" name="password"><br>
+    <label for="password" th:text="#{insightful.user.update.newpassword}">New Password:</label>
+    <input type="password" class="form-control" id="password" name="password"><br>
 
-  <label for="rePassword">Confirm New Password:</label>
-  <input type="password" class="form-control" id="rePassword" name="rePassword"><br>
+    <label for="rePassword" th:text="#{insightful.user.update.confirmpassword}">Confirm New Password:</label>
+    <input type="password" class="form-control" id="rePassword" name="rePassword"><br>
 
-  <label for="oldPassword">Old Password:</label>
-  <input type="password" class="form-control" id="oldPassword" name="oldPassword"><br>
+    <label for="oldPassword" th:text="#{insightful.user.update.oldpassword}">Old Password:</label>
+    <input type="password" class="form-control" id="oldPassword" name="oldPassword"><br>
 
-  <label for="captcha">Email Verify Code:</label>
-  <div class="input-group mb-3">
-    <input type="text" class="form-control" id="captcha" name="captcha">
-    <button type="button" class="btn btn-outline-secondary" id="getCode"
-            onclick="GetCode()">Get Code</button>
-  </div>
+    <label for="captcha" th:text="#{insightful.user.update.captcha}">Email Verify Code:</label>
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" id="captcha" name="captcha">
+        <button type="button" class="btn btn-outline-secondary" id="getCode"
+                onclick="GetCode()" th:text="#{insightful.user.update.getcode}">Get Code</button>
+    </div>
 
-  <input type="submit" class="btn btnn btn-warning" value="Update">
-  <input type="reset" class="btn btnn btn-secondary" value="Reset">
+    <input type="submit" class="btn btnn btn-warning" th:value="#{insightful.user.update.submit}" value="Update">
+    <input type="reset" class="btn btnn btn-secondary" th:value="#{insightful.user.update.reset}" value="Reset">
 </form>
 
 <div class="blank"></div>

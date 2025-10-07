@@ -27,12 +27,12 @@
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
 <div class="container my-4">
-  <header>
-    <h1>Insightful Verse Error Page</h1>
-  </header>
+    <header>
+        <h1 th:text="#{insightful.error.title}">Insightful Verse Error Page</h1>
+    </header>
 
-  <!-- 显示错误信息 -->
-  <p th:text="${errorMessage}"></p>
+    <!-- 显示错误信息 -->
+    <p th:text="${errorMessage}"></p>
 </div>
 
 <div class="blank"></div>
