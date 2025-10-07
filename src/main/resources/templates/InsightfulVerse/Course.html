@@ -17,11 +17,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Insightful Verse Courses - List</title>
-  <!-- 通用布局部分 -->
-  <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insightful Verse Courses - List</title>
+    <!-- 通用布局部分 -->
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
 </head>
 <body>
 <!-- 头部导航 -->
@@ -46,21 +46,22 @@
     <div class="rectangle-container" id="coursesPlace">
         <th:block th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}">
             <div class="rectangle" style="text-decoration: none; color: black" data-bs-toggle="modal"
-                 data-bs-target="#updCourseForm" onclick="updCourse(null, null, null)">
+                 data-bs-target="#updCourseForm">
                 <div class="cont">
                     <i class="bi-plus" style="font-size: 4rem; color: gray;"></i>
                     <h5 th:text="#{insightful.course.add}">Add a new course</h5>
                 </div>
             </div>
         </th:block>
+
         <th:block th:each="course : ${courseList}">
             <a class="rectangle" th:href="@{/InsightfulVerse/CourseInfo(courseId=${course.courseId})}" style="text-decoration: none; color: black">
                 <div class="cont">
                     <th:block th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}">
-                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#updCourseForm"
+                        <button type="button" class="btn btn-warning edit-course-btn" data-bs-toggle="modal" data-bs-target="#updCourseForm"
                                 th:data-course-id="${course.courseId}" th:data-course-name="${course.courseName}" th:data-course-info="${course.courseInfo}"
                                 th:text="#{insightful.course.edit}">Edit</button>
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#delCourseForm"
+                        <button type="button" class="btn btn-danger del-course-btn" data-bs-toggle="modal" data-bs-target="#delCourseForm"
                                 th:data-course-id="${course.courseId}" th:data-course-name="${course.courseName}"
                                 th:text="#{insightful.course.delete}">Delete</button>
                     </th:block>
@@ -80,7 +81,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h1 class="modal-title fs-5" id="del-course-name" th:text="#{insightful.course.modalTitle.delete}">Delete Course</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="cleanModal()"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" th:text="#{insightful.course.modalBody.delete}">
                     Are you sure you want to delete this course? <br>The deleted data cannot be recovered.
@@ -88,7 +89,7 @@
                 <form th:action="@{/InsightfulVerse/DelCourse}">
                     <input type="hidden" id="del-course-id" name="courseId" value="" />
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{insightful.course.button.cancel}" onclick="cleanModal()">Cancel</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{insightful.course.button.cancel}">Cancel</button>
                         <button type="submit" class="btn btn-danger" th:text="#{insightful.course.button.delete}">Delete</button>
                     </div>
                 </form>
@@ -102,7 +103,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title fs-5" th:text="#{insightful.course.modalTitle.edit}">Course Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="cleanModal()"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="/InsightfulVerse/UpdCourse">
                     <div class="modal-body">
@@ -117,7 +118,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{insightful.course.button.cancel}" onclick="cleanModal()">Cancel</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{insightful.course.button.cancel}">Cancel</button>
                         <button type="submit" class="btn btn-warning" th:text="#{insightful.course.button.save}">Save</button>
                     </div>
                 </form>
@@ -132,95 +133,74 @@
 <th:block th:replace="~{common/sub/iviep/iviep-footer :: footer}"></th:block>
 
 <!-- 自定义脚本 -->
-<script th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}">
-  // 等待文档完全加载
-  window.addEventListener('DOMContentLoaded', function() {
-    // 获取所有 <a> 元素
-    const links = document.querySelectorAll('a');
-
-    // 遍历每个 <a> 元素
-    links.forEach(function(link) {
-      // 获取每个 <a> 元素中的 <button> 元素
-      const buttons = link.querySelectorAll('button');
-
-      // 为每个 <button> 元素绑定点击事件
-      buttons.forEach(function(button) {
-        button.addEventListener('click', function(event) {
-          event.preventDefault();  // 阻止按钮点击后的跳转
-          event.stopPropagation(); // 阻止事件传播
-          console.log('Button inside <a> intercepted!');
-        });
-      });
-    });
-  });
-
-  function updCourse(button) {
-    let id = document.getElementById("upd-course-id");
-    let name = document.getElementById("upd-course-name");
-    let info = document.getElementById("upd-course-info");
-    id.value = button.getAttribute('data-course-id');
-    name.value = button.getAttribute('data-course-name');
-    info.value = button.getAttribute('data-course-info');
-  }
-
-  function delCourse(button) {
-    let id = document.getElementById("del-course-id");
-    let name = document.getElementById("del-course-name");
-    id.value = button.getAttribute('data-course-id');
-    name.innerText = "Delete Course " + button.getAttribute('data-file-name');
-  }
-
-  function cleanModal() {
-    let id = document.getElementById("upd-course-id");
-    let name = document.getElementById("upd-course-name");
-    let info = document.getElementById("upd-course-info");
-    let delId = document.getElementById("del-course-id");
-    let delName = document.getElementById("del-course-name");
-    id.value = null;
-    name.value = null;
-    info.value = null;
-    delId.value = null;
-    delName.value = null;
-  }
-</script>
-
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    let buttonAll = document.getElementById('searchAll');
-    let buttonCourse = document.getElementById('searchCourse');
-    let buttonFile = document.getElementById('searchFile');
-    let type = document.getElementById('searchType');
+    document.addEventListener('DOMContentLoaded', function() {
+        // -------------------- 阻止 <a> 内按钮跳转 --------------------
+        document.querySelectorAll('a.rectangle').forEach(link => {
+            link.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                });
+            });
+        });
 
-    if (type.value === "file") {
-      handleButtonClick(buttonFile, 'file');
-    } else if (type.value === "course") {
-      handleButtonClick(buttonCourse, 'course');
-    } else {
-      handleButtonClick(buttonAll, 'all');
-    }
+        // -------------------- 编辑课程 --------------------
+        document.querySelectorAll('.edit-course-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                document.getElementById('upd-course-id').value = button.getAttribute('data-course-id');
+                document.getElementById('upd-course-name').value = button.getAttribute('data-course-name');
+                document.getElementById('upd-course-info').value = button.getAttribute('data-course-info');
+            });
+        });
 
-    // Function to handle setting font weights and type value
-    function handleButtonClick(selectedButton, typeVal) {
-      buttonAll.style.fontWeight = 'normal';
-      buttonCourse.style.fontWeight = 'normal';
-      buttonFile.style.fontWeight = 'normal';
-      selectedButton.style.fontWeight = 'bold';
-      type.value = typeVal;
-    }
+        // -------------------- 删除课程 --------------------
+        document.querySelectorAll('.del-course-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                document.getElementById('del-course-id').value = button.getAttribute('data-course-id');
+                document.getElementById('del-course-name').innerText = "Delete Course " + button.getAttribute('data-course-name');
+            });
+        });
 
-    // Event listeners for buttons
-    buttonAll.addEventListener('click', function() {
-      handleButtonClick(buttonAll, 'all');
+        // -------------------- 清空模态框 --------------------
+        const modals = ['updCourseForm', 'delCourseForm'];
+        modals.forEach(modalId => {
+            let modalEl = document.getElementById(modalId);
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                document.getElementById('upd-course-id').value = '';
+                document.getElementById('upd-course-name').value = '';
+                document.getElementById('upd-course-info').value = '';
+                document.getElementById('del-course-id').value = '';
+                document.getElementById('del-course-name').innerText = 'Delete Course';
+            });
+        });
+
+        // -------------------- 搜索类型按钮 --------------------
+        const buttonAll = document.getElementById('searchAll');
+        const buttonCourse = document.getElementById('searchCourse');
+        const buttonFile = document.getElementById('searchFile');
+        const type = document.getElementById('searchType');
+
+        function handleButtonClick(selectedButton, typeVal) {
+            buttonAll.style.fontWeight = 'normal';
+            buttonCourse.style.fontWeight = 'normal';
+            buttonFile.style.fontWeight = 'normal';
+            selectedButton.style.fontWeight = 'bold';
+            type.value = typeVal;
+        }
+
+        if (type.value === "file") {
+            handleButtonClick(buttonFile, 'file');
+        } else if (type.value === "course") {
+            handleButtonClick(buttonCourse, 'course');
+        } else {
+            handleButtonClick(buttonAll, 'all');
+        }
+
+        buttonAll.addEventListener('click', () => handleButtonClick(buttonAll, 'all'));
+        buttonCourse.addEventListener('click', () => handleButtonClick(buttonCourse, 'course'));
+        buttonFile.addEventListener('click', () => handleButtonClick(buttonFile, 'file'));
     });
-
-    buttonCourse.addEventListener('click', function() {
-      handleButtonClick(buttonCourse, 'course');
-    });
-
-    buttonFile.addEventListener('click', function() {
-      handleButtonClick(buttonFile, 'file');
-    });
-  });
 </script>
 </body>
 </html>

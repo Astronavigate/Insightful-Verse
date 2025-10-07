@@ -41,7 +41,19 @@
             border-bottom: none;
             padding: 25px;
             text-align: center;
-            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='0.1' d='M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,192C1248,192,1344,128,1392,96L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+            background-size: cover;
         }
 
         .language-btn {
@@ -55,8 +67,7 @@
             color: var(--text-dark);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             font-size: 0.95rem;
-            width: 100%;
-            margin-bottom: 10px;
+            height: 100%;
         }
 
         .language-btn:hover {
@@ -72,7 +83,69 @@
             color: var(--primary-blue);
         }
 
+        .modal-content {
+            border-radius: 20px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            color: white;
+            border-bottom: none;
+            padding: 20px 25px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(77, 171, 247, 0.4);
+        }
+
+        .btn-secondary {
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 500;
+        }
+
+        .earth-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: white;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1.6rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+        }
+
         @media (max-width: 768px) {
+            .language-card {
+                margin: 10px;
+            }
+
+            .card-body {
+                padding: 20px !important;
+            }
+
             .language-btn {
                 font-size: 0.9rem;
                 padding: 10px 12px;
@@ -84,8 +157,8 @@
 <div class="container">
     <div class="card shadow language-card mx-auto">
         <div class="card-header bg-primary text-white text-center py-4">
-            <h2 class="card-title">Select Language</h2>
-            <p class="card-subtitle">Choose your preferred language</p>
+            <h2 class="card-title" th:text="${title}">Select Language</h2>
+            <p class="card-subtitle" th:text="${content}">Choose your preferred language</p>
         </div>
 
         <div class="card-body p-4 p-md-5">

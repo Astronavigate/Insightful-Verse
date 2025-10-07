@@ -372,13 +372,26 @@ public class InsightfulVerseController {
     @RequestMapping("/InsightfulVerse/DelCourse")
     public String IVIEPDelCourse(@RequestParam String courseId, HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("user");
+
+        // 权限验证
         if (user != null && user.getUserId() != null) {
-            if (user.getAuthority() == "infinite" && (boolean) request.getSession().getAttribute("authorize")) {
+            if ("infinite".equals(user.getAuthority())
+                    && Boolean.TRUE.equals(request.getSession().getAttribute("authorize"))) {
                 request.getSession().setAttribute("lastUrl", "/InsightfulVerse/CourseInfo?courseId=" + courseId);
                 return "redirect:/InsightfulVerse/VerifyPerm";
             }
         }
+
+        // 删除课程
         courseService.deleteCourse(courseId);
+
+        // 获取来源页
+        String referer = request.getHeader("Referer");
+        if (referer != null && referer.contains("/InsightfulVerse/Search")) {
+            return "redirect:" + referer; // 返回搜索页面
+        }
+
+        // 默认返回课程列表页
         return "redirect:/InsightfulVerse/Course";
     }
 

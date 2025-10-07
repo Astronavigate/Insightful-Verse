@@ -31,7 +31,7 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" th:href="${session.user != null && session.user.getUserId() != null ? '/InsightfulVerse/Personal' : '/InsightfulVerse/Login'}">
-                        <span th:text="${session.user != null && session.user.getUserId() != null ? session.user.getUsername() : #{insightful.header.login}}">Login</span>
+                        <span th:text="${session.user != null && session.user.getUserId() != null ? session.user.getUsername() : #messages.msg('insightful.header.login')}">Login</span>
                     </a>
                 </li>
                 <li class="nav-item">

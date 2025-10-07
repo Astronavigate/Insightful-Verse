@@ -95,14 +95,30 @@ public class RavonController {
     }
 
     @RequestMapping("/ChangeLang")
-    public String ChangeLang(@RequestParam(defaultValue = "en") String lang,
+    public String ChangeLang(@RequestParam(required = false) String lang,
                              HttpServletRequest request,
+                             HttpServletResponse response,
                              Model model) {
 
         // 保存来源页（用于返回）
         String lastViewUrl = request.getHeader("Referer");
         if (lastViewUrl != null && !lastViewUrl.contains(".do") && !lastViewUrl.contains("Error")) {
             request.getSession().setAttribute("lastUrl", lastViewUrl);
+        }
+
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("LANG".equalsIgnoreCase(cookie.getName())) {
+                    lang = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        // 如果 Cookie 也没有，则默认英文
+        if (lang == null || lang.isEmpty()) {
+            lang = "en";
         }
 
         lang = lang.toLowerCase(Locale.ROOT);

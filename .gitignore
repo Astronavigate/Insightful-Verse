@@ -26,11 +26,11 @@ target/
 /nbdist/
 /.nb-gradle/
 AiBot/model/
-src/main/resources/static/code/
+# src/main/resources/static/code/
 src/main/resources/static/doc/
 src/main/resources/static/image/
 src/main/resources/static/media/
-src/main/resources/dumps/
+# src/main/resources/dumps/
 
 
 build/
