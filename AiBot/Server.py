@@ -22,7 +22,7 @@ import asyncio
 import os
 
 # --- 模型加载 ---
-MODEL_PATH = "model/DeepSeek-R1-Distill-Llama-8B-Q8_0.gguf"
+MODEL_PATH = "model/DeepSeek-R1-Distill-Llama-8B-Q4_K_S.gguf"
 
 # 检查模型文件是否存在
 if not os.path.exists(MODEL_PATH):

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Raven Audio — Fixed 100px Lyrics + Stable Sync</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+<style>
+  :root{
+    --bg:#060607; --muted:#9aa0a6; --accent:#66fcf1;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#050506,#0b0c10);color:#e6eef0}
+  .container{width:92vw;max-width:1000px;padding:20px;border-radius:12px;background:rgba(255,255,255,0.02);display:grid;grid-template-columns:360px 1fr;gap:18px}
+  .left{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .cover{width:340px;height:340px;border-radius:12px;overflow:hidden;background:#0b0c10;border:1px solid rgba(255,255,255,0.03)}
+  .cover img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s,ease}
+  .controls audio{width:320px}
+  .btn{padding:8px 14px;border-radius:8px;border:1px solid rgba(102,252,241,0.12);background:transparent;color:var(--accent);cursor:pointer}
+  .right{position:relative;display:flex;flex-direction:column}
+  .lyrics-shell{padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.006));position:relative}
+  .lyrics-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:var(--muted);font-size:13px}
+  /* 这里将歌词区域高度固定为 100px（你要求），并允许滚动 */
+  .lyrics-module{height:100px;overflow:auto;padding:10px;border-radius:8px;background:rgba(0,0,0,0.02);scroll-behavior:smooth}
+  .lyric-line{text-align:center;margin:4px 0;padding:4px 6px;border-radius:6px;cursor:pointer;color:rgba(230,238,240,0.78);font-size:14px;line-height:1.3;opacity:0;transform:translateY(6px);transition:opacity .28s, transform .28s, color .2s}
+  .lyric-line.visible{opacity:1;transform:translateY(0)}
+  .lyric-line.un-sync{color:rgba(200,210,212,0.9)}
+  .lyric-line.active{color:var(--accent);font-weight:700;font-size:16px;text-shadow:0 6px 18px rgba(102,252,241,0.06)}
+  .lyric-line.context{color:rgba(180,190,192,0.6);font-size:13px;transform:scale(0.99)}
+  .status{margin-top:8px;text-align:right;color:var(--muted);font-size:12px}
+  .mask-top,.mask-bottom{position:absolute;left:0;right:0;height:40px;pointer-events:none}
+  .mask-top{top:68px;background:linear-gradient(180deg,rgba(11,12,16,0.95),rgba(11,12,16,0))}
+  .mask-bottom{bottom:20px;background:linear-gradient(180deg,rgba(11,12,16,0),rgba(11,12,16,0.95))}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <div class="cover"><img id="coverImg" src="" alt="cover"></div>
+      <div class="controls"><audio id="audio" controls></audio></div>
+      <div><button class="btn" id="btn">LOAD FILES</button><input id="fileInput" type="file" accept=".mp3,.m4a,.wav,.flac,.jpg,.png,.srt,.lrc" multiple style="display:none"></div>
+    </div>
+
+    <div class="right">
+      <div class="lyrics-shell">
+        <div class="lyrics-header">
+          <div id="songName">SYSTEM INIT</div>
+          <div id="mode" style="color:var(--muted)">—</div>
+        </div>
+
+        <div class="lyrics-module" id="lyricsContainer">
+          <div style="text-align:center;opacity:0.25;margin-top:10px">NO DATA</div>
+        </div>
+
+        <div class="mask-top"></div>
+        <div class="mask-bottom"></div>
+        <div class="status" id="status">System Ready</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* --------------------
+   状态和 DOM
+   -------------------- */
+const audio = document.getElementById('audio');
+const fileInput = document.getElementById('fileInput');
+const btn = document.getElementById('btn');
+const coverImg = document.getElementById('coverImg');
+const lyricsContainer = document.getElementById('lyricsContainer');
+const status = document.getElementById('status');
+const songName = document.getElementById('songName');
+const mode = document.getElementById('mode');
+
+let lyricsData = []; // [{time:sec|null, text, words?}]
+let isSynchronized = false;
+let currentIndex = -1;
+
+/* 默认封面 */
+const DEFAULT_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect width='300' height='300' fill='%230b0c10'/%3E%3Cpath d='M150 100 L200 180 L100 180 Z' fill='none' stroke='%23333' stroke-width='2'/%3E%3C/svg%3E";
+coverImg.src = DEFAULT_COVER;
+
+/* 事件 */
+btn.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', handleFiles);
+audio.addEventListener('timeupdate', timeUpdateHandler);
+audio.addEventListener('loadedmetadata', ()=> updateStatus('Audio Ready'));
+
+/* --------------------
+   Helper: updateStatus
+   -------------------- */
+function updateStatus(msg){ status.innerText = 'STATUS: ' + msg; console.log(msg); }
+
+/* --------------------
+   文件处理主流程
+   -------------------- */
+async function handleFiles(e){
+  const files = Array.from(e.target.files || []);
+  if (!files.length){ updateStatus('No files'); return; }
+
+  // find audio
+  let audioFile = files.find(f => f.type && f.type.startsWith('audio/')) || files.find(f => /\.(mp3|m4a|wav|flac|ogg)$/i.test(f.name));
+  if (!audioFile){ updateStatus('No audio file'); console.warn(files.map(f=>f.name)); return; }
+
+  songName.innerText = audioFile.name;
+  updateStatus('Loading ' + audioFile.name);
+
+  // load audio blob
+  audio.src = URL.createObjectURL(audioFile);
+  audio.load();
+
+  // read id3 for embedded cover and lyrics (jsmediatags)
+  const embedded = await readEmbeddedMetadata(audioFile);
+  if (embedded.cover){ coverImg.src = embedded.cover; updateStatus('Cover: Embedded'); }
+  else {
+    // check for same-name image file
+    const base = audioFile.name.replace(/\.[^/.]+$/,'').toLowerCase();
+    const img = files.find(f => f.name.replace(/\.[^/.]+$/,'').toLowerCase() === base && /\.(jpe?g|png|webp|gif)$/i.test(f.name));
+    if (img){ coverImg.src = URL.createObjectURL(img); updateStatus('Cover: External'); }
+    else { coverImg.src = DEFAULT_COVER; updateStatus('Cover: default'); }
+  }
+
+  // parse lyrics priority: LRC -> SRT -> embedded (embedded LRC detection improved)
+  await processLyrics(audioFile, files, embedded.lyrics);
+}
+
+/* --------------------
+   ID3 读取（简化健壮版）
+   -------------------- */
+function readEmbeddedMetadata(audioFile){
+  return new Promise((resolve) => {
+    try {
+      window.jsmediatags.read(audioFile, {
+        onSuccess: function(tag){
+          const data = { cover:null, lyrics:null };
+          const tags = tag.tags || {};
+          if (tags.picture && tags.picture.data && tags.picture.format){
+            let b = "";
+            for (let i=0;i<tags.picture.data.length;i++) b += String.fromCharCode(tags.picture.data[i]);
+            data.cover = "data:" + tags.picture.format + ";base64," + window.btoa(b);
+          }
+          // try multiple frames for lyrics
+          let lyricsText = null;
+          if (tags.USLT) lyricsText = (typeof tags.USLT === 'string') ? tags.USLT : tags.USLT.text;
+          if (!lyricsText && tags.LYRICS) lyricsText = tags.LYRICS;
+          if (!lyricsText && tags.SYLT) lyricsText = (typeof tags.SYLT === 'string') ? tags.SYLT : tags.SYLT.text;
+          if (!lyricsText && tags.COMM){
+            let c = tags.COMM;
+            if (Array.isArray(c)) c = c.find(x => x.text) || c[0];
+            if (c && c.text) lyricsText = c.text;
+          }
+          if (!lyricsText && tags.TXXX){
+            let t = tags.TXXX; if (!Array.isArray(t)) t = [t];
+            for (const item of t){
+              if (item && (item.description||'').toLowerCase().includes('lyric')){
+                lyricsText = item.value || item.text || item;
+                break;
+              }
+            }
+          }
+          if (lyricsText) data.lyrics = lyricsText;
+          console.log('readEmbeddedMetadata -> cover:', !!data.cover, 'lyrics present:', !!data.lyrics);
+          resolve(data);
+        },
+        onError: function(err){
+          console.warn('ID3 read error', err);
+          resolve({ cover:null, lyrics:null });
+        }
+      });
+    } catch (ex){
+      console.error('jsmediatags fail', ex);
+      resolve({ cover:null, lyrics:null });
+    }
+  });
+}
+
+/* --------------------
+   解析器与处理逻辑
+   支持 LRC（逐行/逐词宽容）、SRT（宽容），并确保无时间的行在列表末尾（避免影响同步）
+   -------------------- */
+
+/* 将 LRC 解析成对象数组；若包含 per-word times 则拆分 words */
+function parseLRC(lrc){
+  if (!lrc) return [];
+  lrc = lrc.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/^\uFEFF/,'');
+  const lines = lrc.split('\n');
+  const items = [];
+  for (let raw of lines){
+    raw = raw.trim();
+    if (!raw) continue;
+    // offset/meta
+    const off = raw.match(/^\[offset:([+-]?\d+)\]/i);
+    if (off) { /* ignore offset for now */ continue; }
+    if (/^\[[a-z]{2,}:/i.test(raw)) continue;
+    // gather line time tags such as [mm:ss.xx]
+    const timeTags = [];
+    const timeRe = /\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
+    let m;
+    let body = raw;
+    while ((m = timeRe.exec(raw)) !== null){
+      const sec = Number(m[1]) * 60 + Number(m[2]) + (m[3] ? Number(m[3].padEnd(3,'0'))/1000 : 0);
+      timeTags.push(sec);
+      // remove tags from body later
+    }
+    body = body.replace(timeRe, '').trim();
+    // try per-word tags like <mm:ss.xx>word or word<mm:ss.xx> or word{mm:ss.xx}
+    const wordTimeRegex = /(?:<(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?>)|(?:\{(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\})/g;
+    // if contains such tags, build words array
+    if (wordTimeRegex.test(raw)){
+      // reconstruct parts: split by tags, associate times
+      const parts = [];
+      wordTimeRegex.lastIndex = 0;
+      let lastIndex = 0;
+      let found;
+      while ((found = wordTimeRegex.exec(raw)) !== null){
+        if (found.index > lastIndex){
+          parts.push({type:'text', text: raw.slice(lastIndex, found.index)});
+        }
+        if (found[1] !== undefined){
+          parts.push({type:'time', time: Number(found[1]) * 60 + Number(found[2]) + (found[3] ? Number(found[3].padEnd(3,'0'))/1000 : 0)});
+        } else {
+          parts.push({type:'time', time: Number(found[4]) * 60 + Number(found[5]) + (found[6] ? Number(found[6].padEnd(3,'0'))/1000 : 0)});
+        }
+        lastIndex = wordTimeRegex.lastIndex;
+      }
+      if (lastIndex < raw.length) parts.push({type:'text', text: raw.slice(lastIndex)});
+      // assemble words
+      const words = [];
+      let pendingTime = null;
+      for (const p of parts){
+        if (p.type === 'time'){ pendingTime = p.time; continue; }
+        // split p.text by whitespace to words
+        const segs = p.text.split(/(\s+)/).filter(x=>x.length>0);
+        for (const seg of segs){
+          if (/^\s+$/.test(seg)) continue;
+          words.push({text: seg.trim(), time: pendingTime});
+          pendingTime = null;
+        }
+      }
+      // Use first time tag as line base if no word times
+      if (timeTags.length > 0 && words.length === 0){
+        for (const t of timeTags) items.push({time: t, text: body, words: null, raw: raw});
+      } else {
+        // Add one line entry, with words (some words may have null times)
+        // If any words have time, treat as synced
+        const hasWordTimes = words.some(w=>w.time!=null);
+        if (hasWordTimes){
+          // if there is also line time tag, we will keep the line.time as the earliest time if any
+          const lineTime = timeTags.length ? timeTags[0] : (words.find(w=>w.time!=null)?.time ?? null);
+          items.push({time: lineTime, text: words.map(w=>w.text).join(' '), words: words, raw: raw});
+        } else {
+          // treat as unsynced line
+          items.push({time: null, text: body || raw, words: null, raw: raw});
+        }
+      }
+    } else {
+      // no per-word tags
+      if (timeTags.length){
+        for (const t of timeTags) items.push({time: t, text: body || raw, words: null, raw: raw});
+      } else {
+        // unsynced line
+        items.push({time: null, text: body || raw, words: null, raw: raw});
+      }
+    }
+  } // end for
+
+  // dedupe by time+text
+  const map = new Map();
+  for (const it of items){
+    const k = `${it.time === null ? 'n' : Math.round(it.time*1000)}|${it.text.replace(/\s+/g,' ').trim()}`;
+    if (!map.has(k)) map.set(k, it);
+  }
+  // produce array: synced items sorted, then unsynced appended
+  const synced = Array.from(map.values()).filter(x => x.time != null).sort((a,b)=>a.time - b.time);
+  const unsynced = Array.from(map.values()).filter(x => x.time == null);
+  return synced.concat(unsynced);
+}
+
+/* SRT parser (较宽容) */
+function parseSRT(srt){
+  if (!srt) return [];
+  srt = srt.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/^\uFEFF/,'');
+  const regex = /(?:\d+\s*\n)?\s*(\d{2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?\s*-->\s*(\d{2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?\s*\n([\s\S]*?)(?=\n{2,}|$)/g;
+  const items = [];
+  let m;
+  while ((m = regex.exec(srt)) !== null){
+    const start = Number(m[1])*3600 + Number(m[2])*60 + Number(m[3]) + (m[4] ? Number(m[4].padEnd(3,'0'))/1000 : 0);
+    const text = (m[9] || m[8] || m[7] || '').trim() || m[6] || '';
+    if (text) items.push({time: start, text: text.replace(/\r?\n/g,' '), words: null, raw: text});
+  }
+  // dedupe+sort
+  const map = new Map();
+  for (const it of items) map.set(`${Math.round(it.time*1000)}|${it.text}`, it);
+  return Array.from(map.values()).sort((a,b)=>a.time-b.time);
+}
+
+/* Top-level process: find external LRC, else SRT, else embedded (LRC or plain) */
+async function processLyrics(audioFile, allFiles, embeddedLyrics){
+  lyricsData = []; isSynchronized = false; currentIndex = -1;
+  const base = audioFile.name.replace(/\.[^/.]+$/,'').toLowerCase();
+
+  // external LRC
+  const lrcFile = allFiles.find(f => f.name.replace(/\.[^/.]+$/,'').toLowerCase() === base && f.name.toLowerCase().endsWith('.lrc'));
+  if (lrcFile){
+    try {
+      const txt = await lrcFile.text();
+      const parsed = parseLRC(txt);
+      if (parsed.length){ lyricsData = parsed; isSynchronized = parsed.some(p=>p.time!=null); renderLyrics(); updateStatus('Lyrics: External LRC'); mode.innerText = 'LRC'; console.log('LRC parsed', parsed.length); return; }
+    } catch(e){ console.error('lrc read fail', e); }
+  }
+
+  // external SRT
+  const srtFile = allFiles.find(f => f.name.replace(/\.[^/.]+$/,'').toLowerCase() === base && f.name.toLowerCase().endsWith('.srt'));
+  if (srtFile){
+    try {
+      const txt = await srtFile.text();
+      const parsed = parseSRT(txt);
+      if (parsed.length){ lyricsData = parsed; isSynchronized = parsed.some(p=>p.time!=null); renderLyrics(); updateStatus('Lyrics: External SRT'); mode.innerText = 'SRT'; console.log('SRT parsed', parsed.length); return; }
+    } catch(e){ console.error('srt read fail', e); }
+  }
+
+  // embedded: detect if it looks like LRC (contains [mm:ss or <mm:ss)
+  if (embeddedLyrics && typeof embeddedLyrics === 'string'){
+    const looksLikeLrc = /\[\d{1,2}:\d{2}/.test(embeddedLyrics) || /<\d{1,2}:\d{2}/.test(embeddedLyrics);
+    if (looksLikeLrc){
+      const parsed = parseLRC(embeddedLyrics);
+      if (parsed.length){ lyricsData = parsed; isSynchronized = parsed.some(p=>p.time!=null); renderLyrics(); updateStatus('Lyrics: Embedded LRC'); mode.innerText = 'Embedded LRC'; console.log('Embedded LRC parsed'); return; }
+    }
+    // else treat embedded as plain unsynced lines
+    const lines = embeddedLyrics.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+    if (lines.length){
+      lyricsData = lines.map((t,i)=>({time:null,text:t,words:null,raw:t}));
+      isSynchronized = false;
+      renderLyrics();
+      updateStatus('Lyrics: Embedded (Unsync)');
+      mode.innerText = 'Embedded Unsync';
+      return;
+    }
+  }
+
+  // none
+  lyricsData = [];
+  renderLyrics();
+  updateStatus('Lyrics: None');
+  mode.innerText = '—';
+}
+
+/* --------------------
+   渲染歌词（只显示条目，区域固定 100px，可滚动）
+   -------------------- */
+function renderLyrics(){
+  lyricsContainer.innerHTML = '';
+  currentIndex = -1;
+  if (!lyricsData || !lyricsData.length){
+    lyricsContainer.innerHTML = "<div style='text-align:center;opacity:0.25;margin-top:8px'>NO DATA</div>";
+    return;
+  }
+
+  // top spacer to let first line center nicely
+  const top = document.createElement('div'); top.style.height = '36px'; lyricsContainer.appendChild(top);
+
+  lyricsData.forEach((line, idx) => {
+    const div = document.createElement('div');
+    div.className = 'lyric-line' + (isSynchronized ? '' : ' un-sync');
+    div.dataset.index = idx;
+    div.dataset.time = line.time != null ? line.time : '';
+    div.innerHTML = escapeHtml(line.text);
+    // click to seek: prefer first word time if exists
+    div.addEventListener('click', ()=> {
+      let t = null;
+      if (line.words && line.words.length){
+        const w = line.words.find(w=>w.time!=null);
+        if (w) t = w.time;
+      }
+      if (t == null && line.time != null) t = line.time;
+      if (t != null) audio.currentTime = t;
+    });
+    lyricsContainer.appendChild(div);
+  });
+
+  const bot = document.createElement('div'); bot.style.height = '60px'; lyricsContainer.appendChild(bot);
+
+  // animate appearance (stagger)
+  const nodes = lyricsContainer.querySelectorAll('.lyric-line');
+  nodes.forEach((n,i)=> {
+    n.classList.remove('visible');
+    setTimeout(()=> n.classList.add('visible'), Math.min(220, i*8 + 6));
+  });
+}
+
+/* --------------------
+   时间更新：使用二分查找找出最后一个 time <= currentTime（避免线性遍历导致回退跳动）
+   -------------------- */
+function timeUpdateHandler(){
+  if (!isSynchronized) return;
+  if (!lyricsData || lyricsData.length === 0) return;
+
+  const cur = audio.currentTime;
+  // build array of indices that have time (cached approach could be used for perf)
+  // We'll binary search on first synced portion (lyricsData are organized synced then unsynced)
+  const rightBound = lyricsData.findIndex(x => x.time == null);
+  const endIndex = rightBound === -1 ? lyricsData.length - 1 : rightBound - 1;
+  if (endIndex < 0) return; // no synced lines
+
+  // binary search to find greatest i in [0,endIndex] with lyricsData[i].time <= cur
+  let lo = 0, hi = endIndex, found = -1;
+  while (lo <= hi){
+    const mid = Math.floor((lo+hi)/2);
+    const t = lyricsData[mid].time;
+    if (t <= cur){
+      found = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+
+  // if found is -1, then currentTime is before first lyric: set index to -1 (no active)
+  if (found === -1){
+    if (currentIndex !== -1){
+      // clear active
+      setActiveIndex(-1);
+      currentIndex = -1;
+    }
+    return;
+  }
+
+  if (found !== currentIndex){
+    setActiveIndex(found);
+    currentIndex = found;
+  }
+}
+
+/* set active index and scroll center */
+function setActiveIndex(index){
+  const nodes = document.querySelectorAll('.lyric-line');
+  nodes.forEach(n => { n.classList.remove('active'); n.classList.remove('context'); });
+
+  if (index === -1) return;
+  const node = nodes[index];
+  if (!node) return;
+  node.classList.add('active');
+
+  // set context for neighbors
+  const ctx = 2;
+  for (let i = Math.max(0, index-ctx); i <= Math.min(nodes.length-1, index+ctx); i++){
+    if (i === index) continue;
+    if (nodes[i]) nodes[i].classList.add('context');
+  }
+
+  // smooth center scroll
+  const containerHeight = lyricsContainer.clientHeight;
+  const target = node.offsetTop - (containerHeight/2) + (node.clientHeight/2);
+  smoothScrollTo(lyricsContainer, target, 300);
+}
+
+/* smooth scroll */
+function smoothScrollTo(el, to, duration){
+  const start = el.scrollTop; const change = to - start;
+  const startTime = performance.now();
+  function step(now){
+    const t = Math.min(1,(now-startTime)/duration);
+    const eased = t<0.5 ? 2*t*t : -1 + (4-2*t)*t;
+    el.scrollTop = start + change * eased;
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* small util */
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* debug key D */
+window.addEventListener('keydown', (e)=> { if (e.key.toLowerCase()==='d'){ console.log({isSynchronized, length: lyricsData.length, currentIndex}); updateStatus('Debug logged'); } });
+
+</script>
+</body>
+</html>

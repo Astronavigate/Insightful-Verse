@@ -115,10 +115,19 @@
                             <label for="upd-file-remark" class="form-label">File Introduction</label>
                             <textarea class="form-control" id="upd-file-remark" name="fileRemark" rows="5"></textarea>
                         </div>
+
                         <div class="mb-3" style="margin-top: 1rem">
+                            <label for="file" class="form-label">File</label>
                             <input type="file" id="file" name="file">
                             <p style="font-size: smaller" id="tips">* Not uploading files will not update files</p>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="subtitleFile" class="form-label">Subtitle File</label>
+                            <input type="file" id="subtitleFile" name="subtitleFile" accept=".lrc, .srt">
+                            <p style="font-size: smaller" id="subtitle-tips">* Optional: Upload LRC or SRT file to associate with the media.<br>* Not uploading files will not update files</p>
+                        </div>
+
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="cleanModal()">Cancel</button>

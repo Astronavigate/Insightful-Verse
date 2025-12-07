@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Raven Audio System V3.3 — Click-to-Seek + Apple Music Style</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+  <style>
+    :root{
+      --bg:#0b0c10;
+      --panel:#121418;
+      --muted:#9aa0a6;
+      --accent:#66fcf1;
+      --accent-deep:#2bd6cf;
+      --glass: rgba(255,255,255,0.04);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family: "SF Pro Text","Segoe UI",Roboto,system-ui, -apple-system, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,#060607 0%, #0b0c10 100%);
+      color:#e6eef0;
+    }
+
+    .system-container{
+      width:820px;
+      display:grid;
+      grid-template-columns: 350px 1fr;
+      gap:22px;
+      padding:28px;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+
+    /* 左侧视觉模块 */
+    .visual-module{display:flex;flex-direction:column;align-items:center;gap:18px}
+    .cover-art{
+      width:300px;height:300px;border-radius:12px;overflow:hidden;
+      background:linear-gradient(180deg,#05060a,#0e1114);
+      display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.03);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    .cover-art img{width:100%;height:100%;object-fit:cover;display:block}
+
+    .control-panel audio{width:300px;outline:none;background:transparent}
+    .file-input-wrapper{position:relative;display:inline-block}
+    .btn-upload{
+      border-radius:10px;padding:8px 18px;border:1px solid rgba(102,252,241,0.15);
+      background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);
+      color:var(--accent);font-weight:600;cursor:pointer;letter-spacing:0.6px;
+      transition:all .18s ease;
+    }
+    .btn-upload:hover{transform:translateY(-2px); box-shadow:0 4px 18px rgba(43,214,207,0.06);}
+
+    input[type=file]{position:absolute;left:0;top:0;opacity:0;width:100%;height:100%;cursor:pointer}
+
+    /* 右侧歌词窗口：Apple Music 风格 */
+    .lyrics-shell{
+      display:flex;flex-direction:column;height:100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.008));
+      border-radius:10px;padding:18px;
+      border:1px solid rgba(255,255,255,0.02);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.01);
+    }
+
+    .lyrics-header{
+      display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
+      color:var(--muted);font-size:12px;
+    }
+
+    .lyrics-module{
+      flex:1;overflow:auto;padding:34px 18px;position:relative;
+      background: linear-gradient(180deg, rgba(11,12,16,0.0), rgba(11,12,16,0.02));
+      border-radius:8px;
+      scrollbar-width:thin;
+    }
+    .lyrics-module::-webkit-scrollbar{width:8px}
+    .lyrics-module::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.04);border-radius:8px}
+
+    /* Apple Music like: 中间大字，高亮与模糊 */
+    .lyric-line{
+      text-align:center;margin:6px 0;padding:6px 12px;border-radius:8px;
+      transition: transform .28s cubic-bezier(.2,.9,.3,1), color .22s, opacity .22s, filter .22s;
+      color: rgba(230,238,240,0.55); font-size:15px; line-height:1.4;cursor:pointer;
+      user-select:none;
+    }
+
+    /* 非同步或普通行 */
+    .lyric-line.un-sync{color:rgba(200,210,212,0.75);font-weight:400}
+
+    /* 当前高亮（中心大字） */
+    .lyric-line.active{
+      color:var(--accent);
+      font-size:22px;
+      font-weight:700;
+      transform: scale(1.06);
+      text-shadow:
+         0 2px 20px rgba(102,252,241,0.08),
+         0 6px 30px rgba(11,12,16,0.6);
+      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.6));
+      backdrop-filter: blur(6px);
+    }
+
+    /* 上下文行：小且透明 */
+    .lyric-line.context{
+      color:rgba(180,190,192,0.55);
+      font-size:14px;
+      transform: scale(0.98);
+      opacity:0.7;
+    }
+
+    /* 鼠标样式和 hover 效果 */
+    .lyric-line:hover{
+      transform:translateY(-2px) scale(1.01);
+      color: var(--accent-deep);
+    }
+
+    /* small timestamp hint (hidden usually) */
+    .lyric-line .ts{display:block;font-size:11px;color:rgba(255,255,255,0.2);margin-top:4px}
+
+    .status-bar{grid-column:1/-1;text-align:right;color:var(--muted);font-size:11px;margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="system-container">
+    <div class="visual-module">
+      <div class="cover-art" id="coverArt">
+        <img id="coverImg" src="" alt="cover">
+      </div>
+      <div class="control-panel"><audio id="audioPlayer" controls></audio></div>
+
+      <div class="file-input-wrapper">
+        <button class="btn-upload" id="uploadBtn">LOAD DATA SOURCE</button>
+        <input id="fileInput" type="file" accept=".mp3,.m4a,.wav,.flac,.jpg,.png,.srt,.lrc" multiple>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">*Select audio + same-name .lrc / .srt / image</div>
+    </div>
+
+    <div class="lyrics-shell">
+      <div class="lyrics-header">
+        <div id="songInfo">SYSTEM INIT</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div id="syncMode" style="color:var(--muted)">—</div>
+        </div>
+      </div>
+
+      <div class="lyrics-module" id="lyricsContainer">
+        <div style="margin-top:140px;opacity:0.25;text-align:center">NO DATA</div>
+      </div>
+
+      <div class="status-bar" id="statusBar">System Ready</div>
+    </div>
+  </div>
+
+<script>
+  // ====== DOM & 状态 ======
+  const audioPlayer = document.getElementById('audioPlayer');
+  const coverImg = document.getElementById('coverImg');
+  const fileInput = document.getElementById('fileInput');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const lyricsContainer = document.getElementById('lyricsContainer');
+  const statusBar = document.getElementById('statusBar');
+  const songInfo = document.getElementById('songInfo');
+  const syncMode = document.getElementById('syncMode');
+
+  let lyricsData = [];
+  let isSynchronized = false;
+  let currentActiveLyricIndex = -1;
+  const DEFAULT_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Crect width='300' height='300' fill='%230b0c10'/%3E%3Cpath d='M150 100 L200 180 L100 180 Z' fill='none' stroke='%23333' stroke-width='2'/%3E%3C/svg%3E";
+  coverImg.src = DEFAULT_COVER;
+
+  // 绑定
+  fileInput.addEventListener('change', handleFiles);
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  audioPlayer.addEventListener('timeupdate', timeUpdateHandler);
+  audioPlayer.addEventListener('loadedmetadata', () => updateStatus("System: Audio Ready"));
+
+  // ====== 文件处理（保留 LRC+SRT+ID3 支持） ======
+  async function handleFiles(e){
+    const files = Array.from(e.target.files || []);
+    if (!files.length){ updateStatus("Error: No files provided"); return; }
+
+    // 找音频
+    let audioFile = files.find(f => f.type && f.type.startsWith('audio/')) ||
+                    files.find(f => /\.(mp3|m4a|wav|flac|ogg)$/i.test(f.name));
+    if (!audioFile){ updateStatus("Error: No audio file"); console.warn(files.map(f=>f.name)); return; }
+
+    resetSystem();
+    updateStatus("Load: " + audioFile.name);
+    songInfo.innerText = audioFile.name;
+
+    // 播放
+    const url = URL.createObjectURL(audioFile);
+    audioPlayer.src = url; audioPlayer.load();
+
+    // 读取 ID3
+    const embedded = await readEmbeddedMetadata(audioFile);
+    processCover(audioFile, files, embedded.cover);
+
+    // 处理歌词（LRC 优先 -> SRT -> embedded）
+    await processLyricsLrcSrt(audioFile, files, embedded.lyrics);
+  }
+
+  function resetSystem(){
+    coverImg.src = DEFAULT_COVER;
+    lyricsContainer.innerHTML = '';
+    lyricsData = []; isSynchronized = false; currentActiveLyricIndex = -1;
+    audioPlayer.removeAttribute('src');
+    syncMode.innerText = '—';
+  }
+
+  // ====== ID3 读取（略作精简） ======
+  function readEmbeddedMetadata(audioFile){
+    return new Promise((resolve) => {
+      try {
+        window.jsmediatags.read(audioFile, {
+          onSuccess: function(tag){
+            const data = { cover:null, lyrics:null };
+            const tags = tag.tags || {};
+            if (tags.picture && tags.picture.data && tags.picture.format){
+              let b = "";
+              for (let i=0;i<tags.picture.data.length;i++) b += String.fromCharCode(tags.picture.data[i]);
+              data.cover = "data:" + tags.picture.format + ";base64," + window.btoa(b);
+            }
+            // 简单检查多字段
+            let lyricsText = null;
+            if (tags.USLT) lyricsText = (typeof tags.USLT === 'string' ? tags.USLT : tags.USLT.text);
+            if (!lyricsText && tags.LYRICS) lyricsText = tags.LYRICS;
+            if (!lyricsText && tags.COMM){
+              let c = tags.COMM;
+              if (Array.isArray(c)) c = c.find(x => x.text) || c[0];
+              if (c && c.text) lyricsText = c.text;
+            }
+            if (!lyricsText && tags.TXXX){
+              let t = tags.TXXX;
+              if (!Array.isArray(t)) t = [t];
+              for (const item of t){
+                if (item && (item.description||'').toLowerCase().includes('lyric')){
+                  lyricsText = item.value || item.text || item;
+                  break;
+                }
+                if (!lyricsText && (item.value || item.text)) lyricsText = item.value || item.text;
+              }
+            }
+            if (lyricsText) data.lyrics = lyricsText;
+            console.log("readEmbeddedMetadata -> cover:", !!data.cover, "lyrics present:", !!data.lyrics);
+            resolve(data);
+          },
+          onError: function(err){
+            console.warn("ID3 read error:", err);
+            resolve({cover:null,lyrics:null});
+          }
+        });
+      } catch (ex){
+        console.error("jsmediatags fail:", ex);
+        resolve({cover:null,lyrics:null});
+      }
+    });
+  }
+
+  function processCover(audioFile, allFiles, embeddedCover){
+    if (embeddedCover){ coverImg.src = embeddedCover; updateStatus("Cover: Embedded"); return; }
+    const base = audioFile.name.replace(/\.[^/.]+$/,'').toLowerCase();
+    const img = allFiles.find(f => f.name.replace(/\.[^/.]+$/,'').toLowerCase() === base && /\.(jpe?g|png|webp|gif)$/i.test(f.name));
+    if (img){ coverImg.src = URL.createObjectURL(img); updateStatus("Cover: External"); }
+    else updateStatus("Cover: Default");
+  }
+
+  // ====== 时间转换 ======
+  function timeToSeconds(h,m,s,ms){
+    let msNum = 0;
+    if (ms !== undefined && ms !== null && ms !== '') {
+      const msStr = String(ms).padEnd(3,'0').slice(0,3);
+      msNum = parseInt(msStr,10) || 0;
+    }
+    return parseInt(h,10)*3600 + parseInt(m,10)*60 + parseInt(s,10) + (msNum/1000);
+  }
+
+  // ====== LRC 解析 ======
+  function parseLRC(lrc){
+    if (!lrc) return [];
+    const lines = lrc.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/^\uFEFF/,'').split('\n');
+    let offset = 0; const items=[];
+    for (let raw of lines){
+      raw = raw.trim(); if (!raw) continue;
+      const off = raw.match(/^\[offset:([+-]?\d+)\]/i);
+      if (off){ offset = parseInt(off[1],10)||0; continue; }
+      if (/^\[[a-z]{2,}:/i.test(raw)) continue; // meta
+      const timeTag = /\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
+      let match; const times=[];
+      while ((match = timeTag.exec(raw))!==null){
+        const h=0, mm=match[1], ss=match[2], ms=match[3]||'000';
+        const sec = timeToSeconds(h,mm,ss,ms) + (offset/1000);
+        times.push(sec);
+      }
+      const last = raw.lastIndexOf(']');
+      const text = raw.slice(last+1).trim();
+      if (times.length && text){
+        for (const t of times) items.push({time:t, text});
+      }
+    }
+    // sort & dedupe
+    items.sort((a,b)=>a.time-b.time);
+    const seen=new Set(); const out=[];
+    for (const e of items){
+      const k = Math.round(e.time*1000) + '|' + e.text;
+      if (!seen.has(k)){ seen.add(k); out.push(e); }
+    }
+    console.log("parseLRC ->", out.length);
+    return out;
+  }
+
+  // ====== SRT 解析（宽容） ======
+  function parseSRT(srt){
+    if (!srt) return [];
+    srt = srt.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/^\uFEFF/,'');
+    console.log("parseSRT preview:", srt.slice(0,400).replace(/\n/g,'\\n'));
+    const isVTT = /^\s*WEBVTT/i.test(srt);
+    if (isVTT) srt = srt.replace(/^\s*WEBVTT[^\n]*\n*/,'');
+    const regexes = [
+      /(?:\d+\s*\n)?\s*(\d{2}):(\d{2}):(\d{2})[.,](\d{1,3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[.,](\d{1,3})\s*\n([\s\S]*?)(?=\n{2,}|$)/g,
+      /(?:\d+\s*\n)?\s*(\d{2}):(\d{2}):(\d{2})\s*-->\s*(\d{2}):(\d{2}):(\d{2})\s*\n([\s\S]*?)(?=\n{2,}|$)/g,
+      /(?:\d+\s*\n)?\s*(\d{1,2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?\s*\n([\s\S]*?)(?=\n{2,}|$)/g
+    ];
+    let found=[];
+    for (const regex of regexes){
+      regex.lastIndex = 0;
+      let match;
+      while ((match = regex.exec(srt)) !== null){
+        try{
+          let startH, startM, startS, startMs, text;
+          if (match.length >= 10){
+            startH=match[1]; startM=match[2]; startS=match[3]; startMs=match[4];
+            text = match[9] || '';
+          } else if (match.length >= 7){
+            startH=match[1]; startM=match[2]; startS=match[3]; startMs='000';
+            text = match[7] || '';
+          } else {
+            startH=match[1]||'00'; startM=match[2]||'00'; startS=match[3]||'00'; startMs=match[4]||'000';
+            text = match[match.length-1]||'';
+          }
+          const cleaned = text.trim();
+          if (!cleaned) continue;
+          const startTime = timeToSeconds(startH,startM,startS,startMs);
+          found.push({time:startTime, text: cleaned});
+        }catch(e){ console.warn("srt entry err", e); }
+      }
+      if (found.length) break;
+    }
+    // dedupe & sort
+    const map = new Map();
+    for (const e of found) map.set(Math.round(e.time*1000) + '|' + e.text, e);
+    const out = Array.from(map.values()).sort((a,b)=>a.time-b.time);
+    console.log("parseSRT ->", out.length);
+    return out;
+  }
+
+  // ====== 优先级：LRC -> SRT -> Embeded ======
+  async function processLyricsLrcSrt(audioFile, allFiles, embeddedText){
+    lyricsData = []; isSynchronized = false; currentActiveLyricIndex = -1;
+    const base = audioFile.name.replace(/\.[^/.]+$/,'').toLowerCase();
+
+    // LRC
+    const lrc = allFiles.find(f => f.name.replace(/\.[^/.]+$/,'').toLowerCase() === base && f.name.toLowerCase().endsWith('.lrc'));
+    if (lrc){
+      try{
+        const txt = await lrc.text();
+        const parsed = parseLRC(txt);
+        if (parsed.length){ lyricsData = parsed; isSynchronized = true; renderLyrics(); updateStatus("Lyrics: External LRC (Sync)"); syncMode.innerText = 'LRC'; console.log("LRC parsed:", parsed.length); return; }
+        else console.warn("LRC present but parsed 0");
+      }catch(e){ console.error("read lrc fail", e); }
+    }
+
+    // SRT
+    const srt = allFiles.find(f => f.name.replace(/\.[^/.]+$/,'').toLowerCase() === base && f.name.toLowerCase().endsWith('.srt'));
+    if (srt){
+      try{
+        const txt = await srt.text();
+        const parsed = parseSRT(txt);
+        if (parsed.length){ lyricsData = parsed; isSynchronized = true; renderLyrics(); updateStatus("Lyrics: External SRT (Sync)"); syncMode.innerText = 'SRT'; console.log("SRT parsed:", parsed.length); return; }
+        else console.warn("SRT present but parsed 0");
+      }catch(e){ console.error("read srt fail", e); }
+    }
+
+    // embedded
+    if (embeddedText && typeof embeddedText === 'string'){
+      // 如果像 LRC 则尝试解析为 LRC
+      if (/^\s*\[[0-9]{1,2}:[0-9]{2}/m.test(embeddedText)){
+        const parsed = parseLRC(embeddedText);
+        if (parsed.length){ lyricsData = parsed; isSynchronized = true; renderLyrics(); updateStatus("Lyrics: Embedded LRC (Sync)"); syncMode.innerText = 'Embedded LRC'; console.log("Embedded LRC parsed"); return; }
+      }
+      // 否则当作普通行展示
+      const lines = embeddedText.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length){ lyricsData = lines.map((t,i)=>({time:i*1e6, text:t})); isSynchronized = false; renderLyrics(); updateStatus("Lyrics: Embedded (Unsync)"); syncMode.innerText = 'Embedded; Unsync'; console.log("embedded plain lines", lines.length); return; }
+    }
+
+    updateStatus("Lyrics: None"); syncMode.innerText = '—'; renderLyrics();
+  }
+
+  // ====== 渲染、点击跳转与高亮（Apple Music 风格） ======
+  function renderLyrics(){
+    lyricsContainer.innerHTML = '';
+    currentActiveLyricIndex = -1;
+    if (!lyricsData || !lyricsData.length){
+      lyricsContainer.innerHTML = "<div style='margin-top:140px;opacity:0.25;text-align:center'>NO DATA</div>"; return;
+    }
+
+    // 顶部占位让第一行居中
+    const spacerTop = document.createElement('div'); spacerTop.style.height='140px';
+    lyricsContainer.appendChild(spacerTop);
+
+    lyricsData.forEach((line, idx) => {
+      const div = document.createElement('div');
+      div.className = 'lyric-line' + (isSynchronized ? '' : ' un-sync');
+      div.dataset.time = line.time;
+      div.dataset.index = idx;
+      div.innerHTML = escapeHtml(line.text);
+      // timestamp hint (hidden unless needed)
+      const ts = document.createElement('span'); ts.className='ts'; ts.innerText = formatTime(line.time);
+      div.appendChild(ts);
+
+      // 点击跳转
+      div.addEventListener('click', (ev) => {
+        const t = parseFloat(div.dataset.time);
+        if (!isNaN(t)){
+          audioPlayer.currentTime = t;
+          // 若已经暂停则不自动播放（保留原播放器行为），但是可以播放：
+          // audioPlayer.play();
+        }
+      });
+
+      // 双击快速跳转并播放（可选）
+      div.addEventListener('dblclick', (ev) => {
+        const t = parseFloat(div.dataset.time);
+        if (!isNaN(t)){
+          audioPlayer.currentTime = t;
+          audioPlayer.play();
+        }
+      });
+
+      lyricsContainer.appendChild(div);
+    });
+
+    const spacerBottom = document.createElement('div'); spacerBottom.style.height='160px';
+    lyricsContainer.appendChild(spacerBottom);
+  }
+
+  // 小辅助：转义 HTML 防注入
+  function escapeHtml(s){
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  // 点击高亮逻辑 / 滚动
+  function timeUpdateHandler(){
+    if (!isSynchronized || !lyricsData.length) return;
+    const cur = audioPlayer.currentTime;
+    let next = currentActiveLyricIndex;
+    const start = (currentActiveLyricIndex < 0) ? 0 : currentActiveLyricIndex;
+    for (let i = start; i < lyricsData.length; i++){
+      if (cur >= lyricsData[i].time) next = i;
+      else break;
+    }
+    if (next !== currentActiveLyricIndex){
+      setActiveLyric(next);
+      currentActiveLyricIndex = next;
+    }
+  }
+
+  function setActiveLyric(index){
+    const all = document.querySelectorAll('.lyric-line');
+    // 清理
+    all.forEach(n => { n.classList.remove('active'); n.classList.remove('context'); });
+
+    if (index === -1) return;
+    const active = all[index];
+    if (!active) return;
+
+    // 标记上下文：前两行/后两行为 context
+    const ctxRange = 2;
+    for (let i = Math.max(0,index-ctxRange); i <= Math.min(all.length-1, index+ctxRange); i++){
+      if (i === index) continue;
+      if (all[i]) all[i].classList.add('context');
+    }
+
+    active.classList.add('active');
+
+    // 平滑滚动使 active 居中
+    const containerHeight = lyricsContainer.clientHeight;
+    const top = active.offsetTop;
+    const h = active.clientHeight;
+    window.requestAnimationFrame(() => {
+      lyricsContainer.scrollTop = top - (containerHeight/2) + (h/2);
+    });
+  }
+
+  // ====== 小工具 ======
+  function formatTime(t){
+    if (t == null || isNaN(t)) return '00:00';
+    const hh = Math.floor(t/3600); const mm = Math.floor((t%3600)/60); const ss = Math.floor(t%60);
+    if (hh>0) return `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+    return `${pad(mm)}:${pad(ss)}`;
+  }
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  function updateStatus(m){
+    statusBar.innerText = "STATUS: " + m;
+    console.log(m);
+  }
+
+  // Debug 快捷键（D）
+  window.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'd'){
+      console.log({isSynchronized, lyricsLen: lyricsData.length, sample: lyricsData.slice(0,6)});
+      updateStatus('Debug dumped to console');
+    }
+  });
+
+</script>
+</body>
+</html>

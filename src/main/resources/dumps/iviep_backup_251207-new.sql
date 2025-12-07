@@ -1,0 +1,226 @@
+SET FOREIGN_KEY_CHECKS = 0; -- 禁用外键检查，以便安全地删除和重建表
+
+DROP DATABASE IF EXISTS iviep;
+CREATE DATABASE iviep;
+USE iviep;
+
+DROP TABLE IF EXISTS `stuassignments`;
+DROP TABLE IF EXISTS `fileviewrecords`;
+DROP TABLE IF EXISTS `file`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `class`;
+DROP TABLE IF EXISTS `test`;
+DROP TABLE IF EXISTS `courses`;
+DROP TABLE IF EXISTS `ivversion`;
+
+CREATE TABLE `class` (
+  `class_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `class_name` varchar(100) NOT NULL,
+  PRIMARY KEY (`class_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10000000000 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `courses` (
+  `course_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `course_name` varchar(100) NOT NULL,
+  `course_info` varchar(300) DEFAULT NULL,
+  PRIMARY KEY (`course_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10000000006 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `courses` (`course_id`, `course_name`, `course_info`) VALUES
+(10000000000, 'OOSA&D', 'Object-Oriented System Analysis and Design.'),
+(10000000001, 'Computer Network', 'Computer networking refers to connected computing devices and an ever-expanding array of IoT devices that communicate with one another.'),
+(10000000002, 'Music', 'Listen, just feel your heart!'),
+(10000000003, 'Genshin Impact', 'Step Into a Vast Magical World of Adventure'),
+(10000000004, 'English', NULL),
+(10000000005, 'Temp Recourse', '');
+
+CREATE TABLE `users` (
+  `user_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `phone` varchar(16) NOT NULL,
+  `password` varchar(512) NOT NULL,
+  `class_id` BIGINT DEFAULT NULL, 
+  `eagloxis_id` BIGINT DEFAULT NULL,
+  `way_1_id` varchar(100) DEFAULT NULL,
+  `way_2_id` varchar(100) DEFAULT NULL,
+  `way_3_id` varchar(100) DEFAULT NULL,
+  `way_4_id` varchar(100) DEFAULT NULL,
+  `way_5_id` varchar(100) DEFAULT NULL,
+  `way_6_id` varchar(100) DEFAULT NULL,
+  `authority` enum('normal',' teacher','admin','infinite') NOT NULL,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `email` (`email`),
+  UNIQUE KEY `phone` (`phone`),
+  KEY `class_id` (`class_id`),
+  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `class` (`class_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10000000005 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `users` (`user_id`, `username`, `email`, `phone`, `password`, `class_id`, `eagloxis_id`, `way_1_id`, `way_2_id`, `way_3_id`, `way_4_id`, `way_5_id`, `way_6_id`, `authority`) VALUES
+(10000000000, 'Ravon Gonzales', 'ravongonzales@gmail.com', '+14152836259', '$argon2id$v=19$m=65536,t=3,p=1$55CmHLytIqlWdQguB+chGw$uHhLgR88RwGNhxu35KmFSQSfW2VwLotYWjHUtfdDEXI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'infinite'),
+(10000000001, '114', '1078959112@qq.com', '+8615640993693', '$argon2id$v=19$m=65536,t=3,p=1$0nckdWH+mGAO1TtbWJQQuQ$U7S2iuL56DyaHYsyWdIIntqnsJenaWTACBQYhJwCgY0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'normal'),
+(10000000002, '长青', '1243637340@qq.com', '17347140977', '$argon2id$v=19$m=65536,t=3,p=1$0nckdWH+mGAO1TtbWJQQuQ$U7S2iuL56DyaHYsyWdIIntqnsJenaWTACBQYhJwCgY0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'normal'),
+(10000000003, 'Tester', 'Tester', '0000000000', '$argon2id$v=19$m=65536,t=3,p=1$mH60WgbcZmHsxhzaexLdbg$5qRcBGu1bdso0xgBXZT5e7N8EGKB4V0ua9lEu+0NEvw', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'normal'),
+(10000000004, 'Test', 'ivadmin@test.ravon.tech', '+8618141192117', '$argon2id$v=19$m=65536,t=3,p=1$OnrXIvvI9Lsu/nBm3DXjkw$U6ZpOa6d9yANMlzRM/5fLURw0Ylih7Dte+Au/f4grDc', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'admin');
+
+CREATE TABLE `ivversion` (
+  `commit_id` char(36) NOT NULL,
+  `version` varchar(35) NOT NULL,
+  `update_info` varchar(9999) DEFAULT 'Fix Bugs',
+  PRIMARY KEY (`commit_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `ivversion` VALUES 
+('0a54bac6-9861-11f0-a41f-6b3c1ccfef93','1.1.4.1100.beta.2.aix','Fixed an error when the logged in user does not exist'),
+('1009d1c0-3c4e-11f0-8b9c-a51ae60b576a','1.1.0.1000.beta.1.aix','Update package name; Fix some bugs in history records; Add AiBot page.'),
+('1792e216-3863-11ef-921f-005056c00001','1.0.16.1000.alpha.0','Initial release'),
+('179356c8-3863-11ef-921f-005056c00001','1.0.16.1000.alpha.1','Optimize code logic and add the function of modifying personal information'),
+('1793ca14-3863-11ef-921f-005056c00001','1.0.18.1100.alpha.2','Fixed some known bugs'),
+('17942f51-3863-11ef-921f-005056c00001','1.0.19.1000.alpha.3','Adjusted the logout page logic and add account unregsiter'),
+('17949a88-3863-11ef-921f-005056c00001','1.0.21.1000.alpha.4','Adjusted web page architecture'),
+('2439cb90-3c90-11f0-a211-1b03c85e0ae4','1.1.4.1000.beta.2.aix','Added AiBot function to support exporting chat history; optimized AiBot page; adjusted AiBot Server logic.'),
+('2d36395a-434a-11ef-acd1-005056c00001','1.0.29.5000.alpha.6','1. Added the function of course; 2. Adjust view history; 3. Support more type of viewer; 4. Support admin operation; 5. Fix some known bugs.'),
+('2f2c0b4c-a367-11f0-a218-325096b39f47','1.2.51.1000.beta.1.aix','Added support for 23 languages ​including Simplified Chinese, French, German, etc.'),
+('67cc5000-3b9e-11f0-8b9c-a51ae60b576a','1.0.34.1000.beta.2.aix','Fixed the bug that database automatic backup was not saved; Fixed the bug that users would get an error when directly turning pages on the browsing history page; Optimized the user history structure.'),
+('7aff4c00-3bbb-11f0-8b9c-a51ae60b576a','1.0.34.9000.beta.3.aix','Dynamically display the system version; Optimize user history storage; Display user browsing times, first and last browsing time; Fix some known bugs.'),
+('9dd2f0a9-4349-11ef-acd1-005056c00001','1.0.22.5000.alpha.5','Adjusted web architecture'),
+('ac1f6117-9cfa-11f0-922a-e3cd01e5ca3b','1.1.7.1000.zeta.0.aix','Added multi-language options (currently only supports English); Fixed some known bugs.'),
+('cbd2af32-a37b-11f0-9865-325096b39f47','1.2.55.1000.beta.2.aix','Fixed errors caused by the navigation bar on some pages; Fixed the error that administrators could not modify or delete courses on the course page; Fixed the error that administrators jumped back to the course page after deleting a course on the search page; Adjusted the style of the language selection page.'),
+('e24e0920-3b9b-11f0-8b9c-a51ae60b576a','1.0.30.1000.beta.1.aix','Added automatic database backup for Linux servers'),
+('9bc4dd30-d32b-11f0-9dbd-d964415d14f3','1.2.59.1000.release.aix','Adjusted audio player interface');
+
+CREATE TABLE `file` (
+  `file_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `file_name` varchar(100) NOT NULL,
+  `type` varchar(20) NOT NULL,
+  `course_id` BIGINT DEFAULT NULL, 
+  `remarks` varchar(999) DEFAULT NULL,
+  `upload_user` BIGINT DEFAULT NULL, 
+  `upload_date` date DEFAULT NULL,
+  `file_path` varchar(255) NOT NULL,
+  PRIMARY KEY (`file_id`),
+  UNIQUE KEY `file_path` (`file_path`),
+  KEY `course_id` (`course_id`),
+  KEY `upload_user` (`upload_user`),
+  CONSTRAINT `file_ibfk_1` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`),
+  CONSTRAINT `file_ibfk_2` FOREIGN KEY (`upload_user`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10000000021 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `file` (`file_id`, `file_name`, `type`, `course_id`, `remarks`, `upload_user`, `upload_date`, `file_path`) VALUES
+(10000000000, 'Ferryman', 'pdf', 10000000004, 'Life, death, love - which would you choose?', 10000000001, '2024-07-18', '/doc/Ferryman.pdf'),
+(10000000001, 'The Development and Prospects of Passive Optical Networks (Chinese)', 'mp4', 10000000001, 'PON, developed in the mid-1990s, was oniginally designed to alow Intemet Serice Providers (ISPs) to deliver broadband triple-play senices (data,voice, and video) to residential\nusers.', 10000000001, '2024-07-18', '/media/PON.mp4'),
+(10000000002, 'RFC 9114', 'pdf', 10000000001, 'After5 years, HTTP 3 was finaly standardized as RFC 9114. A new chapter in the web will be opened with RFC 9204 (QPACK header compression) and RFC 9218 (Extensible\r Prioritization)!', 10000000001, '2024-07-18', '/doc/rfc9114.pdf'),
+(10000000003, 'Adapter Java Example', 'java', 10000000000, 'The user has purchased a new three-phase socket and wants to use the newly purchased three-phase socket to use both three-phase and two-phase appliances.', 10000000001, '2024-07-18', '/code/AdapterExample.java'),
+(10000000004, 'Command Java Example', 'java', 10000000000, 'The customer asked the waiter to order Mutton shashlik or chicken, and the chef was responsible for the barbecue.', 10000000001, '2024-07-18', '/code/CommandExample.java'),
+(10000000005, 'Singleton Java Example', 'java', 10000000000, 'The print pool is an application that manages print tasks, allowing a print pool user to delete, abort, or change the priority of the print tasks, only one print pool object can run in a system.', 10000000001, '2024-07-18', '/code/SingletonExample.java'),
+(10000000006, 'Character Demo - Cyno', 'mp4', 10000000003, 'Counsel of Condemnation | Genshin Impact', 10000000001, '2024-07-18', '/media/Character Demo - Cyno Counsel of Condemnation Genshin Impact.mp4'),
+(10000000007, 'Character Teaser - Cyno', 'mp4', 10000000003, 'A Just Punishment | Genshin Impact', 10000000001, '2024-07-18', '/media/Character Teaser - Cyno A Just Punishment Genshin Impact.mp4'),
+(10000000008, '最后时刻 - Li Jian', 'm4a', 10000000002, 'On May 12, 2008, the Wenchuan earthquake. As a singer, the only thing I can do at this moment is to use music to express my care. Li Jian created such a song in the shortest possible time, but it has become the most warm and restrained work among all disaster relief songs. The small love between lovers and relatives replaces the big love in the mainstream voice, and expresses the sadness and love hidden deep in the heart with warm melodies and lyrics.', 10000000001, '2024-07-18', '/media/01 最后时刻.m4a'),
+(10000000009, 'Character Picture - Cyno', 'png', 10000000003, 'Genshin Impact', 10000000001, '2024-07-18', '/image/4d708230-877f-42c0-8cee-fde3304f5278.png'),
+(10000000010, 'VORTEX - 白鲨JAWS', 'mp3', 10000000002, 'The song "VORTEX" is from the album titled "Link Click Season 2 Original Soundtrack" released in 2023. It is produced by Bilibili and written by Michael Yu, who is also the lyricist. The song falls under the genres of rock, TV soundtrack, and theme song. The relatable lyrics and powerful melodies transport me to a world where anything is possible. This song reminds me to embrace the uncertainties of life and to face challenges head-on, knowing that there is always something to hold onto, even in the darkest of times. It is a reminder that we are all part of a larger narrative and that our actions today can shape a better tomorrow.', 10000000001, '2024-07-18', '/media/白鲨JAWS - VORTEX.mp3'),
+(10000000011, 'Shadow Assassins - 王舜禾', 'mp3', 10000000002, 'SCISSOR SEVEN Season 3 (Animation Original Soundtracks)', 10000000001, '2024-07-18', '/media/王舜禾 - 暗影刺客.mp3'),
+(10000000012, 'What are you waiting for? - Nickelback', 'mp3', 10000000002, '“What Are You Waiting For?” is a high‐octane pop-rock rally cry from Nickelback, co‐written by Chad Kroeger and Mike Kroeger. Driven by urgent drums, throbbing bass, and shimmering synth layers, its punchy chorus—“What are you waiting for?”—cuts through complacency like a clarion call. A brief piano-led interlude before the final chorus offers a moment of introspection, only to give way to a full-band explosion that propels listeners from hesitation into action. Since its release as the breakout single from No Fixed Address, it has become a live-show staple, uniting crowds in a shared vow to stop waiting and start living.', 10000000001, '2024-07-18', '/media/Nickelback - What Are You Waiting For_.mp3'),
+(10000000013, 'Do I Matter To Me - 赵寒', 'mp3', 10000000002, '"One day, when the people and things around you are gone, is it still important to you?" "Do I Matter To Me" is the first officially published English lyrics by Zhang Jiacheng, and the whole lyrics use the end of the world as a metaphorical background, describing a person\'s reflection after losing everything when he is most lonely and lost. Using musicians from Beijing, Hong Kong, Canada and the United States, Zhang Jiacheng ripped apart the worldview of nothingness and an instrumental solo before the final chorus.', 10000000001, '2024-07-18', '/media/赵寒 - Do I Matter To Me.mp3'),
+(10000000014, 'I Will Never Get Loved - Milk Coffee', 'mp3', 10000000002, 'SCISSOR SEVEN Season 4 (Animation Original Soundtracks)', 10000000001, '2024-07-18', '/media/牛奶咖啡 - 怀抱的温柔并不属于我.mp3'),
+(10000000015, 'Symphony No. 5 in C minor, Op. 67 (Fate Symphony)', 'mp4', 10000000002, 'The Fifth Symphony in C minor opens with a musical short-short-short-long rhythmic motive. It is said that Beethoven once interpreted the motive of the four tones as "the god of fate is knocking at the door". It dominates the first movement and plays a rather important role throughout the symphony. The whole symphony can be seen as an emotional development, from the conflict and struggle of the first movement in C minor to the triumph and joy of the final movement in C major. The final movement is the climax of the work, which is longer and more powerful in sound than the first movement.', 10000000001, '2024-07-18', '/media/331334530-1-208.mp4'),
+(10000000016, 'Character Picture - Ororon', 'jpg', 10000000003, 'Genshin Impact 5.2', 10000000000, '2024-12-18', '/image/20241208_221123833_iOS.jpg'),
+(10000000017, 'Laptop Details', 'xlsx', 10000000005, '  ', 10000000000, '2025-12-02', '/doc/laptop_detail_data_250406.xlsx'),
+(10000000018, '风吹过的晨曦', 'flac', 10000000002, '', 10000000000, '2025-12-04', '/media/风吹过的晨曦_1.flac'),
+(10000000019, '絵本 - Sān-Z & HOYO-MiX', 'flac', 10000000002, 'This is a “soul’s picture book” of loneliness, struggle and rebirth — shadows crying out in silent nights, chained souls still holding onto hope, gradually breaking free through melody, spreading their wings, and soaring toward the boundless sky.', 10000000000, '2025-12-03', '/media/絵本.flac'),
+(10000000020, '你一定能看见', 'flac', 10000000002, '', 10000000000, '2025-12-07', '/media/你一定能看见.flac');
+
+CREATE TABLE `fileviewrecords` (
+  `record_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `file_id` BIGINT NOT NULL, 
+  `user_id` BIGINT NOT NULL, 
+  `view_duration` int NOT NULL,
+  `view_date` timestamp NOT NULL,
+  `view_count` int NOT NULL DEFAULT '1',
+  `first_view` datetime NOT NULL,
+  PRIMARY KEY (`record_id`),
+  KEY `file_id` (`file_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `fileviewrecords_ibfk_1` FOREIGN KEY (`file_id`) REFERENCES `file` (`file_id`),
+  CONSTRAINT `fileviewrecords_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10000000053 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `fileviewrecords` (`record_id`, `file_id`, `user_id`, `view_duration`, `view_date`, `view_count`, `first_view`) VALUES
+(10000000000, 10000000000, 10000000001, 0, '2024-07-13 11:00:40', 1, '2024-07-13 04:00:40'),
+(10000000001, 10000000001, 10000000001, 0, '2024-07-13 11:00:52', 1, '2024-07-13 04:00:52'),
+(10000000002, 10000000002, 10000000001, 0, '2024-07-13 14:16:37', 1, '2024-07-13 07:16:37'),
+(10000000003, 10000000003, 10000000001, 0, '2024-07-14 11:33:03', 1, '2024-07-14 04:33:03'),
+(10000000004, 10000000004, 10000000001, 0, '2024-07-14 14:50:52', 1, '2024-07-14 07:50:52'),
+(10000000005, 10000000006, 10000000001, 0, '2024-07-15 02:19:25', 1, '2024-07-14 19:19:25'),
+(10000000006, 10000000007, 10000000001, 0, '2024-07-15 02:20:18', 1, '2024-07-14 19:20:18'),
+(10000000007, 10000000008, 10000000001, 0, '2024-07-15 03:23:48', 1, '2024-07-14 20:23:48'),
+(10000000008, 10000000009, 10000000001, 0, '2024-07-15 05:41:14', 1, '2024-07-14 22:41:14'),
+(10000000009, 10000000008, 10000000000, 0, '2025-12-04 13:30:22', 4, '2024-07-16 03:06:36'),
+(10000000010, 10000000010, 10000000001, 0, '2024-07-16 10:22:44', 1, '2024-07-16 03:22:44'),
+(10000000011, 10000000001, 10000000001, 0, '2024-07-16 10:23:43', 1, '2024-07-16 03:23:43'),
+(10000000012, 10000000000, 10000000001, 0, '2024-07-16 10:25:16', 1, '2024-07-16 03:25:16'),
+(10000000013, 10000000010, 10000000000, 0, '2025-10-07 12:31:17', 2, '2024-07-16 03:30:40'),
+(10000000014, 10000000010, 10000000001, 0, '2024-07-16 10:57:49', 1, '2024-07-16 03:57:49'),
+(10000000015, 10000000012, 10000000001, 0, '2024-07-16 11:22:10', 1, '2024-07-16 04:22:10'),
+(10000000016, 10000000013, 10000000001, 0, '2024-07-16 11:23:10', 1, '2024-07-16 04:23:10'),
+(10000000017, 10000000011, 10000000001, 0, '2024-07-16 11:23:18', 1, '2024-07-16 04:23:18'),
+(10000000018, 10000000014, 10000000001, 0, '2024-07-16 11:24:47', 1, '2024-07-16 04:24:47'),
+(10000000019, 10000000014, 10000000002, 0, '2024-07-16 15:53:15', 1, '2024-07-16 08:53:15'),
+(10000000020, 10000000010, 10000000002, 0, '2024-07-16 15:56:28', 1, '2024-07-16 08:56:28'),
+(10000000021, 10000000003, 10000000003, 0, '2024-07-17 01:29:08', 1, '2024-07-16 18:29:08'),
+(10000000022, 10000000001, 10000000003, 0, '2024-07-17 01:30:26', 1, '2024-07-16 18:30:26'),
+(10000000023, 10000000002, 10000000003, 0, '2024-07-17 01:32:43', 1, '2024-07-16 18:32:43'),
+(10000000024, 10000000008, 10000000003, 0, '2024-07-17 01:34:04', 1, '2024-07-16 18:34:04'),
+(10000000025, 10000000003, 10000000000, 0, '2025-12-03 11:16:59', 5, '2024-07-17 00:24:51'),
+(10000000026, 10000000004, 10000000000, 0, '2025-10-07 12:30:51', 2, '2024-07-17 00:24:53'),
+(10000000027, 10000000005, 10000000000, 0, '2025-10-07 12:30:55', 2, '2024-07-17 00:24:54'),
+(10000000028, 10000000001, 10000000000, 0, '2025-10-07 12:31:02', 3, '2024-07-17 00:24:57'),
+(10000000029, 10000000002, 10000000000, 0, '2025-10-07 12:31:09', 2, '2024-07-17 00:24:59'),
+(10000000030, 10000000012, 10000000000, 0, '2025-10-07 12:31:22', 8, '2024-07-17 00:25:02'),
+(10000000031, 10000000013, 10000000000, 0, '2025-12-04 13:30:08', 5, '2024-07-17 00:25:11'),
+(10000000032, 10000000000, 10000000000, 0, '2025-10-15 05:42:59', 3, '2024-07-17 00:30:37'),
+(10000000033, 10000000011, 10000000000, 0, '2025-10-07 12:31:20', 3, '2024-07-17 00:31:41'),
+(10000000034, 10000000009, 10000000000, 0, '2025-10-07 12:31:43', 2, '2024-07-17 00:33:42'),
+(10000000035, 10000000015, 10000000001, 0, '2024-07-18 01:16:54', 1, '2024-07-17 18:16:54'),
+(10000000036, 10000000000, 10000000002, 0, '2024-11-14 07:56:30', 1, '2024-11-13 23:56:30'),
+(10000000037, 10000000013, 10000000002, 0, '2024-11-14 07:58:24', 1, '2024-11-13 23:58:24'),
+(10000000038, 10000000006, 10000000002, 0, '2024-11-14 07:58:38', 1, '2024-11-13 23:58:38'),
+(10000000039, 10000000015, 10000000002, 0, '2024-11-14 07:58:52', 1, '2024-11-13 23:58:52'),
+(10000000040, 10000000016, 10000000000, 0, '2025-10-15 05:50:31', 3, '2024-12-18 19:47:51'),
+(10000000041, 10000000003, 10000000003, 0, '2024-12-19 08:40:57', 1, '2024-12-19 00:40:57'),
+(10000000042, 10000000007, 10000000000, 0, '2025-10-07 12:31:41', 2, '2025-05-28 22:27:51'),
+(10000000043, 10000000014, 10000000000, 0, '2025-10-07 12:31:27', 1, '2025-10-07 20:31:27'),
+(10000000044, 10000000015, 10000000000, 0, '2025-10-07 12:31:29', 1, '2025-10-07 20:31:29'),
+(10000000045, 10000000006, 10000000000, 0, '2025-10-07 12:31:37', 1, '2025-10-07 20:31:37'),
+(10000000046, 10000000017, 10000000000, 0, '2025-12-04 13:37:48', 3, '2025-12-02 17:18:55'),
+(10000000047, 10000000018, 10000000000, 0, '2025-12-04 13:37:28', 4, '2025-12-04 21:24:40'),
+(10000000048, 10000000003, 10000000004, 0, '2025-12-04 13:58:56', 1, '2025-12-04 21:58:56'),
+(10000000049, 10000000002, 10000000004, 0, '2025-12-04 13:59:15', 1, '2025-12-04 21:59:15'),
+(10000000050, 10000000018, 10000000004, 0, '2025-12-04 14:02:37', 2, '2025-12-04 22:02:08'),
+(10000000051, 10000000019, 10000000000, 0, '2025-12-07 03:35:41', 1, '2025-12-07 11:35:41'),
+(10000000052, 10000000020, 10000000000, 0, '2025-12-07 03:36:22', 1, '2025-12-07 11:36:22');
+
+CREATE TABLE `test` (
+  `test_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `test_name` varchar(100) NOT NULL,
+  `course_id` BIGINT NOT NULL, 
+  `test_content` longtext NOT NULL,
+  `test_answer` longtext NOT NULL,
+  PRIMARY KEY (`test_id`),
+  KEY `course_id` (`course_id`),
+  CONSTRAINT `test_ibfk_1` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10000000000 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `stuassignments` (
+  `submission_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `test_id` BIGINT NOT NULL, 
+  `user_id` BIGINT NOT NULL, 
+  `submission_date` datetime NOT NULL,
+  `grade` int DEFAULT NULL,
+  PRIMARY KEY (`submission_id`),
+  KEY `test_id` (`test_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `stuassignments_ibfk_1` FOREIGN KEY (`test_id`) REFERENCES `test` (`test_id`),
+  CONSTRAINT `stuassignments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10000000000 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;

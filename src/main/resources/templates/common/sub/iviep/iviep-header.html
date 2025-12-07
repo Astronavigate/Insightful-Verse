@@ -14,10 +14,11 @@
   limitations under the License.
 -->
 
-<nav class="navbar navbar-expand-md navbar-light" th:fragment="header">
+<nav class="navbar navbar-expand-md liquid" th:fragment="header">
     <div class="container">
         <a class="navbar-brand" href="/InsightfulVerse/" th:text="#{insightful.header.brand}">Insightful Verse</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
@@ -29,8 +30,8 @@
                     <a class="nav-link" href="/InsightfulVerse/Course" th:text="#{insightful.header.course}">Course</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" th:href="${session.user != null and session.user.getUserId() != null ? '/InsightfulVerse/Personal' : '/InsightfulVerse/Login'}">
-                        <span th:text="${session.user != null and session.user.getUserId() != null ? session.user.getUsername() : #messages.msg('insightful.header.login')}">Login</span>
+                    <a class="nav-link" th:href="${session.user != null && session.user.getUserId() != null ? '/InsightfulVerse/Personal' : '/InsightfulVerse/Login'}">
+                        <span th:text="${session.user != null && session.user.getUserId() != null ? session.user.getUsername() : #messages.msg('insightful.header.login')}">Login</span>
                     </a>
                 </li>
                 <li class="nav-item">

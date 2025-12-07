@@ -28,7 +28,7 @@ import lombok.Data;
 public class User implements Serializable {
 
 	@TableId(type = IdType.AUTO)
-	private Integer userId;
+	private Long userId;
 
 	private String username;
 
@@ -38,9 +38,9 @@ public class User implements Serializable {
 
 	private String password;
 
-	private Integer classId;
+	private Long classId;
 
-	private Integer eagloxisId;
+	private Long eagloxisId;
 
 	private String way1Id;
 

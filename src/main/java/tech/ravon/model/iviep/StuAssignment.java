@@ -29,11 +29,11 @@ import lombok.Data;
 public class StuAssignment implements Serializable {
 
     @TableId(type = IdType.AUTO)
-    private Integer submissionId;
+    private Long submissionId;
 
-    private Integer testId;
+    private Long testId;
 
-    private Integer userId;
+    private Long userId;
 
     private Date submissionDate;
 

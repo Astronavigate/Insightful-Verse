@@ -148,7 +148,7 @@
   <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
 </head>
 <body>
-<th:block th:replace="~{common/sub/iviep/iviep-header-intel.html}"></th:block>
+<th:block th:replace="~{common/sub/iviep/iviep-header.html}"></th:block>
 
 <div class="chat-container">
   <div id="chat-history"></div>
@@ -157,13 +157,12 @@
 <div class="input-area">
     <!-- 文本输入和按钮 -->
     <div class="message-input-area">
-    <textarea id="prompt" class="form-control"
-              placeholder="#{insightful.chat.placeholder}"></textarea>
+        <textarea id="prompt" class="form-control" th:placeholder="#{insightful.chat.placeholder}"></textarea>
         <div>
             <!-- File upload controls -->
             <div class="file-upload-area">
                 <input type="file" id="fileInput" accept=".txt,.md,.csv,.doc,.docx">
-                <label for="fileInput" th:text="#{insightful.chat.uploadFile}"></label>
+                <!--label for="fileInput" th:text="#{insightful.chat.uploadFile}"></label-->
             </div>
             <div class="button-group" style="display: inline-block; align-items: center;">
                 <button class="btn btn-primary" style="display: inline;" th:text="#{insightful.chat.send}" onclick="sendPrompt()"></button>

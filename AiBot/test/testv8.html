@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Raven Audio — Animated Lyrics + Audio-React + Word Highlight</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+<style>
+  :root{
+    --bg:#060607;
+    --muted:#9aa0a6;
+    --accent:#66fcf1;
+    --accent-strong:#33e9db;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:"SF Pro Text","Segoe UI",Roboto,-apple-system,Arial;background:linear-gradient(180deg,#050506,#0b0c10);color:#e6eef0}
+  .system-container{width:96vw;max-width:1100px;display:grid;grid-template-columns:380px 1fr;gap:24px;padding:28px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));box-shadow:0 12px 50px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.02)}
+  .visual-module{display:flex;flex-direction:column;align-items:center;gap:18px}
+  .cover-wrap{width:360px;height:360px;border-radius:12px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,0.03);background:#0b0c10}
+  .cover-wrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .9s cubic-bezier(.2,.9,.2,1), filter .9s}
+  .cover-glow{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen}
+  .control-panel audio{width:340px}
+  .btn-upload{border-radius:10px;padding:9px 20px;border:1px solid rgba(102,252,241,0.12);background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);color:var(--accent);font-weight:700;cursor:pointer}
+  .file-input{position:absolute;left:0;top:0;opacity:0;width:100%;height:100%;cursor:pointer}
+
+  .lyrics-shell{position:relative;display:flex;flex-direction:column;border-radius:12px;padding:18px;overflow:hidden}
+  .bg-layer{position:absolute;inset:0;border-radius:12px;overflow:hidden;pointer-events:none;z-index:0;display:flex;align-items:center;justify-content:center}
+  .bg-img{position:absolute;inset:-10%;background-size:cover;background-position:center center;transform:scale(1.08);filter:blur(30px) saturate(1.05) contrast(0.9);opacity:0;transition:opacity .85s ease, transform .95s cubic-bezier(.2,.9,.2,1)}
+  .bg-overlay{position:absolute;inset:0;background:linear-gradient(180deg, rgba(11,12,16,0.42), rgba(8,9,11,0.76));backdrop-filter: blur(2px);opacity:1}
+  .lyrics-content{position:relative;z-index:2;display:flex;flex-direction:column;height:100%}
+  .lyrics-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:var(--muted);font-size:12px}
+  .lyrics-module{flex:1;border-radius:8px;padding:28px 24px;overflow:auto;scroll-behavior:smooth;position:relative;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
+  .lyrics-module::-webkit-scrollbar{width:10px}
+  .lyrics-module::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.45);border-radius:10px}
+
+  .lyric-line{display:block;text-align:center;margin:8px 0;padding:6px 10px;border-radius:10px;cursor:pointer;color:rgba(230,238,240,0.72);font-size:15px;line-height:1.45;user-select:none;transform:translateY(8px) scale(0.995);opacity:0;transition:transform .36s cubic-bezier(.2,.9,.3,1),opacity .36s, color .22s, text-shadow .22s, filter .22s;will-change:transform,opacity}
+  .lyric-line.visible{transform:translateY(0) scale(1);opacity:1}
+  .lyric-line.un-sync{color:rgba(200,210,212,0.9)}
+  .lyric-line.active{color:var(--accent);font-size:22px;font-weight:800;transform:scale(1.06);text-shadow:0 6px 28px rgba(102,252,241,0.09),0 10px 40px rgba(8,9,11,0.7);filter:drop-shadow(0 10px 40px rgba(0,0,0,0.55))}
+  .lyric-line.context{color:rgba(190,200,202,0.6);font-size:14px;opacity:0.85;transform:scale(0.99)}
+  .lyric-word{display:inline-block;transition:color .18s, transform .15s; padding:0 1px}
+  .lyric-word.active-word{color:var(--accent-strong);font-weight:700;transform:scale(1.02);text-shadow:0 6px 20px rgba(102,252,241,0.06)}
+
+  .mask-top,.mask-bottom{position:absolute;left:0;right:0;height:80px;pointer-events:none;z-index:3}
+  .mask-top{top:18px;background:linear-gradient(180deg, rgba(11,12,16,0.96), rgba(11,12,16,0.0))}
+  .mask-bottom{bottom:18px;background:linear-gradient(180deg, rgba(11,12,16,0.0), rgba(11,12,16,0.96))}
+  .status-bar{grid-column:1/-1;text-align:right;color:var(--muted);font-size:11px;margin-top:12px;z-index:5;position:relative}
+
+  /* small helper */
+  .tiny{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="system-container">
+    <div class="visual-module">
+      <div class="cover-wrap">
+        <img id="coverImg" src="" alt="cover">
+        <div class="cover-glow" id="coverGlow"></div>
+      </div>
+      <div class="control-panel">
+        <audio id="audioPlayer" controls></audio>
+      </div>
+      <div style="position:relative">
+        <button class="btn-upload" id="uploadBtn">LOAD DATA SOURCE</button>
+        <input id="fileInput" class="file-input" type="file" accept=".mp3,.m4a,.wav,.flac,.jpg,.png,.srt,.lrc" multiple>
+      </div>
+      <div class="tiny">*Select audio + same-name .lrc / .srt / image</div>
+    </div>
+
+    <div class="lyrics-shell">
+      <div class="bg-layer" id="bgLayer">
+        <div class="bg-img" id="bgImg"></div>
+        <div class="bg-overlay"></div>
+      </div>
+
+      <div class="lyrics-content">
+        <div class="lyrics-header">
+          <div id="songInfo">SYSTEM INIT</div>
+          <div id="syncMode" class="tiny">—</div>
+        </div>
+
+        <div class="lyrics-module" id="lyricsContainer">
+          <div style="margin-top:120px;opacity:0.22;text-align:center">NO DATA</div>
+        </div>
+
+        <div class="mask-top"></div>
+        <div class="mask-bottom"></div>
+        <div class="status-bar" id="statusBar">System Ready</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =========================
+   CONFIG (可调)
+   ========================= */
+const CONFIG = {
+  audioReact: {
+    enabled: true,
+    // 将 RMS 映射到 blur range（px）和 cover scale
+    blurMin: 18,
+    blurMax: 36,
+    coverScaleMin: 1.00,
+    coverScaleMax: 1.06,
+    sensitivity: 1.2, // 放大 RMS 的灵敏度
+    smoothing: 0.85 // 指数平滑系数 (0-1), 越大越平滑
+  },
+  coverHighlight: {
+    scaleOnLyric: 1.07,
+    hueRotateDeg: 12,
+    transitionMs: 650
+  },
+  wordHighlight: {
+    enabled: true,
+    // 若逐词时间不可用，仍可做每行逐字淡入（不逐字高亮）
+  }
+};
+
+/* =========================
+   DOM & 状态
+   ========================= */
+const audioPlayer = document.getElementById('audioPlayer');
+const fileInput = document.getElementById('fileInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const coverImg = document.getElementById('coverImg');
+const bgImg = document.getElementById('bgImg');
+const bgLayer = document.getElementById('bgLayer');
+const lyricsContainer = document.getElementById('lyricsContainer');
+const statusBar = document.getElementById('statusBar');
+const songInfo = document.getElementById('songInfo');
+const syncMode = document.getElementById('syncMode');
+const coverGlow = document.getElementById('coverGlow');
+
+let lyricsData = []; // [{time:sec, text, words?: [{time:sec, text}], rawText }]
+let isSynchronized = false;
+let currentActiveLyricIndex = -1;
+let audioContext = null;
+let analyser = null;
+let sourceNode = null;
+let analyserDataArray = null;
+let lastRms = 0;
+const DEFAULT_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Crect width='600' height='600' fill='%230b0c10'/%3E%3Cpath d='M300 200 L400 360 L200 360 Z' fill='none' stroke='%23333' stroke-width='3'/%3E%3C/svg%3E";
+coverImg.src = DEFAULT_COVER;
+setBgImage(DEFAULT_COVER, true);
+
+/* events */
+fileInput.addEventListener('change', handleFiles);
+uploadBtn.addEventListener('click', ()=>fileInput.click());
+audioPlayer.addEventListener('timeupdate', timeUpdateHandler);
+audioPlayer.addEventListener('loadedmetadata', ()=>updateStatus('Audio Ready'));
+audioPlayer.addEventListener('play', initAudioContextIfNeeded);
+
+/* =========== FILE / METADATA / LYRICS =========== */
+async function handleFiles(e){
+  const files = Array.from(e.target.files || []);
+  if (!files.length){ updateStatus("Error: No files provided"); return; }
+
+  // find audio
+  let audioFile = files.find(f => f.type && f.type.startsWith('audio/')) ||
+                  files.find(f => /\.(mp3|m4a|wav|flac|ogg)$/i.test(f.name));
+  if (!audioFile){ updateStatus("Error: No audio file"); console.warn(files.map(f=>f.name)); return; }
+
+  resetSystem();
+  updateStatus("Load: " + audioFile.name);
+  songInfo.innerText = audioFile.name;
+
+  const url = URL.createObjectURL(audioFile);
+  audioPlayer.src = url; audioPlayer.load();
+
+  // read id3 metadata (cover/embedded)
+  const embedded = await readEmbeddedMetadata(audioFile);
+
+  // cover prefer embedded -> external
+  processCover(audioFile, files, embedded.cover);
+
+  // lyrics priority: LRC -> SRT -> embedded
+  await processLyricsLrcSrt(audioFile, files, embedded.lyrics);
+}
+
+function resetSystem(){
+  coverImg.src = DEFAULT_COVER;
+  setBgImage(DEFAULT_COVER, true);
+  lyricsContainer.innerHTML = '';
+  lyricsData = []; isSynchronized = false; currentActiveLyricIndex = -1;
+  audioPlayer.removeAttribute('src');
+  syncMode.innerText = '—';
+  // reset audio react
+  lastRms = 0;
+  disconnectAudioContext();
+}
+
+/* --- ID3 using jsmediatags --- */
+function readEmbeddedMetadata(audioFile){
+  return new Promise((resolve) => {
+    try {
+      window.jsmediatags.read(audioFile, {
+        onSuccess: function(tag){
+          const data = { cover:null, lyrics:null };
+          const tags = tag.tags || {};
+          if (tags.picture && tags.picture.data && tags.picture.format){
+            let b = "";
+            for (let i=0;i<tags.picture.data.length;i++) b += String.fromCharCode(tags.picture.data[i]);
+            data.cover = "data:" + tags.picture.format + ";base64," + window.btoa(b);
+          }
+          let lyricsText = null;
+          if (tags.USLT) lyricsText = (typeof tags.USLT === 'string' ? tags.USLT : tags.USLT.text);
+          if (!lyricsText && tags.LYRICS) lyricsText = tags.LYRICS;
+          if (!lyricsText && tags.COMM){
+            let c = tags.COMM;
+            if (Array.isArray(c)) c = c.find(x => x.text) || c[0];
+            if (c && c.text) lyricsText = c.text;
+          }
+          if (!lyricsText && tags.TXXX){
+            let t = tags.TXXX; if (!Array.isArray(t)) t = [t];
+            for (const item of t){ if (item && (item.description||'').toLowerCase().includes('lyric')){ lyricsText = item.value || item.text || item; break; } }
+          }
+          if (lyricsText) data.lyrics = lyricsText;
+          console.log("readEmbeddedMetadata -> cover:", !!data.cover, "lyrics present:", !!data.lyrics);
+          resolve(data);
+        },
+        onError: function(err){
+          console.warn("ID3 read error:", err);
+          resolve({cover:null,lyrics:null});
+        }
+      });
+    } catch (ex) {
+      console.error("jsmediatags fail:", ex);
+      resolve({cover:null,lyrics:null});
+    }
+  });
+}
+
+/* --- cover and background --- */
+function processCover(audioFile, allFiles, embeddedCover){
+  if (embeddedCover){
+    coverImg.src = embeddedCover;
+    setBgImage(embeddedCover);
+    updateStatus("Cover: Embedded");
+    return;
+  }
+  const base = audioFile.name.replace(/\.[^/.]+$/,'').toLowerCase();
+  const img = allFiles.find(f => f.name.replace(/\.[^/.]+$/,'').toLowerCase() === base && /\.(jpe?g|png|webp|gif)$/i.test(f.name));
+  if (img){
+    const url = URL.createObjectURL(img);
+    coverImg.src = url; setBgImage(url); updateStatus("Cover: External");
+  } else { updateStatus("Cover: Default"); setBgImage(DEFAULT_COVER); }
+}
+
+// fade background image in
+function setBgImage(url, immediate=false){
+  const newBg = document.createElement('div');
+  newBg.className = 'bg-img';
+  newBg.style.backgroundImage = `url('${url}')`;
+  newBg.style.opacity = immediate ? '1' : '0';
+  newBg.style.transform = 'scale(1.12)';
+  bgLayer.insertBefore(newBg, bgLayer.firstChild);
+  void newBg.offsetWidth;
+  requestAnimationFrame(()=>{ newBg.style.opacity = '1'; newBg.style.transform = 'scale(1.00)'; });
+  setTimeout(()=>{
+    const imgs = bgLayer.querySelectorAll('.bg-img');
+    for (let i=0;i<imgs.length-1;i++){ try{ imgs[i].remove(); }catch(e){} }
+  }, 950);
+}
+
+/* =========== PARSERS: LRC & SRT (and word timestamps) =========== */
+/* timeToSeconds supports variable ms length */
+function timeToSeconds(h,m,s,ms){
+  let msNum = 0;
+  if (ms !== undefined && ms !== null && ms !== '') {
+    const msStr = String(ms).padEnd(3,'0').slice(0,3);
+    msNum = parseInt(msStr,10) || 0;
+  }
+  return parseInt(h,10)*3600 + parseInt(m,10)*60 + parseInt(s,10) + (msNum/1000);
+}
+
+/* Parse LRC — support per-word tags like <00:01.234>word or word<00:01.234> or word{00:01.234} */
+function parseLRC(lrc){
+  if (!lrc) return [];
+  const lines = lrc.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/^\uFEFF/,'').split('\n');
+  let offset = 0; const items=[];
+  for (let raw of lines){
+    raw = raw.trim(); if (!raw) continue;
+    const off = raw.match(/^\[offset:([+-]?\d+)\]/i);
+    if (off){ offset = parseInt(off[1],10)||0; continue; }
+    if (/^\[[a-z]{2,}:/i.test(raw)) continue;
+    // extract time tags [mm:ss.xx] at line head (may be multiple)
+    const lineTimeTags = [];
+    const lineTimeTagRegex = /\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
+    let m;
+    while ((m = lineTimeTagRegex.exec(raw)) !== null){
+      const sec = timeToSeconds(0, m[1], m[2], m[3]||'000') + (offset/1000);
+      lineTimeTags.push(sec);
+    }
+    // remove bracket time tags to isolate lyric body
+    const body = raw.replace(lineTimeTagRegex, '').trim();
+    if (!body) continue;
+
+    // try to extract per-word timestamps. Support:
+    // 1) <mm:ss.xx>word   or   word<mm:ss.xx>
+    // 2) word{mm:ss.xx}
+    // 3) <mm:ss.xx> might be absolute or relative. We will accept absolute times first.
+    // We'll try to find patterns like <hh:mm:ss.xx> too (but common is mm:ss)
+    const wordTimePattern = /(?:<(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?>)|(?:\{(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\})/g;
+    // We'll parse whole body left-to-right, extracting words and times associated.
+    // Approach: split on spaces, but preserve tokens that include time tags.
+    // Simpler robust approach: find all <time> and {time} tags and their positions, then split text by these tags.
+    // We'll also support inline pattern like word<00:01.23>
+    // Build an array of parts: either {type:'time',sec} or {type:'text',text}
+    const parts = [];
+    let idx = 0;
+    wordTimePattern.lastIndex = 0;
+    while ((m = wordTimePattern.exec(body)) !== null){
+      const tagStart = m.index;
+      if (tagStart > idx){
+        parts.push({type:'text', text: body.slice(idx, tagStart)});
+      }
+      // m groups: 1,2,3 or 4,5,6
+      if (m[1] !== undefined){
+        parts.push({type:'time', sec: timeToSeconds(0, m[1], m[2], m[3]||'000')});
+      } else {
+        parts.push({type:'time', sec: timeToSeconds(0, m[4], m[5], m[6]||'000')});
+      }
+      idx = wordTimePattern.lastIndex;
+    }
+    if (idx < body.length){
+      parts.push({type:'text', text: body.slice(idx)});
+    }
+    // Now convert parts into words with times where possible.
+    // We'll split text parts by whitespace to get words, then associate preceding or following time tags if exist.
+    const words = [];
+    let pendingTime = null;
+    for (const p of parts){
+      if (p.type === 'time'){
+        // If next text contains words, we'll associate this time with next word (common pattern <time>word)
+        pendingTime = p.sec;
+      } else {
+        // split p.text by spaces but keep punctuation
+        const segs = p.text.split(/(\s+)/).filter(x => x.length>0);
+        for (const s of segs){
+          if (/^\s+$/.test(s)){
+            // whitespace; skip
+            continue;
+          }
+          // s is a chunk that may contain trailing time tags we didn't capture (like word<time>) — but earlier regex should capture <time>
+          const cleaned = s.trim();
+          if (cleaned.length === 0) continue;
+          // assign time: either pendingTime, or none
+          if (pendingTime !== null){
+            words.push({text: cleaned, time: pendingTime});
+            pendingTime = null;
+          } else {
+            words.push({text: cleaned, time: null});
+          }
+        }
+      }
+    }
+
+    // If words contain times for some words (not all), and lineTimeTags exists, we will interpret times as absolute if they are realistic.
+    // If words have times all null but lineTimeTags present, then create a line entry with lineTimeTags (one per tag)
+    if (words.some(w => w.time !== null)){
+      // If a word time is smaller than earliest lineTimeTag, maybe it's relative to lineTime — try to reconcile:
+      if (lineTimeTags.length > 0){
+        // If word times are mostly < 1 hour and less than lineTimeTags[0] + 1, we consider them absolute; otherwise we check if they seem relative (small)
+        // Simpler: if max(word.time) - min(word.time) < 300 (reasonable), we keep absolute.
+      }
+      // For each word lacking time, we can approximate by spacing evenly between neighboring word-times or whole-line time.
+      // For simplicity: perform a pass to fill null times by linear interpolation between nearest known times, or fallback to line start + 0.0
+      // First compute baseTime: if lineTimeTags exists use first as baseTime
+      const baseLineTime = lineTimeTags.length>0 ? lineTimeTags[0] : null;
+      // Convert word.time possibly absolute; if baseLineTime exists and many word times are small (<3600) and less than baseLineTime, we assume word times are relative and add baseLineTime.
+      const wordTimesVals = words.map(w => w.time).filter(x=>x!=null);
+      // Fill nulls by interpolation
+      // Prepare arrays of indices with known times
+      const knownIdx = [];
+      for (let i=0;i<words.length;i++) if (words[i].time!=null) knownIdx.push(i);
+      if (knownIdx.length === 0){
+        // No known word times; fallback to produce words without times
+        lyricsDataPushLine(words.map(w=>w.text).join(' '), lineTimeTags, words);
+      } else {
+        // Fill head nulls with first known time or baseLineTime
+        for (let i=0;i<words.length;i++){
+          if (words[i].time==null){
+            // find neighbors
+            // find prev known
+            let prev = null; for (let j=i-1;j>=0;j--) if (words[j].time!=null){ prev=j; break; }
+            let next = null; for (let j=i+1;j<words.length;j++) if (words[j].time!=null){ next=j; break; }
+            let assign = null;
+            if (prev!=null && next!=null){
+              // linear interpolate
+              const tPrev = words[prev].time; const tNext = words[next].time;
+              const ratio = (i - prev) / (next - prev);
+              assign = tPrev + (tNext - tPrev) * ratio;
+            } else if (prev!=null){
+              assign = words[prev].time + 0.15 * (i - prev); // spacing 150ms
+            } else if (next!=null){
+              assign = words[next].time - 0.15 * (next - i);
+            } else if (baseLineTime!=null){
+              assign = baseLineTime + (i * 0.3);
+            } else {
+              assign = 0;
+            }
+            words[i].time = assign;
+          }
+        }
+        // Now push a single line entry containing words array
+        lyricsDataPushLine(words.map(w=>w.text).join(' '), lineTimeTags, words);
+      }
+    } else {
+      // No per-word times — fallback
+      if (lineTimeTags.length>0){
+        // each tag becomes a separate line (common when multiple [mm:ss.xx] applied)
+        for (const t of lineTimeTags){
+          lyricsDataPushLine(body, [t], null);
+        }
+      } else {
+        // no timestamps at all — skip (embedded plain lines handled later)
+        lyricsDataPushLine(body, [], null);
+      }
+    }
+  } // end for lines
+
+  // Helper: push a parsed line to items
+  function lyricsDataPushLine(text, timesArr, wordsArr){
+    if (timesArr && timesArr.length>0){
+      for (const t of timesArr) {
+        items.push({time: t, text: text, words: wordsArr ? wordsArr.map(w=>({time:w.time, text:w.text})) : null, rawText: text});
+      }
+    } else {
+      // no explicit time — store as unsynced line
+      items.push({time: null, text: text, words: wordsArr ? wordsArr.map(w=>({time:w.time, text:w.text})) : null, rawText: text});
+    }
+  }
+
+  // sort by time, placing null-times at end
+  const synced = items.filter(it => it.time != null).sort((a,b)=>a.time - b.time);
+  const unsynced = items.filter(it => it.time == null);
+  const out = synced.concat(unsynced);
+  console.log("parseLRC ->", out.length, out.slice(0,6));
+  return out;
+}
+
+/* SRT parser (宽容) */
+function parseSRT(srt){
+  if (!srt) return [];
+  srt = srt.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/^\uFEFF/,'');
+  console.log("parseSRT preview:", srt.slice(0,400).replace(/\n/g,'\\n'));
+  const isVTT = /^\s*WEBVTT/i.test(srt);
+  if (isVTT) srt = srt.replace(/^\s*WEBVTT[^\n]*\n*/,'');
+  const regexes = [
+    /(?:\d+\s*\n)?\s*(\d{2}):(\d{2}):(\d{2})[.,](\d{1,3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[.,](\d{1,3})\s*\n([\s\S]*?)(?=\n{2,}|$)/g,
+    /(?:\d+\s*\n)?\s*(\d{2}):(\d{2}):(\d{2})\s*-->\s*(\d{2}):(\d{2}):(\d{2})\s*\n([\s\S]*?)(?=\n{2,}|$)/g,
+    /(?:\d+\s*\n)?\s*(\d{1,2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?\s*\n([\s\S]*?)(?=\n{2,}|$)/g
+  ];
+  let found=[];
+  for (const regex of regexes){
+    regex.lastIndex = 0;
+    let match;
+    while ((match = regex.exec(srt)) !== null){
+      try {
+        let startH,startM,startS,startMs,text;
+        if (match.length>=10){
+          startH=match[1]; startM=match[2]; startS=match[3]; startMs=match[4];
+          text = match[9] || '';
+        } else if (match.length>=7){
+          startH=match[1]; startM=match[2]; startS=match[3]; startMs='000';
+          text = match[7] || '';
+        } else {
+          startH=match[1]||'00'; startM=match[2]||'00'; startS=match[3]||'00'; startMs=match[4]||'000';
+          text = match[match.length-1]||'';
+        }
+        const cleaned = text.trim();
+        if (!cleaned) continue;
+        const startTime = timeToSeconds(startH,startM,startS,startMs);
+        found.push({time:startTime, text: cleaned, words: null, rawText: cleaned});
+      } catch(e){ console.warn("srt entry err", e); }
+    }
+    if (found.length) break;
+  }
+  const map = new Map();
+  for (const e of found) map.set(Math.round(e.time*1000) + '|' + e.text, e);
+  const out = Array.from(map.values()).sort((a,b)=>a.time-b.time);
+  console.log("parseSRT ->", out.length);
+  return out;
+}
+
+/* =========== Priority handling: LRC -> SRT -> Embedded =========== */
+async function processLyricsLrcSrt(audioFile, allFiles, embeddedText){
+  lyricsData = []; isSynchronized = false; currentActiveLyricIndex = -1;
+  const base = audioFile.name.replace(/\.[^/.]+$/,'').toLowerCase();
+
+  // LRC
+  const lrc = allFiles.find(f => f.name.replace(/\.[^/.]+$/,'').toLowerCase() === base && f.name.toLowerCase().endsWith('.lrc'));
+  if (lrc){
+    try { const txt = await lrc.text(); const parsed = parseLRC(txt); if (parsed.length){ lyricsData = parsed; isSynchronized = parsed.some(p=>p.time!=null); renderLyrics(); updateStatus("Lyrics: External LRC"); syncMode.innerText='LRC'; console.log("LRC parsed", parsed.length); return; } else console.warn("LRC parsed 0"); } catch(e){ console.error("read lrc fail", e); }
+  }
+
+  // SRT
+  const srt = allFiles.find(f => f.name.replace(/\.[^/.]+$/,'').toLowerCase() === base && f.name.toLowerCase().endsWith('.srt'));
+  if (srt){
+    try { const txt = await srt.text(); const parsed = parseSRT(txt); if (parsed.length){ lyricsData = parsed; isSynchronized = parsed.some(p=>p.time!=null); renderLyrics(); updateStatus("Lyrics: External SRT"); syncMode.innerText='SRT'; console.log("SRT parsed", parsed.length); return; } else console.warn("SRT parsed 0"); } catch(e){ console.error("read srt fail", e); }
+  }
+
+  // embedded
+  if (embeddedText && typeof embeddedText === 'string'){
+    if (/^\s*\[[0-9]{1,2}:[0-9]{2}/m.test(embeddedText)){
+      const parsed = parseLRC(embeddedText);
+      if (parsed.length){ lyricsData = parsed; isSynchronized = parsed.some(p=>p.time!=null); renderLyrics(); updateStatus("Lyrics: Embedded LRC"); syncMode.innerText='Embedded LRC'; console.log("Embedded LRC parsed"); return; }
+    }
+    const lines = embeddedText.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length){ lyricsData = lines.map((t,i)=>({time:null, text:t, words:null, rawText:t})); isSynchronized=false; renderLyrics(); updateStatus("Lyrics: Embedded (Unsync)"); syncMode.innerText='Embedded; Unsync'; console.log("embedded plain", lines.length); return; }
+  }
+
+  updateStatus("Lyrics: None"); syncMode.innerText='—'; renderLyrics();
+}
+
+/* =========== RENDER + CLICK-TO-SEEK + WORD HIGHLIGHT =========== */
+function renderLyrics(){
+  lyricsContainer.innerHTML = '';
+  currentActiveLyricIndex = -1;
+  if (!lyricsData || !lyricsData.length){
+    lyricsContainer.innerHTML = "<div style='margin-top:120px;opacity:0.22;text-align:center'>NO DATA</div>"; return;
+  }
+
+  const spacerTop = document.createElement('div'); spacerTop.style.height='140px';
+  lyricsContainer.appendChild(spacerTop);
+
+  lyricsData.forEach((line, idx) => {
+    const div = document.createElement('div');
+    div.className = 'lyric-line' + (isSynchronized ? '' : ' un-sync');
+    div.dataset.time = line.time != null ? line.time : '';
+    div.dataset.index = idx;
+
+    // render words if available
+    if (line.words && line.words.length){
+      // Create word spans; words may include times
+      div.innerHTML = '';
+      for (let wIdx=0; wIdx<line.words.length; wIdx++){
+        const w = line.words[wIdx];
+        const span = document.createElement('span');
+        span.className = 'lyric-word';
+        span.dataset.wordIndex = wIdx;
+        if (w.time!=null) span.dataset.wordTime = w.time;
+        span.innerText = w.text + (wIdx < line.words.length -1 ? ' ' : '');
+        div.appendChild(span);
+      }
+    } else {
+      div.innerHTML = escapeHtml(line.text);
+    }
+
+    // click -> seek to line or first word
+    div.addEventListener('click', ()=> {
+      // if first word has time, seek to it; else use line time
+      let target = null;
+      if (line.words && line.words.length){
+        const firstWith = line.words.find(w=>w.time!=null);
+        if (firstWith) target = firstWith.time;
+      }
+      if (target == null && line.time != null) target = line.time;
+      if (target != null) audioPlayer.currentTime = target;
+    });
+
+    div.addEventListener('dblclick', ()=>{
+      let target = null;
+      if (line.words && line.words.length){
+        const firstWith = line.words.find(w=>w.time!=null);
+        if (firstWith) target = firstWith.time;
+      }
+      if (target == null && line.time != null) target = line.time;
+      if (target != null){ audioPlayer.currentTime = target; audioPlayer.play(); }
+    });
+
+    lyricsContainer.appendChild(div);
+  });
+
+  const spacerBottom = document.createElement('div'); spacerBottom.style.height='160px';
+  lyricsContainer.appendChild(spacerBottom);
+
+  // stagger reveal
+  const nodes = lyricsContainer.querySelectorAll('.lyric-line');
+  nodes.forEach((n, i) => {
+    n.classList.remove('visible');
+    const delay = Math.min(260, 8 + i*6);
+    setTimeout(()=> n.classList.add('visible'), delay);
+  });
+
+  if (isSynchronized && lyricsData.length>0) currentActiveLyricIndex = -1;
+}
+
+/* =========== Time update: highlight line + word =========== */
+function timeUpdateHandler(){
+  // audio-react visuals
+  if (CONFIG.audioReact.enabled) sampleAudioReact();
+
+  if (!isSynchronized || !lyricsData.length) return;
+  const cur = audioPlayer.currentTime;
+  let next = currentActiveLyricIndex;
+  // optimize: start from currentActiveLyricIndex
+  const start = (currentActiveLyricIndex < 0) ? 0 : currentActiveLyricIndex;
+  for (let i = start; i < lyricsData.length; i++){
+    if (lyricsData[i].time != null && cur >= lyricsData[i].time) next = i;
+    else if (lyricsData[i].time != null && cur < lyricsData[i].time) break;
+  }
+  // also check earlier lines in case of seeking backward
+  if (next === currentActiveLyricIndex){
+    for (let i = Math.max(0, start-8); i >=0; i--){
+      if (lyricsData[i].time != null && cur >= lyricsData[i].time) { next = i; break; }
+    }
+  }
+
+  if (next !== currentActiveLyricIndex){
+    setActiveLyric(next);
+    currentActiveLyricIndex = next;
+  }
+
+  // per-word highlight if line has words with times
+  if (currentActiveLyricIndex !== -1){
+    const line = lyricsData[currentActiveLyricIndex];
+    if (line && line.words && line.words.length){
+      // find current word index
+      let wIndex = -1;
+      for (let i=0;i<line.words.length;i++){
+        if (line.words[i].time != null && cur >= line.words[i].time) wIndex = i;
+        else break;
+      }
+      highlightWordInLine(currentActiveLyricIndex, wIndex);
+    }
+  }
+}
+
+/* highlight mechanics */
+function setActiveLyric(index){
+  const all = document.querySelectorAll('.lyric-line');
+  all.forEach(n => { n.classList.remove('active'); n.classList.remove('context'); });
+
+  if (index === -1) return;
+  const active = all[index];
+  if (!active) return;
+
+  // context before/after
+  const ctx=2;
+  for (let i=Math.max(0, index-ctx); i<=Math.min(all.length-1, index+ctx); i++){
+    if (i===index) continue;
+    if (all[i]) all[i].classList.add('context');
+  }
+  active.classList.add('active');
+
+  // smooth scroll center
+  const containerHeight = lyricsContainer.clientHeight;
+  const top = active.offsetTop;
+  const h = active.clientHeight;
+  const target = top - (containerHeight/2) + (h/2);
+  smoothScrollTo(lyricsContainer, target, 360);
+
+  // animate cover on lyric change
+  animateCoverOnHighlight();
+}
+
+/* highlight single word span in a line */
+function highlightWordInLine(lineIndex, wordIndex){
+  const lineNodes = lyricsContainer.querySelectorAll('.lyric-line');
+  const node = lineNodes[lineIndex];
+  if (!node) return;
+  const spans = node.querySelectorAll('.lyric-word');
+  spans.forEach(s => s.classList.remove('active-word'));
+  if (wordIndex >= 0 && spans[wordIndex]) spans[wordIndex].classList.add('active-word');
+}
+
+/* smooth scroll helper */
+function smoothScrollTo(element, to, duration){
+  const start = element.scrollTop;
+  const change = to - start;
+  const startTime = performance.now();
+  function animate(now){
+    const elapsed = now - startTime;
+    const t = Math.min(1, elapsed/duration);
+    const eased = t<0.5 ? 2*t*t : -1 + (4-2*t)*t;
+    element.scrollTop = start + change*eased;
+    if (t < 1) requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+}
+
+/* =========== Audio-React (WebAudio analyser) =========== */
+function initAudioContextIfNeeded(){
+  if (!CONFIG.audioReact.enabled) return;
+  if (audioContext && audioContext.state !== 'closed') return;
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 2048;
+    analyserDataArray = new Uint8Array(analyser.frequencyBinCount);
+    // create source node when audio element is playing
+    sourceNode = audioContext.createMediaElementSource(audioPlayer);
+    sourceNode.connect(analyser);
+    analyser.connect(audioContext.destination);
+    lastRms = 0;
+    // start loop
+    requestAnimationFrame(audioReactLoop);
+    updateStatus('AudioContext initialized');
+  } catch (e){
+    console.warn("AudioContext init failed:", e);
+  }
+}
+
+function disconnectAudioContext(){
+  try {
+    if (sourceNode){ sourceNode.disconnect(); sourceNode = null; }
+    if (analyser){ analyser.disconnect(); analyser = null; analyserDataArray = null; }
+    if (audioContext && audioContext.close) { audioContext.close(); audioContext = null; }
+  } catch(e){ console.warn("disconnectAudioContext err", e); }
+}
+
+/* compute RMS from analyser data and update UI */
+function audioReactLoop(){
+  if (!analyser || !analyserDataArray) return;
+  analyser.getByteTimeDomainData(analyserDataArray);
+  // compute rms
+  let sum = 0;
+  for (let i=0;i<analyserDataArray.length;i++){
+    const v = (analyserDataArray[i] - 128) / 128; sum += v*v;
+  }
+  const rms = Math.sqrt(sum / analyserDataArray.length) * CONFIG.audioReact.sensitivity;
+  // exponential smoothing
+  const smooth = (CONFIG.audioReact.smoothing * lastRms) + ((1 - CONFIG.audioReact.smoothing) * rms);
+  lastRms = smooth;
+  // map smooth to blur & cover scale
+  const blur = clamp(CONFIG.audioReact.blurMin + smooth * (CONFIG.audioReact.blurMax - CONFIG.audioReact.blurMin), CONFIG.audioReact.blurMin, CONFIG.audioReact.blurMax);
+  const cscale = clamp(CONFIG.audioReact.coverScaleMin + smooth * (CONFIG.audioReact.coverScaleMax - CONFIG.audioReact.coverScaleMin), CONFIG.audioReact.coverScaleMin, CONFIG.audioReact.coverScaleMax);
+  // apply to bg img (only the topmost .bg-img)
+  const topBg = bgLayer.querySelector('.bg-img');
+  if (topBg) topBg.style.filter = `blur(${blur}px) saturate(1.05) contrast(0.92)`;
+  // cover scaling as gentle transform
+  coverImg.style.transform = `scale(${cscale})`;
+  // also alter active-word intensity (use CSS variable or class manip)
+  const intensity = clamp(0.2 + smooth*1.2, 0.2, 1.6);
+  document.documentElement.style.setProperty('--audio-intensity', intensity);
+  // schedule next
+  requestAnimationFrame(audioReactLoop);
+}
+
+/* sample used in timeupdate (for small adjustments when playback paused) */
+function sampleAudioReact(){
+  // no-op (we're running audioReactLoop) but keep function for integration
+}
+
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+/* cover animation on lyric change */
+let coverAnimTimeout = null;
+function animateCoverOnHighlight(){
+  // pulse scale and hue rotate
+  const s = CONFIG.coverHighlight.scaleOnLyric;
+  const deg = CONFIG.coverHighlight.hueRotateDeg;
+  coverImg.style.transition = `transform ${CONFIG.coverHighlight.transitionMs}ms cubic-bezier(.2,.9,.2,1), filter ${CONFIG.coverHighlight.transitionMs}ms`;
+  coverImg.style.transform = `scale(${s})`;
+  coverImg.style.filter = `hue-rotate(${deg}deg) saturate(1.08)`;
+  // glow overlay via coverGlow element
+  coverGlow.style.boxShadow = `0 20px 80px rgba(51,233,219,0.16), inset 0 0 40px rgba(102,252,241,0.06)`;
+  clearTimeout(coverAnimTimeout);
+  coverAnimTimeout = setTimeout(()=> {
+    coverImg.style.transform = ''; coverImg.style.filter = '';
+    coverGlow.style.boxShadow = '';
+  }, CONFIG.coverHighlight.transitionMs + 120);
+}
+
+/* =========== Utilities =========== */
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function updateStatus(m){ statusBar.innerText = "STATUS: " + m; console.log(m); }
+
+/* debug key: D dumps current state */
+window.addEventListener('keydown', (e)=> { if (e.key.toLowerCase()==='d'){ console.log({isSynchronized, lyricsLen: lyricsData.length, sample: lyricsData.slice(0,6), lastRms}); updateStatus('Debug dumped to console'); } });
+
+/* =========== END =========== */
+</script>
+</body>
+</html>

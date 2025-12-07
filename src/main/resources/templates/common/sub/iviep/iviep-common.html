@@ -292,3 +292,409 @@
 <!-- Bootstrap Bundle with Popper -->
 <script src="/lib/popper.min.js"></script>
 <script src="/lib/bootstrap.min.js"></script>
+<!-- =========================
+  .liquid — softer reflective border + improved blur/refraction
+  - initial sample + follow scroll/resize (throttled)
+  - more natural handling for near-black / near-white
+  Paste before </body>
+=========================== -->
+<style>
+    /* --- Base & reflective-border vars (defaults; JS overwrites) --- */
+    .liquid {
+        position: relative;
+        overflow: visible;
+        background-clip: padding-box;
+        transition: background 320ms ease, color 220ms ease, backdrop-filter 320ms ease, border-color 320ms ease, box-shadow 320ms ease;
+        background: rgba(255,255,255,0.06) !important;
+        -webkit-backdrop-filter: blur(8px) saturate(110%) !important;
+        backdrop-filter: blur(8px) saturate(110%) !important;
+        /* border controlled by JS via --liquid-border and --liquid-border-width */
+        border-radius: var(--liquid-border-radius, 1.8rem) !important;
+        z-index: 99999;
+        --liquid-border: rgba(255,255,255,0.10);
+        --liquid-border-width: 1.6px;
+        --liquid-border-inner-alpha: 0.06;
+        --liquid-border-reflect: rgba(255,255,255,0.06);
+        --liquid-glow: rgba(255,255,255,0.12);
+        --liquid-glow-outer: rgba(255,255,255,0.06);
+        --liquid-edge-spot1: rgba(255,255,255,0.16);
+        --liquid-edge-spot2: rgba(255,255,255,0.08);
+        /* subtle backdrop contrast to feel like glass */
+        box-shadow:
+                0 8px 22px rgba(0,0,0,0.06),
+                inset 0 1px 0 rgba(255,255,255,var(--liquid-border-inner-alpha,0.04));
+        border: var(--liquid-border-width) solid var(--liquid-border) !important;
+    }
+
+    /* outer diffuse glow (behind element) */
+    .liquid::before {
+        content: "";
+        pointer-events: none;
+        position: absolute;
+        inset: -10px;
+        border-radius: inherit;
+        z-index: -2;
+        background:
+                radial-gradient(circle at 20% 20%, var(--liquid-glow) 0%, transparent 20%),
+                radial-gradient(circle at 80% 80%, var(--liquid-glow-outer) 0%, transparent 25%);
+        filter: blur(10px);
+        opacity: 0.96;
+        transition: opacity 320ms ease, filter 320ms ease, background 320ms ease;
+    }
+
+    /* edge scattering + gentle top reflection (use --liquid-border-reflect) */
+    .liquid::after {
+        content: "";
+        pointer-events: none;
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        z-index: 2;
+        mix-blend-mode: overlay;
+        background:
+                linear-gradient(180deg, var(--liquid-border-reflect) 0%, rgba(255,255,255,0) 10%),
+                radial-gradient(circle at 8% 12%, var(--liquid-edge-spot1) 0%, transparent 8%),
+                radial-gradient(circle at 92% 88%, var(--liquid-edge-spot2) 0%, transparent 12%),
+                linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.00) 20%);
+        opacity: 0.9;
+        transition: opacity 320ms ease, background 320ms ease;
+    }
+
+    /* mobile tweaks */
+    @media (max-width: 767.98px) {
+        .liquid { --liquid-border-width: 1.8px; }
+        .liquid::before { inset: -8px; filter: blur(9px); }
+        .liquid::after { opacity: 0.92; }
+    }
+
+    /* fallbacks */
+    .liquid.force-dark .navbar-brand,
+    .liquid.force-dark .nav-link { color: #fff !important; }
+    .liquid.force-light .navbar-brand,
+    .liquid.force-light .nav-link { color: #111 !important; }
+
+    .liquid > .container { width: 100% !important; padding-left: .6rem !important; padding-right: .6rem !important; }
+</style>
+
+<script>
+    (function(){
+        const SELECTOR = '.liquid';
+        const TOP_GAP = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--lv-top-gap')) || 16;
+        const RETRIES = 22;
+        const RETRY_DELAY = 90;
+        const SCROLL_THROTTLE = 120;
+        const RESIZE_THROTTLE = 200;
+        const BRIGHT_THRESHOLD = 0.6;
+        const NEAR_BLACK = 12;
+        const NEAR_WHITE = 243;
+
+        /* helpers */
+        function parseRGBA(s){
+            if(!s) return null;
+            s = s.trim();
+            if(s[0] === '#'){ let h = s.slice(1); if(h.length===3) h = h.split('').map(c=>c+c).join(''); if(h.length!==6) return null; return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16),1]; }
+            const m = s.match(/rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s\/]+([\d.]+))?\)/i);
+            if(!m) return null;
+            return [parseInt(m[1],10), parseInt(m[2],10), parseInt(m[3],10), m[4] !== undefined ? parseFloat(m[4]) : 1];
+        }
+        function luminance([r,g,b]){ const srgb=[r,g,b].map(v=>v/255).map(c=>c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4)); return 0.2126*srgb[0]+0.7152*srgb[1]+0.0722*srgb[2]; }
+        function avgRGB(arr){ if(!arr||!arr.length) return null; let r=0,g=0,b=0,n=0; arr.forEach(a=>{ r+=a[0]; g+=a[1]; b+=a[2]; n++; }); return n? [Math.round(r/n),Math.round(g/n),Math.round(b/n)]:null; }
+        function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+        function mixRGB(a,b,t){ return [ Math.round(a[0]+(b[0]-a[0])*t), Math.round(a[1]+(b[1]-a[1])*t), Math.round(a[2]+(b[2]-a[2])*t) ]; }
+        function rgbToCss(rgb,a=1){ return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`; }
+
+        function measure(el){
+            if(!el) return 0;
+            const r = el.getBoundingClientRect();
+            if(r && r.height && r.height>0) return Math.ceil(r.height);
+            if(el.offsetHeight && el.offsetHeight>0) return Math.ceil(el.offsetHeight);
+            if(el.scrollHeight && el.scrollHeight>0) return Math.ceil(el.scrollHeight);
+            let sum = 0;
+            Array.from(el.children).forEach(ch=>{
+                try{
+                    const cs = getComputedStyle(ch);
+                    if(cs.position==='absolute' || cs.position==='fixed') return;
+                    const cr = ch.getBoundingClientRect();
+                    sum += (cr && cr.height) ? cr.height : (ch.offsetHeight||ch.scrollHeight||0);
+                }catch(e){}
+            });
+            return Math.ceil(sum||0);
+        }
+
+        function sampleUnder(el){
+            try{
+                const rect = el.getBoundingClientRect();
+                const y = Math.min(Math.max(Math.ceil(rect.bottom+2),2), window.innerHeight-2);
+                const xs = [ Math.round(rect.left + rect.width*0.5), Math.round(rect.left + rect.width*0.25), Math.round(rect.left + rect.width*0.75) ];
+                const out = [];
+                xs.forEach(x=>{
+                    try{
+                        let node = document.elementFromPoint(x,y);
+                        let depth = 0;
+                        while(node && depth < 12){
+                            const bg = getComputedStyle(node).backgroundColor;
+                            if(bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)'){
+                                const rgba = parseRGBA(bg);
+                                if(rgba){ out.push(rgba); break; }
+                            }
+                            node = node.parentElement;
+                            depth++;
+                        }
+                        if(!node){
+                            const bodyBg = getComputedStyle(document.body).backgroundColor;
+                            const rgba = parseRGBA(bodyBg);
+                            if(rgba) out.push(rgba);
+                        }
+                    }catch(e){}
+                });
+                console.log(`[LIQUID SAMPLE] Sampling under <${el.tagName.toLowerCase()} class="${el.className}"> at Y: ${y}`);
+                return out.length ? out : null;
+            }catch(e){ return null; }
+        }
+
+        /* smoothing helper (softly interpolate numeric parameters to avoid abrupt jumps) */
+        function smoothNumber(prev, next, weightNew=0.6){
+            if(prev === undefined || prev === null) return next;
+            return prev * (1 - weightNew) + next * weightNew;
+        }
+        function smoothRgb(prevRgb, nextRgb, weightNew=0.6){
+            if(!prevRgb || !nextRgb) return nextRgb || prevRgb;
+            return [
+                Math.round(prevRgb[0] * (1-weightNew) + nextRgb[0] * weightNew),
+                Math.round(prevRgb[1] * (1-weightNew) + nextRgb[1] * weightNew),
+                Math.round(prevRgb[2] * (1-weightNew) + nextRgb[2] * weightNew)
+            ];
+        }
+
+        function ensureTogglerSVG(container, textLight){
+            try{
+                const toggler = container.querySelector('.navbar-toggler');
+                if(!toggler) return;
+                const comp = window.getComputedStyle(toggler);
+                const bg = comp.getPropertyValue('background-image');
+                const fill = textLight ? '#fff' : '#111';
+                if(bg && bg !== 'none'){
+                    toggler.innerHTML = '<svg width="24" height="18" viewBox="0 0 24 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+                        '<rect y="0" x="0" width="24" height="2" rx="1"></rect>' +
+                        '<rect y="8" x="0" width="24" height="2" rx="1"></rect>' +
+                        '<rect y="16" x="0" width="24" height="2" rx="1"></rect>' +
+                        '</svg>';
+                    toggler.querySelectorAll('svg, rect, path').forEach(s=>{ try{ s.style.setProperty('fill', fill, 'important'); }catch(e){} try{ s.style.setProperty('stroke', fill, 'important'); }catch(e){} });
+                } else {
+                    toggler.querySelectorAll('svg, path, rect, circle').forEach(s=>{ try{ s.style.setProperty('fill', fill, 'important'); }catch(e){} try{ s.style.setProperty('stroke', fill, 'important'); }catch(e){} });
+                }
+            }catch(e){}
+        }
+
+        function preserveBorderRadius(el){
+            try{ const cs = getComputedStyle(el); const br = cs.borderRadius || cs.getPropertyValue('border-radius') || '1.8rem'; el.style.setProperty('--liquid-border-radius', br, 'important'); el.style.setProperty('border-radius', br, 'important'); }catch(e){}
+        }
+
+        /* main visual application (with natural treatment for extremes + soft smoothing) */
+        function applyVisual(el, analysis){
+            const supportsBackdrop = window.CSS && CSS.supports && (CSS.supports('backdrop-filter','blur(1px)') || CSS.supports('-webkit-backdrop-filter','blur(1px)'));
+            const avgLum = analysis && typeof analysis.avgLum === 'number' ? analysis.avgLum : null;
+            const avgRgb = analysis && analysis.avgRGB ? analysis.avgRGB : null;
+
+            const bgIsDark = avgLum !== null ? (avgLum < BRIGHT_THRESHOLD) : false;
+
+            // overlay & blur (light -> larger blur to isolate; dark -> less blur so scene shows)
+            const overlay = bgIsDark ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.12)';
+            const blurVal = bgIsDark ? 6 : 10; // numeric px for smoothing
+            const sat = bgIsDark ? '125%' : '110%';
+
+            // base color to derive border from
+            const base = avgRgb || (bgIsDark ? [30,30,30] : [230,230,230]);
+
+            // compute border parameters with special handling for near extremes
+            let borderRgb, borderAlpha, borderWidth, innerAlpha, reflectAlpha;
+            if(base[0] <= NEAR_BLACK && base[1] <= NEAR_BLACK && base[2] <= NEAR_BLACK){
+                // near-black: softer bright rim (not overly white), thinner and subtle inner rim
+                borderRgb = mixRGB(base, [255,255,255], 0.7);    // mostly white but tempered
+                borderAlpha = 0.14;
+                borderWidth = 1.6;
+                innerAlpha = 0.08;
+                reflectAlpha = 0.12;
+            } else if(base[0] >= NEAR_WHITE && base[1] >= NEAR_WHITE && base[2] >= NEAR_WHITE){
+                // near-white: softer dark rim, subtle
+                borderRgb = mixRGB(base, [0,0,0], 0.6);
+                borderAlpha = 0.14;
+                borderWidth = 1.6;
+                innerAlpha = 0.06;
+                reflectAlpha = 0.08;
+            } else {
+                const t = bgIsDark ? 0.62 : 0.24;
+                borderRgb = mixRGB(base, [255,255,255], t);
+                borderAlpha = bgIsDark ? 0.12 : 0.12;
+                borderWidth = bgIsDark ? 1.8 : 1.6;
+                innerAlpha = bgIsDark ? 0.09 : 0.06;
+                reflectAlpha = bgIsDark ? 0.16 : 0.08;
+            }
+
+            // glow / spots (softer than before)
+            const glow = bgIsDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.08)';
+            const glowOuter = bgIsDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)';
+            const spot1 = bgIsDark ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.10)';
+            const spot2 = bgIsDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)';
+
+            // text color
+            const textLight = bgIsDark;
+            const textColor = textLight ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.92)';
+            const fillColor = textLight ? '#fff' : '#111';
+
+            // prepare desired numeric values (some smoothed against previous)
+            const prev = el.__liquid_state || {};
+            const prevBorderRgb = prev.borderRgb || null;
+            const prevBorderWidth = prev.borderWidth || null;
+            const prevBlur = prev.blurVal || null;
+
+            const smoothBorderRgb = smoothRgb(prevBorderRgb, borderRgb, 0.55);
+            const smoothBorderWidth = smoothNumber(prevBorderWidth, borderWidth, 0.55);
+            const smoothBlur = smoothNumber(prevBlur, blurVal, 0.55);
+
+            const desired = {
+                textLight,
+                overlay,
+                blurVal: smoothBlur + 'px',
+                sat,
+                borderRgb: smoothBorderRgb,
+                borderCss: rgbToCss(smoothBorderRgb, borderAlpha),
+                borderWidth: smoothBorderWidth,
+                innerAlpha,
+                reflectCss: rgbToCss(mixRGB(base,[255,255,255],0.9), reflectAlpha),
+                glow, glowOuter, spot1, spot2,
+                textColor
+            };
+
+            // detect change (coarse)
+            const prevKey = prev && prev.borderCss;
+            const changed = !prev || prevKey !== desired.borderCss || prev.overlay !== desired.overlay || prev.textLight !== desired.textLight || prev.borderWidth !== desired.borderWidth || prev.blurVal !== desired.blurVal;
+
+            if(!changed) return;
+
+            try{
+                // overlay & filters
+                el.style.setProperty('background', desired.overlay, 'important');
+                if(supportsBackdrop){
+                    el.style.setProperty('-webkit-backdrop-filter', `blur(${desired.blurVal}) saturate(${desired.sat})`, 'important');
+                    el.style.setProperty('backdrop-filter', `blur(${desired.blurVal}) saturate(${desired.sat})`, 'important');
+                } else {
+                    el.style.setProperty('background', desired.overlay, 'important');
+                }
+
+                // border vars
+                el.style.setProperty('--liquid-border', desired.borderCss, 'important');
+                el.style.setProperty('--liquid-border-width', desired.borderWidth + 'px', 'important');
+                el.style.setProperty('--liquid-border-inner-alpha', desired.innerAlpha, 'important');
+                el.style.setProperty('--liquid-border-reflect', desired.reflectCss, 'important');
+
+                // glow & spots
+                el.style.setProperty('--liquid-glow', desired.glow, 'important');
+                el.style.setProperty('--liquid-glow-outer', desired.glowOuter, 'important');
+                el.style.setProperty('--liquid-edge-spot1', desired.spot1, 'important');
+                el.style.setProperty('--liquid-edge-spot2', desired.spot2, 'important');
+
+                // text color & svg recolor
+                ['.navbar-brand', '.nav-link', '.navbar-text', '.navbar-toggler', 'a', 'button'].forEach(sel=>{
+                    el.querySelectorAll(sel).forEach(node=>{
+                        try{
+                            node.style.setProperty('color', desired.textColor, 'important');
+                            node.style.setProperty('fill', fillColor, 'important');
+                            node.style.setProperty('stroke', fillColor, 'important');
+                        }catch(e){}
+                    });
+                });
+
+                el.classList.toggle('force-dark', desired.textLight);
+                el.classList.toggle('force-light', !desired.textLight);
+                ensureTogglerSVG(el, desired.textLight);
+            }catch(e){ console.warn('[liquid] applyVisual exception', e); }
+
+            // store state (including numeric arrays)
+            el.__liquid_state = Object.assign({}, desired, { borderRgb: desired.borderRgb, blurVal: desired.blurVal });
+        }
+
+        /* lifecycle */
+        function initOne(el, isFirst){
+            preserveBorderRadius(el);
+
+            // ensure nav fixed
+            if(el.tagName === 'NAV'){
+                try{
+                    el.classList.add('fixed-top-force');
+                    el.style.setProperty('position', 'fixed', 'important');
+                    el.style.setProperty('top', '0', 'important');
+                    el.style.setProperty('left', '8%', 'important');
+                    el.style.setProperty('right', '8%', 'important');
+                    el.style.setProperty('width', 'auto', 'important');
+                    el.style.setProperty('box-sizing', 'border-box', 'important');
+                }catch(e){}
+            }
+
+            let tries = 0;
+            function attempt(){
+                tries++;
+                const h = measure(el);
+                if(h > 0 || tries >= RETRIES){
+                    if(isFirst && el.tagName === 'NAV'){
+                        document.documentElement.style.setProperty('--nav-height', h + 'px');
+                        document.body.style.setProperty('padding-top', (h + TOP_GAP) + 'px');
+                    }
+                    const samples = sampleUnder(el);
+                    const analysis = samples ? { avgRGB: avgRGB(samples), avgLum: samples.map(s=>luminance([s[0],s[1],s[2]])).reduce((a,b)=>a+b,0)/samples.length } : null;
+                    applyVisual(el, analysis);
+                    return;
+                }
+                setTimeout(attempt, RETRY_DELAY);
+            }
+            const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+            fontsReady.then(()=>setTimeout(attempt, 140)).catch(()=>setTimeout(attempt, 240));
+        }
+
+        function updateElement(el){
+            const samples = sampleUnder(el);
+            const analysis = samples ? { avgRGB: avgRGB(samples), avgLum: samples.map(s=>luminance([s[0],s[1],s[2]])).reduce((a,b)=>a+b,0)/samples.length } : null;
+            applyVisual(el, analysis);
+        }
+
+        function throttle(fn, wait){
+            let last = 0, timeout = null;
+            return function(...args){
+                const now = Date.now();
+                const remaining = wait - (now - last);
+                if(remaining <= 0 || remaining > wait){
+                    if(timeout){ clearTimeout(timeout); timeout = null; }
+                    last = now;
+                    fn.apply(this, args);
+                } else if(!timeout){
+                    timeout = setTimeout(()=>{ last = Date.now(); timeout = null; fn.apply(this, args); }, remaining);
+                }
+            };
+        }
+
+        /* boot */
+        let elements = [];
+        function runOnce(){
+            elements = Array.from(document.querySelectorAll(SELECTOR));
+            if(!elements.length) return;
+            elements.forEach((el, idx)=> initOne(el, idx===0) );
+
+            const onScroll = throttle(()=>{ elements.forEach(updateElement); }, SCROLL_THROTTLE);
+            const onResize = throttle(()=>{ elements.forEach(el=>{ preserveBorderRadius(el); updateElement(el); }); }, RESIZE_THROTTLE);
+            window.addEventListener('scroll', onScroll, {passive:true});
+            window.addEventListener('resize', onResize);
+            if(window.MutationObserver){
+                const mo = new MutationObserver(throttle(()=>{ elements.forEach(updateElement); }, 300));
+                try{ mo.observe(document.body, { childList:true, subtree:true, attributes:true }); }catch(e){}
+            }
+        }
+
+        if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', runOnce);
+        else runOnce();
+
+        // manual refresh
+        window.__liquidRefreshAll = function(){ try{ runOnce(); }catch(e){ console.warn('[liquid] refresh failed', e); } };
+
+    })();
+</script>
+

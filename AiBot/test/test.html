@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raven Audio System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0c10;       /* 深夜黑 */
+            --panel-bg: #1f2833;       /* 深钢蓝 */
+            --text-main: #c5c6c7;      /* 银灰 */
+            --text-highlight: #66fcf1; /* 冰蓝 */
+            --accent: #45a29e;         /* 冷青 */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', 'Roboto', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* 主架构容器 */
+        .system-container {
+            display: grid;
+            grid-template-columns: 350px 450px;
+            gap: 20px;
+            background: #121418;
+            padding: 30px;
+            border: 1px solid #333;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            border-radius: 4px;
+        }
+
+        /* 左侧：视觉与控制 */
+        .visual-module {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .cover-art {
+            width: 300px;
+            height: 300px;
+            background-color: #000;
+            border: 1px solid #333;
+            object-fit: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+            font-size: 12px;
+            position: relative;
+        }
+
+        /* 默认封面的极简几何占位 */
+        .cover-placeholder::after {
+            content: "NO SIGNAL";
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        .control-panel audio {
+            width: 300px;
+            outline: none;
+            filter: invert(0.9) hue-rotate(180deg); /* 强制转为冷色系滤镜 */
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .btn-upload {
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background-color: transparent;
+            padding: 8px 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .btn-upload:hover {
+            background-color: var(--accent);
+            color: #000;
+        }
+
+        .file-input-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* 右侧：歌词数据流 */
+        .lyrics-module {
+            background-color: var(--panel-bg);
+            border-left: 2px solid var(--accent);
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            position: relative;
+            font-size: 14px;
+            line-height: 1.8;
+            text-align: center;
+            scroll-behavior: smooth;
+        }
+
+        /* 隐藏滚动条但保留功能 */
+        .lyrics-module::-webkit-scrollbar {
+            width: 4px;
+        }
+        .lyrics-module::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+
+        .lyric-line {
+            padding: 5px 0;
+            opacity: 0.4;
+            transition: all 0.2s ease;
+        }
+
+        .lyric-line.active {
+            color: var(--text-highlight);
+            font-size: 16px;
+            opacity: 1;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(102, 252, 241, 0.3);
+        }
+
+        .status-bar {
+            grid-column: 1 / -1;
+            font-size: 10px;
+            color: #555;
+            text-align: right;
+            border-top: 1px solid #222;
+            padding-top: 10px;
+            margin-top: 0px;
+            text-transform: uppercase;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="system-container">
+    <div class="visual-module">
+        <img id="coverImg" class="cover-art cover-placeholder" src="" alt="">
+        <div class="control-panel">
+            <audio id="audioPlayer" controls></audio>
+        </div>
+
+        <div class="file-input-wrapper">
+            <button class="btn-upload">Load Data Source</button>
+            <input type="file" id="fileInput" multiple accept=".mp3,.m4a,.wav,.flac,.jpg,.png,.srt">
+        </div>
+        <div style="font-size: 10px; color: #555; margin-top: 5px;">
+            *Select Audio, Image & SRT together
+        </div>
+    </div>
+
+    <div class="lyrics-module" id="lyricsContainer">
+        <div style="margin-top: 150px; opacity: 0.3;">WAITING FOR INPUT...</div>
+    </div>
+
+    <div class="status-bar" id="statusBar">System Ready</div>
+</div>
+
+<script>
+    const audioPlayer = document.getElementById('audioPlayer');
+    const coverImg = document.getElementById('coverImg');
+    const lyricsContainer = document.getElementById('lyricsContainer');
+    const fileInput = document.getElementById('fileInput');
+    const statusBar = document.getElementById('statusBar');
+
+    let lyricsData = []; // [{time: 12.5, text: "..."}]
+
+    // 默认封面（Base64 极简深色图或空）
+    const DEFAULT_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Crect width='300' height='300' fill='%230b0c10'/%3E%3Cpath d='M150 100 L200 180 L100 180 Z' fill='none' stroke='%23333' stroke-width='2'/%3E%3C/svg%3E";
+    coverImg.src = DEFAULT_COVER;
+
+    fileInput.addEventListener('change', handleFiles);
+
+    async function handleFiles(event) {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
+
+        // 1. 寻找音频文件
+        const audioFile = files.find(f => f.type.startsWith('audio/'));
+        if (!audioFile) {
+            updateStatus("Error: No Audio Stream Found.");
+            return;
+        }
+
+        // 重置状态
+        resetSystem();
+        updateStatus(`Load: ${audioFile.name}`);
+
+        // 2. 加载音频
+        const audioURL = URL.createObjectURL(audioFile);
+        audioPlayer.src = audioURL;
+
+        // 3. 处理封面 (逻辑：内嵌 -> 外部同名 -> 默认)
+        await processCoverArt(audioFile, files);
+
+        // 4. 处理歌词 (逻辑：外部同名 -> 无)
+        await processLyrics(audioFile, files);
+    }
+
+    function resetSystem() {
+        coverImg.src = DEFAULT_COVER;
+        lyricsContainer.innerHTML = '';
+        lyricsData = [];
+    }
+
+    // --- 核心逻辑：封面处理 ---
+    async function processCoverArt(audioFile, allFiles) {
+        let coverFound = false;
+
+        // A. 尝试读取音频内嵌封面 (使用 jsmediatags)
+        try {
+            await new Promise((resolve, reject) => {
+                window.jsmediatags.read(audioFile, {
+                    onSuccess: function(tag) {
+                        const picture = tag.tags.picture;
+                        if (picture) {
+                            let base64String = "";
+                            for (let i = 0; i < picture.data.length; i++) {
+                                base64String += String.fromCharCode(picture.data[i]);
+                            }
+                            const base64 = "data:" + picture.format + ";base64," + window.btoa(base64String);
+                            coverImg.src = base64;
+                            coverFound = true;
+                            resolve();
+                        } else {
+                            resolve(); // 无内嵌图片
+                        }
+                    },
+                    onError: function(error) {
+                        console.log(error);
+                        resolve(); // 读取失败也继续
+                    }
+                });
+            });
+        } catch (e) {
+            console.log("Embedded tag read error");
+        }
+
+        if (coverFound) return;
+
+        // B. 如果没有内嵌，寻找同名外部图片
+        const baseName = audioFile.name.substring(0, audioFile.name.lastIndexOf('.'));
+        const imageFile = allFiles.find(f => {
+            const fName = f.name.substring(0, f.name.lastIndexOf('.'));
+            return fName === baseName && f.type.startsWith('image/');
+        });
+
+        if (imageFile) {
+            coverImg.src = URL.createObjectURL(imageFile);
+        }
+        // C. 否则保持默认
+    }
+
+    // --- 核心逻辑：SRT 解析与渲染 ---
+    async function processLyrics(audioFile, allFiles) {
+        const baseName = audioFile.name.substring(0, audioFile.name.lastIndexOf('.'));
+
+        // 寻找同名SRT
+        const srtFile = allFiles.find(f => {
+            // 简单匹配：文件名包含 baseName 且是 .srt
+            return f.name.includes(baseName) && f.name.endsWith('.srt');
+        });
+
+        if (!srtFile) {
+            lyricsContainer.innerHTML = "<div style='margin-top:150px; opacity:0.3;'>NO DATA LINK</div>";
+            return;
+        }
+
+        const text = await srtFile.text();
+        parseSRT(text);
+    }
+
+    function parseSRT(srtContent) {
+        // 简单的SRT解析正则
+        const regex = /(\d{2}):(\d{2}):(\d{2}),(\d{3}) --> (\d{2}):(\d{2}):(\d{2}),(\d{3})[\r\n]+([\s\S]*?)(?=[\r\n]{2,}|$)/g;
+        let match;
+        lyricsData = [];
+
+        while ((match = regex.exec(srtContent)) !== null) {
+            const startTime = parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3]) + parseInt(match[4]) / 1000;
+            const text = match[9].trim();
+            lyricsData.push({ time: startTime, text: text });
+        }
+
+        renderLyrics();
+    }
+
+    function renderLyrics() {
+        lyricsContainer.innerHTML = '';
+        // 增加顶部留白
+        const spacer = document.createElement('div');
+        spacer.style.height = "180px";
+        lyricsContainer.appendChild(spacer);
+
+        lyricsData.forEach((line, index) => {
+            const div = document.createElement('div');
+            div.className = 'lyric-line';
+            div.innerText = line.text;
+            div.dataset.index = index;
+            lyricsContainer.appendChild(div);
+        });
+
+        // 增加底部留白
+        const spacerBottom = document.createElement('div');
+        spacerBottom.style.height = "180px";
+        lyricsContainer.appendChild(spacerBottom);
+    }
+
+    // --- 同步引擎 ---
+    audioPlayer.addEventListener('timeupdate', () => {
+        const currentTime = audioPlayer.currentTime;
+
+        // 找到当前时间对应的最后一句歌词
+        let activeIndex = -1;
+        for (let i = 0; i < lyricsData.length; i++) {
+            if (currentTime >= lyricsData[i].time) {
+                activeIndex = i;
+            } else {
+                break;
+            }
+        }
+
+        if (activeIndex !== -1) {
+            highlightLyric(activeIndex);
+        }
+    });
+
+    function highlightLyric(index) {
+        const lines = document.querySelectorAll('.lyric-line');
+        lines.forEach(line => line.classList.remove('active'));
+
+        const activeLine = lines[index];
+        if (activeLine) {
+            activeLine.classList.add('active');
+
+            // 滚动定位：将高亮行置于容器中间
+            const containerHeight = lyricsContainer.clientHeight;
+            const lineTop = activeLine.offsetTop;
+            const lineHeight = activeLine.clientHeight;
+
+            lyricsContainer.scrollTop = lineTop - (containerHeight / 2) + (lineHeight / 2);
+        }
+    }
+
+    function updateStatus(msg) {
+        statusBar.innerText = `STATUS: ${msg}`;
+    }
+
+</script>
+</body>
+</html>

@@ -29,13 +29,13 @@ import lombok.Data;
 public class ViewRecord implements Serializable {
 
     @TableId(type = IdType.AUTO)
-    private Integer recordId;
+    private Long recordId;
 
-    private Integer fileId;
+    private Long fileId;
 
-    private Integer userId;
+    private Long userId;
 
-    private Integer viewDuration;
+    private Long viewDuration;
 
     private Date viewDate;
 

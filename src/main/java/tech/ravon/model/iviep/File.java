@@ -29,17 +29,17 @@ import lombok.Data;
 public class File implements Serializable {
 
     @TableId(type = IdType.AUTO)
-    private Integer fileId;
+    private Long fileId;
 
     private String fileName;
 
     private String type;
 
-    private Integer courseId;
+    private Long courseId;
 
     private String remarks;
 
-    private Integer uploadUser;
+    private Long uploadUser;
 
     private Date uploadDate;
 

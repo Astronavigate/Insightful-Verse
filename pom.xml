@@ -146,7 +146,21 @@
 			<version>2.1.3</version>
 		</dependency>
 
-		<!-- Eclipse -->
+        <!-- audio tag reader -->
+        <dependency>
+            <groupId>net.jthink</groupId>
+            <artifactId>jaudiotagger</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
+        <!-- UUID generator -->
+        <dependency>
+            <groupId>com.fasterxml.uuid</groupId>
+            <artifactId>java-uuid-generator</artifactId>
+            <version>5.1.1</version>
+        </dependency>
+
+		<!-- email -->
 		<dependency>
 			<groupId>org.eclipse.angus</groupId>
 			<artifactId>angus-mail</artifactId>

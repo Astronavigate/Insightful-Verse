@@ -28,7 +28,7 @@ import lombok.Data;
 public class Course implements Serializable {
 
     @TableId(type = IdType.AUTO)
-    private Integer courseId;
+    private Long courseId;
 
     private String courseName;
 

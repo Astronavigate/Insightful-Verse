@@ -28,11 +28,11 @@ import lombok.Data;
 public class Test implements Serializable {
 
     @TableId(type = IdType.AUTO)
-    private Integer testId;
+    private Long testId;
 
     private String testName;
 
-    private Integer courseId;
+    private Long courseId;
 
     private String testContent;
 
