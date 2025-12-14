@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="'Insightful Verse Reader ' + ${file != null ? ' - ' + file.fileName : 'None'}">Word Reader</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root { --header-h: 72px; }
+
+        html, body {
+            margin: 0; padding: 0; height: 100%;
+            background-color: #0a0a0a;
+            font-family: system-ui, sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .reader-wrap {
+            height: calc(100vh - var(--header-h));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 32px 24px;
+            box-sizing: border-box;
+        }
+
+        #wordContainer {
+            width: 100%;
+            max-width: 1400px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-radius: 16px;
+            background-color: rgba(255,255,255,0.6);
+            backdrop-filter: blur(12px);
+            overflow: hidden;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        /* Controls */
+        #controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            background-color: rgba(255,255,255,0.6);
+            backdrop-filter: blur(8px);
+            color: #000;
+        }
+
+        #pageIndicator {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        #downloadBtn {
+            height: 28px;
+            padding: 0 12px;
+            border: none;
+            border-radius: 6px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        #downloadBtn:hover { background-color: #0056b3; }
+
+        #viewerWrapper {
+            flex: 1;
+            overflow: auto;
+            border-radius: 12px;
+            background-color: rgba(255,255,255,0.3);
+            padding: 16px;
+        }
+
+        #viewer {
+            width: 100%;
+        }
+
+        /* docx-preview adjustments */
+        .docx-wrapper { padding: 0 !important; }
+        .docx table { border-collapse: collapse; }
+        .docx table td, .docx table th {
+            border: 1px solid rgba(0,0,0,0.15);
+            padding: 4px 8px;
+            color: #000;
+        }
+
+        /* each page */
+        .docx-page {
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            background-color: rgba(255,255,255,0.8);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        /* Scrollbar */
+        #viewerWrapper::-webkit-scrollbar { width:12px; height:12px; }
+        #viewerWrapper::-webkit-scrollbar-track { background: rgba(15,15,15,0.2); border-radius:6px; }
+        #viewerWrapper::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius:6px; }
+        #viewerWrapper::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.6); }
+
+        /* 错误信息 */
+        .error-msg {
+            color: #c0392b;
+            font-weight: bold;
+            font-size: 1rem;
+            text-align: center;
+        }
+    </style>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
+</head>
+<body style="background-color: #0a0a0a;">
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="reader-wrap">
+    <div id="wordContainer">
+        <div id="controls">
+            <div></div>
+            <div id="pageIndicator">Page 0 / 0</div>
+            <button id="downloadBtn">Download</button>
+        </div>
+        <div id="viewerWrapper">
+            <div id="viewer">Loading document…</div>
+        </div>
+    </div>
+</div>
+
+<!-- docx-preview dependencies -->
+<script src="/lib/jszip-2.6.1/dist/jszip.min.js"></script>
+<script src="/lib/docxjs-0.3.6/dist/docx-preview.min.js"></script>
+
+<script>
+    const FILE_PATH = "[[${file != null ? file.filePath : ''}]]";
+    const viewer = document.getElementById("viewer");
+    const pageIndicator = document.getElementById("pageIndicator");
+    const wrapper = document.getElementById("viewerWrapper");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    function isDocx(path) { return path.toLowerCase().endsWith(".docx"); }
+    function isDoc(path) { return path.toLowerCase().endsWith(".doc"); }
+
+    async function loadWord(url) {
+        if (isDoc(url)) {
+            viewer.innerHTML = `<div class="error-msg">
+                Format Incompatible: The legacy .doc format cannot be rendered. Download is required.
+            </div>`;
+            pageIndicator.textContent = '';
+            return;
+        }
+        if (!isDocx(url)) {
+            viewer.innerHTML = `<div class="error-msg">
+                Unsupported file format
+            </div>`;
+            pageIndicator.textContent = '';
+            return;
+        }
+
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const buf = await res.arrayBuffer();
+            viewer.innerHTML = "";
+
+            // breakPages: true ensures .docx-page elements
+            await docx.renderAsync(buf, viewer, null, {
+                inWrapper: true,
+                breakPages: true,
+                ignoreWidth: false,
+                ignoreHeight: false,
+                experimental: false
+            });
+
+            // 初始化页码统计与显示
+            initPageCounter(wrapper, viewer, pageIndicator);
+
+        } catch (e) {
+            viewer.innerHTML = `<div class="error-msg">
+                Failed to load document<br>${e.message}
+            </div>`;
+            pageIndicator.textContent = '';
+        }
+    }
+
+    downloadBtn.addEventListener("click", async () => {
+        try {
+            const res = await fetch(FILE_PATH);
+            if(!res.ok) throw new Error("Download failed");
+            const blob = await res.blob();
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = FILE_PATH.split("/").pop();
+            a.click();
+            URL.revokeObjectURL(a.href);
+        } catch(e) {
+            alert("Download failed: " + e.message);
+        }
+    });
+
+    /**
+     * 初始化页码统计与显示
+     */
+    function initPageCounter(wrapper, viewer, pageIndicator) {
+        const sections = viewer.querySelectorAll('section');
+        const totalPages = sections.length || 1;
+
+        // 初始化页码显示
+        pageIndicator.textContent = `Page 1 / ${totalPages}`;
+
+        // 监听滚动，实时更新当前页
+        wrapper.addEventListener('scroll', () => {
+            const wrapperTop = wrapper.getBoundingClientRect().top;
+            let currentPage = 1;
+
+            sections.forEach((section, index) => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top - wrapperTop <= rect.height / 2) {
+                    currentPage = index + 1;
+                }
+            });
+
+            pageIndicator.textContent = `Page ${currentPage} / ${totalPages}`;
+        });
+    }
+
+    loadWord(FILE_PATH);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>文件预览</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ====== 全局样式：现代 UI + 暗色模式 ====== -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Inter", "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: background 0.3s, color 0.3s;
+        }
+
+        :root {
+            --bg: #f5f5f7;
+            --text: #222;
+            --card-bg: white;
+            --border: #e0e0e0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #111;
+                --text: #eee;
+                --card-bg: #1a1a1a;
+                --border: #333;
+            }
+        }
+
+        .header {
+            padding: 14px 20px;
+            font-size: 18px;
+            font-weight: 600;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        #viewer {
+            height: calc(100vh - 60px);
+            overflow: auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        }
+
+        #txtContent {
+            white-space: pre-wrap;
+            font-family: "JetBrains Mono", monospace;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+<div class="header">
+    📄 文件预览：<span id="title"></span>
+</div>
+
+<div id="viewer">
+    <div id="content" class="card">加载中...</div>
+</div>
+
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.min.js"></script>
+
+<script>
+    (async function() {
+        const params = new URLSearchParams(location.search);
+        const fileName = params.get("file");
+        const ext = fileName.split('.').pop().toLowerCase();
+        const fileUrl = `/files/${fileName}`;
+
+        document.getElementById("title").textContent = fileName;
+        const content = document.getElementById("content");
+
+        /* ==========================
+           TXT
+        ========================== */
+        if (ext === "txt") {
+            content.innerHTML = `<div id="txtContent"></div>`;
+            const t = await fetch(fileUrl).then(r => r.text());
+            document.getElementById("txtContent").textContent = t;
+            return;
+        }
+
+        /* ==========================
+           PDF
+        ========================== */
+        if (ext === "pdf") {
+            content.innerHTML = "";
+            const pdf = await pdfjsLib.getDocument(fileUrl).promise;
+            for (let i=1; i<=pdf.numPages; i++){
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 1.4 });
+
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                content.appendChild(canvas);
+                await page.render({ canvasContext: ctx, viewport }).promise;
+            }
+            return;
+        }
+
+        /* ==========================
+           DOCX
+        ========================== */
+        if (ext === "docx") {
+            content.innerHTML = "<p>正在加载 Word 文件...</p>";
+
+            const script = document.createElement("script");
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js";
+            script.onload = async () => {
+                const buf = await fetch(fileUrl).then(r=>r.arrayBuffer());
+                const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+                content.innerHTML = `<div>${result.value}</div>`;
+            };
+            document.body.appendChild(script);
+            return;
+        }
+
+        /* ==========================
+           XLSX
+        ========================== */
+        if (ext === "xlsx" || ext === "xls") {
+            content.innerHTML = "<p>正在加载 Excel 文件...</p>";
+
+            const script = document.createElement("script");
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+            script.onload = async () => {
+                const data = await fetch(fileUrl).then(r=>r.arrayBuffer());
+                const workbook = XLSX.read(data, { type: "array" });
+
+                content.innerHTML = "";
+                workbook.SheetNames.forEach(name => {
+                    const html = XLSX.utils.sheet_to_html(workbook.Sheets[name]);
+                    const div = document.createElement("div");
+                    div.className = "card";
+                    div.innerHTML = `<h3>${name}</h3>` + html;
+                    content.appendChild(div);
+                });
+            };
+            document.body.appendChild(script);
+            return;
+        }
+
+        /* ==========================
+           其它格式
+        ========================== */
+        content.innerText = "❌ 不支持的文件格式：" + ext;
+
+    })();
+</script>
+
+</body>
+</html>

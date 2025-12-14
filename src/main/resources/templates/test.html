@@ -1,186 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select Language</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <title>DOCX 文档预览 - 秩序化渲染</title>
+
+    <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/docx-preview/dist/docx-preview.css" />
+
     <style>
-        :root {
-            --primary-blue: #4dabf7;
-            --secondary-blue: #339af0;
-            --light-blue: #e7f5ff;
-            --accent-blue: #74c0fc;
-            --text-dark: #343a40;
-        }
-
+        /* 极简与冷峻风格样式：突出内容，保持克制 */
         body {
-            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            background-color: #1a1a1a; /* 深色背景，夜色意象 */
+            color: #e0e0e0;
+            margin: 0;
+            padding: 40px 0;
+            font-family: Consolas, 'Microsoft YaHei', sans-serif;
         }
-
-        .language-card {
-            max-width: 1000px;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(77, 171, 247, 0.15);
-            border: none;
-            overflow: hidden;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+        #document-container {
+            width: 800px; /* 设定固定宽度，体现秩序与架构 */
+            min-height: 900px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: #ffffff; /* 文档内容区域保持冰白背景 */
+            color: #000000;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* 沉稳的阴影 */
+            border: 1px solid #333333; /* 钢的边缘 */
+            /* docx-preview 库会在这里渲染内容 */
         }
-
-        .card-header {
-            border-radius: 20px 20px 0 0 !important;
-            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
-            border-bottom: none;
-            padding: 25px;
+        .loading {
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card-header::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='0.1' d='M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,192C1248,192,1344,128,1392,96L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
-            background-size: cover;
-        }
-
-        .language-btn {
-            transition: all 0.3s ease;
-            text-align: left;
-            border-radius: 10px;
-            padding: 12px 15px;
-            font-weight: 500;
-            border: 1px solid #e1e8ed;
-            background-color: white;
-            color: var(--text-dark);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            font-size: 0.95rem;
-            height: 100%;
-        }
-
-        .language-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(77, 171, 247, 0.2);
-            background-color: var(--light-blue);
-            border-color: var(--accent-blue);
-        }
-
-        .language-icon {
-            font-size: 1.1rem;
-            margin-right: 8px;
-            color: var(--primary-blue);
-        }
-
-        .modal-content { border-radius: 20px; overflow: hidden; border: none; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15); }
-        .modal-header { background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue)); color: white; border-bottom: none; padding: 20px 25px; }
-        .btn-primary { background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue)); border: none; border-radius: 10px; padding: 10px 20px; font-weight: 500; box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3); }
-        .btn-primary:hover { background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue)); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(77, 171, 247, 0.4); }
-        .btn-secondary { border-radius: 10px; padding: 10px 20px; font-weight: 500; }
-        .earth-icon { font-size: 3rem; margin-bottom: 10px; color: white; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2)); }
-        .card-title { font-weight: 600; font-size: 1.6rem; color: white; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
-        .card-subtitle { color: rgba(255, 255, 255, 0.9); font-size: 1rem; }
-
-        @media (max-width: 768px) {
-            .language-card { margin: 10px; }
-            .card-body { padding: 20px !important; }
-            .language-btn { font-size: 0.9rem; padding: 10px 12px; }
+            color: #007acc; /* 深蓝提示色 */
+            padding: 50px;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="card shadow language-card mx-auto">
-        <div class="card-header text-center py-4">
-            <i class="bi bi-globe-central-south-asia earth-icon"></i>
-            <h2 class="card-title">Select Language</h2>
-            <p class="card-subtitle">Choose your preferred language</p>
-        </div>
-        <div class="card-body p-4 p-md-5">
-            <div class="row g-3">
-                <!-- English -->
-                <div class="col-sm-6 col-lg-3">
-                    <form action="/ChangeLang.do" method="post" class="h-100">
-                        <input type="hidden" name="lang" value="en">
-                        <button type="submit" class="btn language-btn w-100"><i class="bi bi-translate language-icon"></i> English</button>
-                    </form>
-                </div>
 
-                <!-- Simplified Chinese -->
-                <div class="col-sm-6 col-lg-3">
-                    <form action="/ChangeLang.do" method="post" class="h-100">
-                        <input type="hidden" name="lang" value="zhs">
-                        <button type="submit" class="btn language-btn w-100"><i class="bi bi-translate language-icon"></i> 简体中文</button>
-                    </form>
-                </div>
-
-                <!-- Traditional Chinese -->
-                <div class="col-sm-6 col-lg-3">
-                    <form action="/ChangeLang.do" method="post" class="h-100">
-                        <input type="hidden" name="lang" value="zht">
-                        <button type="submit" class="btn language-btn w-100"><i class="bi bi-translate language-icon"></i> 繁體中文</button>
-                    </form>
-                </div>
-
-                <!-- Japanese -->
-                <div class="col-sm-6 col-lg-3">
-                    <form action="/ChangeLang.do" method="post" class="h-100">
-                        <input type="hidden" name="lang" value="ja">
-                        <button type="submit" class="btn language-btn w-100"><i class="bi bi-translate language-icon"></i> 日本語</button>
-                    </form>
-                </div>
-
-                <!-- Korean -->
-                <div class="col-sm-6 col-lg-3">
-                    <form action="/ChangeLang.do" method="post" class="h-100">
-                        <input type="hidden" name="lang" value="ko">
-                        <button type="submit" class="btn language-btn w-100"><i class="bi bi-translate language-icon"></i> 한국어</button>
-                    </form>
-                </div>
-
-                <!-- French -->
-                <div class="col-sm-6 col-lg-3">
-                    <form action="/ChangeLang.do" method="post" class="h-100">
-                        <input type="hidden" name="lang" value="fr">
-                        <button type="submit" class="btn language-btn w-100"><i class="bi bi-translate language-icon"></i> Français</button>
-                    </form>
-                </div>
-
-                <!-- German -->
-                <div class="col-sm-6 col-lg-3">
-                    <form action="/ChangeLang.do" method="post" class="h-100">
-                        <input type="hidden" name="lang" value="de">
-                        <button type="submit" class="btn language-btn w-100"><i class="bi bi-translate language-icon"></i> Deutsch</button>
-                    </form>
-                </div>
-
-                <!-- Russian -->
-                <div class="col-sm-6 col-lg-3">
-                    <form action="/ChangeLang.do" method="post" class="h-100">
-                        <input type="hidden" name="lang" value="ru">
-                        <button type="submit" class="btn language-btn w-100"><i class="bi bi-translate language-icon"></i> Русский</button>
-                    </form>
-                </div>
-
-                <!-- Spanish -->
-                <div class="col-sm-6 col-lg-3">
-                    <form action="/ChangeLang.do" method="post" class="h-100">
-                        <input type="hidden" name="lang" value="es">
-                        <button type="submit" class="btn language-btn w-100"><i class="bi bi-translate language-icon"></i> Español</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+<div id="document-container" class="loading">
+    <p>独行至远，洞察超越。正在获取文档...</p>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // 目标文档路径
+    const DOCX_URL = "/doc/test.docx";
+    // 渲染容器
+    const container = document.getElementById("document-container");
+
+    /**
+     * [意志与理智] 核心文档加载与渲染模块
+     */
+    async function loadAndRenderDocx() {
+        try {
+            // 1. 发起网络请求，获取文档二进制数据
+            // responseType 必须设置为 'arraybuffer' 以获取文件字节流，这是 docx-preview 所需的输入格式。
+            const response = await fetch(DOCX_URL);
+
+            if (!response.ok) {
+                // 严格的逻辑检查，拒绝模糊状态
+                throw new Error(`无法获取文件。HTTP 状态码: ${response.status}`);
+            }
+
+            // 2. 将响应体转换为 ArrayBuffer
+            const docxArrayBuffer = await response.arrayBuffer();
+
+            // 3. 定义渲染选项 (Options) - 保持极简默认
+            const renderOptions = {
+                className: "docx",     // 默认样式类名
+                inWrapper: true,       // 启用包装器，保持页面结构秩序
+                ignoreWidth: false,    // 保留文档宽度信息
+            };
+
+            // 清除加载提示
+            container.classList.remove('loading');
+            container.innerHTML = '文档解析中...';
+
+            // 4. 调用 docx.renderAsync 异步渲染
+            // 将 ArrayBuffer 和容器传入，实现纯前端解析
+            await docx.renderAsync(docxArrayBuffer, container, null, renderOptions);
+
+            console.log(`[秩序] 文档：${DOCX_URL} 渲染成功，功能已实现。`);
+
+        } catch (error) {
+            console.error("[错误] 文档渲染失败:", error);
+            // 失败处理：克制且清晰地显示错误
+            container.classList.remove('loading');
+            container.innerHTML = `
+                <div style="color: #d9534f; text-align: center; padding: 50px;">
+                    [错误] 渲染失败。请确认路径和服务器配置正确。<br>
+                    原因: ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    // 启动流程
+    loadAndRenderDocx();
+</script>
+
 </body>
 </html>

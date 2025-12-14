@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Insightful Verse Reader ' + ${file != null ? ' - ' + file.fileName : 'None'}">Excel Reader</title>
+    <style>
+        :root { --header-h: 72px; }
+
+        body, html {
+            margin:0; padding:0; height:100%;
+            background-color:#0a0a0a;
+            font-family:system-ui, sans-serif;
+            color:#fff;
+            overflow:hidden;
+        }
+
+        .excel-wrap {
+            height: calc(100vh - var(--header-h));
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:flex-start;
+            padding:32px 24px;
+            box-sizing:border-box;
+        }
+
+        #excelContainer {
+            width:100%;
+            height:100%;
+            max-width:1400px;
+            display:flex;
+            flex-direction:column;
+            border-radius:16px;
+            background-color: rgba(255,255,255,0.6);
+            backdrop-filter: blur(12px);
+            overflow:hidden;
+            padding:16px;
+            box-sizing:border-box;
+            justify-content: flex-start;
+            align-items: center; /* 内容水平居中 */
+        }
+
+        /* Controls */
+        #controls {
+            display:flex;
+            align-items:center;
+            width:100%; /* 占满父元素宽度 */
+            gap:12px;
+            padding:6px 12px;
+            border-radius:12px;
+            margin-bottom:12px;
+            font-size:14px;
+            background-color: rgba(255,255,255,0.6);
+            backdrop-filter: blur(8px);
+            color:#000;
+            box-sizing: border-box;
+        }
+
+        #controls .control-item {
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+
+        #controls label {
+            display:flex;
+            align-items:center;
+            height:28px;
+        }
+
+        #controls select.form-select {
+            width:auto;
+            min-width:180px;
+            max-width:360px;
+            height:28px;
+        }
+
+        #controls input {
+            width:80px;
+            height:28px;
+            text-align:center;
+        }
+
+        #controls button {
+            height:28px;
+            padding:0 12px;
+            border:none;
+            border-radius:6px;
+            background-color:#007bff;
+            color:#fff;
+            cursor:pointer;
+            font-size:0.875rem;
+        }
+        #controls button:hover { background-color:#0056b3; }
+
+        /* Viewer wrapper */
+        #viewerWrapper {
+            flex:1;
+            overflow:auto;
+            border-radius:12px;
+            background-color: rgba(255,255,255,0.3);
+            padding:16px;
+            width:100%;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+        }
+
+        #viewer {
+            width:auto;
+            height:auto;
+            max-width:100%;
+            max-height:100%;
+        }
+
+        /* Table */
+        #viewer table {
+            border-collapse: collapse;
+            background: rgba(255,255,255,0.7);
+            transform-origin: top left;
+            margin:0 auto;
+        }
+
+        #viewer td, #viewer th {
+            border:1px solid rgba(0,0,0,0.15);
+            padding:4px 8px;
+            white-space: nowrap;
+            text-align:left;
+        }
+
+        /* Scrollbar */
+        #viewerWrapper::-webkit-scrollbar { width:12px; height:12px; }
+        #viewerWrapper::-webkit-scrollbar-track { background: rgba(15,15,15,0.2); border-radius:6px; }
+        #viewerWrapper::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius:6px; }
+        #viewerWrapper::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.6); }
+
+        /* 错误信息 */
+        .error-msg {
+            color: #c0392b;
+            font-weight: bold;
+            font-size: 1rem;
+            text-align: center;
+        }
+    </style>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
+</head>
+<body style="background-color: #0a0a0a;">
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="excel-wrap">
+    <div id="excelContainer">
+        <div id="controls">
+            <div class="control-item">
+                <label for="sheetSelect">Sheet:</label>
+                <select id="sheetSelect" class="form-select form-select-sm"></select>
+            </div>
+            <div class="control-item">
+                <label for="zoomInput">Zoom:</label>
+                <input type="number" class="form-control" id="zoomInput" value="100" min="10" max="500">
+            </div>
+            <button id="downloadBtn" style="margin-left:auto;">Download</button>
+        </div>
+        <div id="viewerWrapper">
+            <div id="viewer"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script>
+    (async () => {
+        const viewer = document.getElementById("viewer");
+        const sheetSelect = document.getElementById("sheetSelect");
+        const zoomInput = document.getElementById("zoomInput");
+        const downloadBtn = document.getElementById("downloadBtn");
+        const workbook = new ExcelJS.Workbook();
+        const FILE_PATH = "[[${file != null ? file.filePath : ''}]]";
+
+        function argbToCss(argb) {
+            if(!argb) return null;
+            return "#" + (argb.length===8 ? argb.slice(2) : argb);
+        }
+
+        async function loadExcel(url) {
+            try {
+                const res = await fetch(url);
+                if(!res.ok) throw new Error("Excel file load failed");
+
+                if ("[[${file != null ? file.type : ''}]]".toLowerCase() === "xls") {
+                    viewer.innerHTML = `<div class="error-msg">Format Incompatible: Legacy .xls format cannot be rendered. Please download.</div>`;
+                    return;
+                }
+                const buf = await res.arrayBuffer();
+                await workbook.xlsx.load(buf);
+                populateSheetSelect();
+                renderSheet(0);
+            } catch(e) {
+                viewer.innerHTML = `<div class="error-msg">${e.message}</div>`;
+            }
+        }
+
+        function populateSheetSelect() {
+            sheetSelect.innerHTML = "";
+            workbook.worksheets.forEach((ws, idx) => {
+                const opt = document.createElement("option");
+                opt.value = idx; opt.textContent = ws.name;
+                sheetSelect.appendChild(opt);
+            });
+        }
+
+        function renderSheet(idx) {
+            const ws = workbook.worksheets[idx];
+            viewer.innerHTML = "";
+            const table = document.createElement("table");
+
+            const colgroup = document.createElement("colgroup");
+            ws.columns.forEach(col=>{
+                const c = document.createElement("col");
+                if(col?.width) c.style.width=(col.width*7)+"px";
+                colgroup.appendChild(c);
+            });
+            table.appendChild(colgroup);
+
+            ws.eachRow({ includeEmpty:true }, row=>{
+                const tr=document.createElement("tr");
+                if(row.height) tr.style.height=row.height+"px";
+                row.eachCell({ includeEmpty:true }, cell=>{
+                    const td=document.createElement("td");
+                    td.textContent = cell.value ?? "";
+                    td.style.backgroundColor = argbToCss(cell.style?.fill?.fgColor?.argb) || "rgba(255,255,255,0.7)";
+                    td.style.color = argbToCss(cell.style?.font?.color?.argb) || "#000";
+                    tr.appendChild(td);
+                });
+                table.appendChild(tr);
+            });
+
+            table.style.transform = `scale(${zoomInput.value/100})`;
+            viewer.appendChild(table);
+        }
+
+        sheetSelect.addEventListener("change", e => renderSheet(parseInt(e.target.value)));
+        zoomInput.addEventListener("input", e => {
+            const table = viewer.querySelector("table");
+            if(table) table.style.transform = `scale(${parseInt(e.target.value)||100}/100)`;
+        });
+
+        downloadBtn.addEventListener("click", async ()=>{
+            try {
+                const res = await fetch(FILE_PATH);
+                if(!res.ok) throw new Error("Download failed");
+                const blob = await res.blob();
+                const a=document.createElement("a");
+                a.href=URL.createObjectURL(blob);
+                a.download=FILE_PATH.split("/").pop();
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch(e){
+                viewer.innerHTML = `<div class="error-msg">${e.message}</div>`;
+            }
+        });
+
+        loadExcel(FILE_PATH);
+    })();
+</script>
+
+</body>
+</html>

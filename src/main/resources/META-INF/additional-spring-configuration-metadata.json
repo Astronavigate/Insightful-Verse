@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "collabora.url",
+      "type": "java.lang.String",
+      "description": "Collabora CODE server url."
+    },
+    {
+      "name": "files.dir",
+      "type": "java.lang.String",
+      "description": "Collabora CODE default read files direction."
+    }
+  ]
+}

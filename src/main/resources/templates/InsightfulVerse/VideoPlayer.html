@@ -1,0 +1,587 @@
+<!--
+  Copyright 2025 Astronavigate
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title th:text="'Insightful Verse Player ' + ${file != null ? ' - ' + file.fileName : 'None'}">Insightful Verse Player</title>
+
+    <style>
+        :root{
+            --header-h: 72px;                 /* header height (used to compute available viewport) */
+            --player-max-w: none;             /* not forcing max width — can set to '1200px' if desired */
+            --side-padding-clamp-min: 12px;   /* minimal left/right padding */
+            --side-padding-clamp-mid: 4vw;    /* responsive mid value */
+            --side-padding-clamp-max: 64px;   /* max left/right padding */
+            --vertical-padding: 12px;         /* top/bottom padding inside .video-wrap */
+            --v-gap-ratio: 0.03;              /* additional vertical safety gap ratio (3%) */
+            --subtitle-max-lines: 4;          /* maximum subtitle lines to render */
+            --simultaneous-eps: 0.05;         /* seconds tolerance to treat lines as simultaneous */
+        }
+
+        /* Reset + base */
+        html,body { height:100%; margin:0; background:#0a0a0a; color:#ddd; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; -webkit-font-smoothing:antialiased; box-sizing:border-box; }
+        *, *::before, *::after { box-sizing:inherit; }
+
+        /* Container that takes viewport minus header */
+        .video-wrap {
+            height: calc(100vh - var(--header-h));
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            overflow:hidden;
+            background: #0a0a0a;
+            /* Responsive left/right padding with clamp */
+            padding-left: clamp(var(--side-padding-clamp-min), var(--side-padding-clamp-mid), var(--side-padding-clamp-max));
+            padding-right: clamp(var(--side-padding-clamp-min), var(--side-padding-clamp-mid), var(--side-padding-clamp-max));
+            /* Top/bottom padding */
+            padding-top: var(--vertical-padding);
+            padding-bottom: var(--vertical-padding);
+        }
+
+        /* Player box: JS will set explicit width & height to fit inside available area */
+        .player-box {
+            position:relative;
+            width:100%;
+            max-width: var(--player-max-w);
+            height:100%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            border-radius:12px;
+            overflow:hidden;
+            background: #0a0a0a;
+        }
+
+        /* Video element: fills the player-box area, preserves aspect ratio */
+        video {
+            width:100%;
+            height:100%;
+            object-fit:contain; /* keep full frame visible; change to 'cover' if you prefer no black bars and allow cropping */
+            background: #000;   /* ensure black background behind video */
+            display:block;
+            max-width:100%;
+            max-height:100%;
+        }
+
+        /* Subtitle overlay */
+        .sub-overlay {
+            pointer-events: none;
+            position:absolute;
+            inset:0;
+            z-index:50;
+            display:flex;
+            align-items:flex-end;
+            justify-content:center;
+            padding: 0 6%;
+            box-sizing:border-box;
+        }
+
+        .sub-line-wrap {
+            pointer-events:none;
+            margin-bottom: clamp(2.2vh, 4.2vh, 5.5vh); /* base bottom offset; adjusted by JS when player size changes */
+            background: transparent;
+            padding: 2px 6px;
+            border-radius:6px;
+            max-width: 88%;
+            text-align:center;
+            box-sizing:border-box;
+        }
+
+        .sub-lines {
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+            align-items:center;
+            justify-content:center;
+            pointer-events:none;
+            max-height: 34vh;
+            overflow:hidden;
+            width:100%;
+        }
+
+        /* Subtitle appearance:
+           - multiple text-shadow layers approximate a per-stroke dark outline
+           - final soft blur shadow for depth
+        */
+        .sub-line {
+            display:block;
+            margin:0;
+            line-height:1.2;
+            font-size: clamp(1.05rem, calc(0.98rem + 1vw), 1.95rem);
+            color:#ffffff;
+            font-weight:700;
+            white-space: pre-wrap;
+            hyphens:auto;
+            word-wrap:break-word;
+            pointer-events:none;
+            max-width:100%;
+            text-shadow:
+                    -2px -2px 0 rgba(0,0,0,0.95),
+                    2px -2px 0 rgba(0,0,0,0.95),
+                    -2px  2px 0 rgba(0,0,0,0.95),
+                    2px  2px 0 rgba(0,0,0,0.95),
+                    -1px  0px 0 rgba(0,0,0,0.95),
+                    1px  0px 0 rgba(0,0,0,0.95),
+                    0px -1px 0 rgba(0,0,0,0.95),
+                    0px  1px 0 rgba(0,0,0,0.95),
+                    0px  6px 18px rgba(0,0,0,0.45); /* soft blurred shadow beneath */
+        }
+
+        /* Toggle button (top-right) */
+        #subtitle-toggle-icon {
+            position:absolute;
+            right:10px;
+            top:10px;
+            z-index:120;
+            width:42px;
+            height:42px;
+            border-radius:8px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+            opacity:0;
+            transform: translateY(6px);
+            transition: opacity .16s ease, transform .12s ease;
+            pointer-events:auto;
+            background: rgba(0,0,0,0.45);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .player-box:hover #subtitle-toggle-icon,
+        .player-box:focus-within #subtitle-toggle-icon { opacity:0.98; transform: translateY(0); }
+        @media (hover:none) { #subtitle-toggle-icon { opacity:0.76; transform:translateY(0); } }
+
+        .sub-hint {
+            position:absolute;
+            right:60px;
+            top:12px;
+            z-index:130;
+            font-size:0.82rem;
+            color:#fff;
+            background: rgba(0,0,0,0.45);
+            padding:6px 10px;
+            border-radius:6px;
+            display:none;
+            pointer-events:none;
+            opacity:0;
+            transition: opacity .3s ease;
+        }
+
+        @media (max-width:640px){
+            .sub-line { font-size: clamp(0.95rem, calc(0.9rem + 1.5vw), 1.45rem); }
+            .sub-line-wrap { margin-bottom: 7vh; padding: 4px 6px; }
+            #subtitle-toggle-icon { width:38px; height:38px; right:8px; top:8px; }
+            .sub-hint { right:52px; top:8px; font-size:0.75rem; }
+            .sub-lines { max-height:30vh; gap:4px; }
+        }
+
+        /* Prevent tiny scrollbars due to subpixel rounding */
+        html, body { overscroll-behavior-y: none; }
+    </style>
+
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+</head>
+<body style="background-color: #0a0a0a;">
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="video-wrap" id="videoWrap">
+    <div class="player-box" id="playerBox">
+        <video id="player" controls crossorigin="anonymous" th:if="${file != null}">
+            <source th:src="${file.filePath}" th:type="'video/' + ${file.type}" />
+            <p>Your browser does not support video playback.</p>
+        </video>
+
+        <div id="subOverlay" class="sub-overlay" aria-live="polite" role="region">
+            <div class="sub-line-wrap">
+                <div id="subCur" class="sub-lines" aria-hidden="false"></div>
+            </div>
+        </div>
+
+        <div id="subtitle-toggle-icon" title="Toggle subtitles (T)" role="button" aria-pressed="false" aria-label="Toggle subtitles">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <rect x="2" y="4" width="20" height="16" rx="2" ry="2" fill="none" stroke="none"></rect>
+                <path d="M6 8h12M6 12h8" stroke="#fff" stroke-width="1.6"></path>
+                <path d="M12 16h6" stroke="#fff" stroke-width="1.6"></path>
+            </svg>
+        </div>
+
+        <div id="subHint" class="sub-hint" aria-hidden="true"></div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const FILE_PATH = /*[[${file != null ? file.filePath : null}]]*/ null;
+    const FILE_TYPE = /*[[${file != null ? file.type : null}]]*/ null;
+    /*]]>*/
+</script>
+
+<script>
+    (function(){
+        const log = (...a)=>console.log('[SUBT-INVIDEO]',...a);
+        if(!FILE_PATH){ log('FILE_PATH missing; subtitles disabled.'); return; }
+
+        // Elements
+        const videoWrap = document.getElementById('videoWrap');
+        const playerBox = document.getElementById('playerBox');
+        const video = document.getElementById('player');
+        const overlay = document.getElementById('subOverlay');
+        const curEl = document.getElementById('subCur');
+        const hint = document.getElementById('subHint');
+        const toggleIcon = document.getElementById('subtitle-toggle-icon');
+
+        // Toggle button
+        if(toggleIcon){
+            toggleIcon.addEventListener('click', (e)=>{ e.stopPropagation(); e.preventDefault(); if(window._subtitle_fix && typeof window._subtitle_fix.toggle === 'function'){ window._subtitle_fix.toggle(); } else { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'T' })); } });
+            let tm=null;
+            toggleIcon.addEventListener('touchstart', ()=>{ tm = setTimeout(()=>toggleIcon.click(), 600); }, { passive:true });
+            toggleIcon.addEventListener('touchend', ()=>{ if(tm) clearTimeout(tm); }, { passive:true });
+        }
+
+        // Resolve file URL/base
+        let fileUrl;
+        try { fileUrl = (typeof FILE_PATH === 'string' && (FILE_PATH.startsWith('http://') || FILE_PATH.startsWith('https://'))) ? FILE_PATH : new URL(FILE_PATH, location.origin).href; } catch(e) { fileUrl = location.origin + FILE_PATH; }
+        const clean = fileUrl.split('#')[0].split('?')[0];
+        const base = clean.replace(/\.[^/.]+$/, '');
+        log('fileUrl:', fileUrl, 'base:', base);
+
+        // subtitle loads/parsing (unchanged functionality)
+        const candidates = [{ext:'.vtt',type:'vtt'},{ext:'.srt',type:'srt'},{ext:'.lrc',type:'lrc'}];
+        let cues = [], usingNative = true, TOL = 0.200;
+
+        async function fetchIfExists(url){
+            try{ const r = await fetch(url, { credentials:'same-origin' }); if(!r.ok) return { ok:false, status:r.status }; return { ok:true, text: await r.text(), contentType: r.headers.get('content-type') }; } catch(e){ return { ok:false, error:e }; }
+        }
+
+        function parseSrtToCues(srtText){
+            const blocks = srtText.replace(/\r+/g,'').split('\n\n').filter(Boolean);
+            const out = [];
+            for(const b of blocks){
+                const lines = b.split('\n').filter(Boolean);
+                if(lines.length<2) continue;
+                let idx=0; if(/^\d+$/.test(lines[0].trim())) idx=1;
+                const timeLine = lines[idx] || '';
+                const m = timeLine.match(/(\d{2}:\d{2}:\d{2}[.,]\d{1,3})\s*-->\s*(\d{2}:\d{2}:\d{2}[.,]\d{1,3})/);
+                if(!m) continue;
+                function toSec(ts){ const parts = ts.replace(',', '.').split(':'); const h=parseInt(parts[0],10), mm=parseInt(parts[1],10); const sp = parts[2].split('.'); const s=parseInt(sp[0],10); const ms = sp[1]? parseInt((sp[1]+'000').slice(0,3),10):0; return h*3600 + mm*60 + s + ms/1000; }
+                out.push({ start: toSec(m[1]), end: toSec(m[2]), text: lines.slice(idx+1).join('\n').trim() });
+            }
+            out.sort((a,b)=>a.start-b.start); return out;
+        }
+
+        function parseLrcToCues(lrcText){
+            const lines = lrcText.replace(/\r+/g,'').split('\n'); const raw=[];
+            for(const ln of lines){
+                if(!ln) continue;
+                const parts = ln.split(/(?=\[\d{1,2}:\d{2}(?:\.\d{1,3})?\])/);
+                for(const p of parts){
+                    const m = p.match(/^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\](.*)/);
+                    if(!m) continue;
+                    const mm = parseInt(m[1],10), ss=parseInt(m[2],10), ms = m[3]? parseInt((m[3]+'000').slice(0,3),10):0;
+                    const start = mm*60 + ss + ms/1000; const text = (m[4]||'').trim();
+                    if(text) raw.push({ start, text });
+                }
+            }
+            raw.sort((a,b)=>a.start-b.start);
+            return raw.map((r,i)=>({ start: r.start, end: (i+1<raw.length?raw[i+1].start: r.start+3.0), text: r.text }));
+        }
+
+        function srtToVttText(srtText){
+            const blocks = srtText.replace(/\r+/g,'').split('\n\n').filter(Boolean); let vtt='WEBVTT\n\n';
+            for(const b of blocks){
+                const lines = b.split('\n').filter(Boolean);
+                if(lines.length===0) continue;
+                if(/^\d+$/.test(lines[0].trim())) lines.shift();
+                if(lines.length===0) continue;
+                const timeLine = lines.shift();
+                const tf = timeLine.replace(/,(\d{1,3})/g,(m,p)=>'.'+p.padEnd(3,'0'));
+                vtt += tf + '\n' + lines.join('\n') + '\n\n';
+            }
+            return vtt;
+        }
+
+        function injectVttAsTrack(vttText,label){
+            try{
+                const blob = new Blob([vttText], { type:'text/vtt' });
+                const url = URL.createObjectURL(blob);
+                const tr = document.createElement('track');
+                tr.kind='subtitles'; tr.label=label||'sub'; tr.srclang='zh'; tr.src = url;
+                tr.crossOrigin = 'anonymous';
+                video.appendChild(tr);
+                tr.addEventListener('load', ()=>{ try{ if(!usingNative) tr.mode='hidden'; else tr.mode='showing'; log('Track loaded:', label); }catch(e){log('load err', e)} });
+                log('Injected track', label);
+                return true;
+            } catch(e){ log('inject failed', e); return false; }
+        }
+
+        function setAllTracksMode(mode){ try{ const tt = video.textTracks||[]; for(let i=0;i<tt.length;i++){ try{ tt[i].mode = mode; }catch(e){} } } catch(e){} }
+
+        (async function loadSubtitles(){
+            log('Loading subtitles for in-video overlay...');
+            for(const c of candidates){
+                const url = base + c.ext;
+                log('try', url);
+                const res = await fetchIfExists(url);
+                log('->', res && (res.ok ? ('200; ct=' + res.contentType) : ('status=' + (res.status || res.error))));
+                if(!res || !res.ok) continue;
+
+                if(c.type==='vtt'){
+                    injectVttAsTrack(res.text,'VTT');
+                    try{
+                        const parts=res.text.split(/\n\n+/).filter(Boolean);
+                        cues = parts.map(p=>{
+                            const lines=p.split('\n').filter(Boolean);
+                            const tline = lines.find(l=>l.includes('-->'))||'';
+                            const m=tline.match(/(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})/);
+                            if(!m) return null;
+                            function toSec(ts){ const ps=ts.split(':'); const h=parseInt(ps[0],10),mi=parseInt(ps[1],10); const sp=ps[2].split('.'); const s=parseInt(sp[0],10); const ms=parseInt(sp[1],10); return h*3600+mi*60+s+ms/1000; }
+                            const start=toSec(m[1]), end=toSec(m[2]);
+                            const txt = lines.filter(l=>!l.includes('-->') && !/^\d+$/.test(l)).join('\n').trim();
+                            return { start,end,text:txt };
+                        }).filter(Boolean);
+                    }catch(e){log('VTT parse error', e)}
+                    break;
+                }
+
+                if(c.type==='srt'){
+                    cues = parseSrtToCues(res.text);
+                    const vtt = srtToVttText(res.text);
+                    injectVttAsTrack(vtt,'SRT->VTT');
+                    break;
+                }
+
+                if(c.type==='lrc'){
+                    cues = parseLrcToCues(res.text);
+                    let vtt='WEBVTT\n\n';
+                    for(const cu of cues){
+                        const s=new Date(cu.start*1000).toISOString().substr(11,12);
+                        const e=new Date(cu.end*1000).toISOString().substr(11,12);
+                        vtt += `${s} --> ${e}\n${cu.text}\n\n`;
+                    }
+                    injectVttAsTrack(vtt,'LRC->VTT');
+                    break;
+                }
+            }
+            log('cues.length =', cues.length);
+
+            setTimeout(()=>{
+                try{
+                    const tt = video.textTracks||[];
+                    const info=[];
+                    let anyShowing=false;
+                    for(let i=0;i<tt.length;i++){
+                        try{
+                            info.push({label:tt[i].label,kind:tt[i].kind,mode:tt[i].mode});
+                            if(tt[i].mode==='showing') anyShowing=true;
+                        }catch(e){}
+                    }
+                    log('textTracks', info);
+
+                    if(!anyShowing && cues.length > 0){
+                        log('No native showing -> falling back to web-rendered overlay');
+                        enableCustomRendering(true);
+                    } else {
+                        log('Native active:', anyShowing);
+                        usingNative=true;
+                        overlay.style.display='none';
+                        video.removeEventListener('timeupdate', onCustomTick);
+                        video.addEventListener('timeupdate', onNativeTick);
+                    }
+                }catch(e){
+                    log('check tracks err', e);
+                    if(cues.length>0) enableCustomRendering(true);
+                }
+            }, 600);
+        })();
+
+        /* ========== Fit player to viewport (considers .video-wrap paddings & safety gaps) ========== */
+        function fitPlayerToViewport(vw, vh){
+            try{
+                // compute paddings from CSS
+                const style = getComputedStyle(videoWrap);
+                const padLeft = parseFloat(style.paddingLeft) || 0;
+                const padRight = parseFloat(style.paddingRight) || 0;
+                const padTop = parseFloat(style.paddingTop) || 0;
+                const padBottom = parseFloat(style.paddingBottom) || 0;
+
+                const headerH = (getComputedStyle(document.documentElement).getPropertyValue('--header-h') || '72px').trim();
+                const headerPx = parseInt(headerH,10) || 72;
+
+                // raw viewport minus header
+                const rawAvailW = window.innerWidth - padLeft - padRight;
+                const rawAvailH = Math.max(0, window.innerHeight - headerPx - padTop - padBottom);
+
+                // vertical safety gaps (top+bottom)
+                const gap = Math.round(rawAvailH * parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--v-gap-ratio') || 0.03));
+                const availW = rawAvailW;
+                const availH = Math.max(0, rawAvailH - (gap * 2));
+
+                const aspect = (vw && vh) ? (vw / vh) : (16/9);
+
+                let targetW, targetH;
+                if (availW / availH > aspect) {
+                    targetH = availH;
+                    targetW = Math.round(targetH * aspect);
+                } else {
+                    targetW = availW;
+                    targetH = Math.round(targetW / aspect);
+                }
+
+                // ensure target not exceed raw avail (some safety)
+                if(targetW > rawAvailW){ targetW = rawAvailW; targetH = Math.round(targetW / aspect); }
+                if(targetH > rawAvailH){ targetH = rawAvailH; targetW = Math.round(targetH * aspect); }
+
+                // write sizes to playerBox
+                playerBox.style.width = targetW + 'px';
+                playerBox.style.height = targetH + 'px';
+                playerBox.style.maxWidth = '100%';
+                playerBox.style.maxHeight = '100%';
+
+                // adjust subtitle bottom offset relative to player height for nicer spacing
+                const wrap = document.querySelector('.sub-line-wrap');
+                if(wrap){
+                    const mbPx = Math.max( (targetH * 0.055), 20 );
+                    wrap.style.marginBottom = mbPx + 'px';
+                }
+
+                log('fitPlayer:', {rawAvailW, rawAvailH, padLeft, padRight, padTop, padBottom, gap, aspect, targetW, targetH});
+            }catch(e){ log('fit err', e); }
+        }
+
+        // on metadata loaded, fit player
+        video.addEventListener('loadedmetadata', ()=>{
+            try{
+                const vw = video.videoWidth || 16;
+                const vh = video.videoHeight || 9;
+                fitPlayerToViewport(vw, vh);
+                setTimeout(()=>renderOverlay(), 60);
+            }catch(e){ log('meta err', e); }
+        });
+
+        // window resize - throttle
+        let _rto = null;
+        window.addEventListener('resize', ()=>{
+            if(_rto) clearTimeout(_rto);
+            _rto = setTimeout(()=>{
+                const vw = video.videoWidth || 16;
+                const vh = video.videoHeight || 9;
+                fitPlayerToViewport(vw, vh);
+                renderOverlay();
+            }, 80);
+        });
+
+        /* ========== Web-rendered subtitles ========== */
+        function enableCustomRendering(initial=false){
+            usingNative=false;
+            overlay.style.display='flex';
+            setAllTracksMode('hidden');
+            video.removeEventListener('timeupdate', onNativeTick);
+            video.addEventListener('timeupdate', onCustomTick);
+            renderOverlay();
+            if(!initial) showHint('Web-rendered subtitles enabled');
+            try{ toggleIcon && toggleIcon.setAttribute('aria-pressed','true'); }catch(e){}
+        }
+
+        function onNativeTick(){}
+        function onCustomTick(){ renderOverlay(); }
+
+        function renderOverlay(){
+            if(!cues || cues.length===0){ overlay.style.display='none'; return; }
+            const now = video.currentTime, t = now + TOL;
+            let lo=0, hi=cues.length-1, idx=-1;
+            while(lo<=hi){ const mid=Math.floor((lo+hi)/2); if(cues[mid].start <= t){ idx=mid; lo=mid+1; } else hi=mid-1; }
+            if(idx===-1){ overlay.style.display='none'; return; }
+            const base = cues[idx];
+            if(!(now + TOL >= base.start && now - TOL < base.end)){ overlay.style.display='none'; return; }
+
+            // collect near-simultaneous lines
+            const EPS = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--simultaneous-eps')) || 0.05;
+            const lines = [];
+            for(let i=idx;i>=0;i--){
+                if(Math.abs(cues[i].start - base.start) <= EPS){
+                    if(cues[i].text) lines.unshift(cues[i].text);
+                } else break;
+            }
+            for(let i=idx+1;i<cues.length;i++){
+                if(Math.abs(cues[i].start - base.start) <= EPS){
+                    if(cues[i].text) lines.push(cues[i].text);
+                } else break;
+            }
+
+            if(lines.length===0){ overlay.style.display='none'; return; }
+
+            curEl.innerHTML = '';
+            const MAX_LINES = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--subtitle-max-lines')) || 4;
+            const showLines = lines.slice(0, MAX_LINES);
+            for(const ln of showLines){
+                const d = document.createElement('div');
+                d.className = 'sub-line';
+                d.textContent = ln;
+                curEl.appendChild(d);
+            }
+            overlay.style.display = 'flex';
+        }
+
+        function showHint(text){
+            try{
+                hint.textContent = text;
+                hint.style.display = 'block';
+                hint.style.transition = 'none';
+                hint.style.opacity = '1';
+                hint.setAttribute('aria-hidden','false');
+                if(hint._t) clearTimeout(hint._t);
+                hint._t = setTimeout(()=>{
+                    hint.style.transition = 'opacity .4s';
+                    hint.style.opacity = '0';
+                    hint.setAttribute('aria-hidden','true');
+                    setTimeout(()=>hint.style.display='none', 400);
+                }, 1300);
+            }catch(e){}
+        }
+
+        // keyboard shortcuts
+        window.addEventListener('keydown',(e)=>{
+            if(e.key==='t'||e.key==='T'){
+                if(usingNative){
+                    enableCustomRendering();
+                    showHint('Web-rendered subtitles enabled');
+                } else {
+                    usingNative=true;
+                    overlay.style.display='none';
+                    setAllTracksMode('showing');
+                    video.removeEventListener('timeupdate', onCustomTick);
+                    video.addEventListener('timeupdate', onNativeTick);
+                    showHint('Browser subtitles enabled');
+                    try{ toggleIcon && toggleIcon.setAttribute('aria-pressed','false'); }catch(e){}
+                }
+            }
+            if(e.key==='d'||e.key==='D'){ printDebug(); }
+        });
+
+        // debug info
+        function printDebug(){ try{ const tt = video.textTracks||[]; const info=[]; for(let i=0;i<tt.length;i++){ try{ info.push({idx:i,label:tt[i].label,kind:tt[i].kind,mode:tt[i].mode}); }catch(e){} } log('DEBUG => fileUrl:', fileUrl, 'base:', base, 'cues:', cues.length, 'textTracks:', info, 'usingNative:', usingNative); alert('Debug info printed to console'); }catch(e){ log('printDebug err', e); } }
+
+        // small helpers for subtitle loading functions already defined above
+        window._subtitle_fix = { fileUrl, base, cues, toggle: ()=>{ if(usingNative){ enableCustomRendering(); showHint('Web-rendered subtitles enabled'); } else { usingNative=true; overlay.style.display='none'; setAllTracksMode('showing'); video.removeEventListener('timeupdate', onCustomTick); video.addEventListener('timeupdate', onNativeTick); showHint('Browser subtitles enabled'); } }, print: printDebug, stop: ()=>{ try{ setAllTracksMode('hidden'); overlay.style.display='none'; video.removeEventListener('timeupdate', onCustomTick); log('stopped'); }catch(e){} } };
+
+        log('In-video subtitle ready. T toggle · D debug.');
+    })();
+</script>
+</body>
+</html>

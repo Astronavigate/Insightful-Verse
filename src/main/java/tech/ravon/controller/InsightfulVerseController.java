@@ -196,85 +196,104 @@ public class InsightfulVerseController {
         return "InsightfulVerse/Personal";
     }
 
-    @RequestMapping("/InsightfulVerse/VPlayer")
-    public String IVIEPVPlayer(HttpServletRequest request) {
+    @RequestMapping("/InsightfulVerse/Player")
+    public String IVIEPPlayer(HttpServletRequest request) {
         File file = (File) request.getSession().getAttribute("file");
         request.setAttribute("file", file);
-        System.out.println(file);
-        return "InsightfulVerse/VPlayer";
-    }
+        switch (file.getType().toLowerCase()) {
+            case "mp4", "mkv", "mov", "wmv" -> {
+                return "InsightfulVerse/VideoPlayer";
+            }
+            case "wav", "wma", "mp3", "flac", "m4a" -> {
+                String filepath = System.getProperty("user.dir") + "/src/main/resources/static" + file.getFilePath();
+                java.io.File iofile = new java.io.File(filepath);
 
-    @RequestMapping("/InsightfulVerse/APlayer")
-    public String IVIEPAPlayer(HttpServletRequest request) {
-        File file = (File) request.getSession().getAttribute("file");
-        request.setAttribute("file", file);
-        String filepath = System.getProperty("user.dir") + "/src/main/resources/static" + file.getFilePath();
-        java.io.File iofile = new java.io.File(filepath);
+                if (iofile != null && iofile.exists()) {
+                    System.out.println("file exists");
+                    try {
+                        AudioFile audioFile = AudioFileIO.read(iofile);
+                        Tag tag = audioFile.getTag();
+                        AudioHeader header = audioFile.getAudioHeader();
 
-        if (iofile != null && iofile.exists()) {
-            System.out.println("file exists");
-            try {
-                AudioFile audioFile = AudioFileIO.read(iofile);
-                Tag tag = audioFile.getTag();
-                AudioHeader header = audioFile.getAudioHeader();
-
-                // 输出所有标签信息
-                if (tag != null) {
-                    for (FieldKey key : FieldKey.values()) {
-                        try {
-                            String value = tag.getFirst(key);
-                            if (value != null && !value.trim().isEmpty()) {
-                                request.setAttribute(key.name().toLowerCase(), value);
-                                System.out.println(key.name() + ": " + value);
+                        // 输出所有标签信息
+                        if (tag != null) {
+                            for (FieldKey key : FieldKey.values()) {
+                                try {
+                                    String value = tag.getFirst(key);
+                                    if (value != null && !value.trim().isEmpty()) {
+                                        request.setAttribute(key.name().toLowerCase(), value);
+                                        System.out.println(key.name() + ": " + value);
+                                    }
+                                } catch (UnsupportedOperationException | KeyNotFoundException e) {
+                                    // 忽略不支持或不存在的字段
+                                }
                             }
-                        } catch (UnsupportedOperationException | KeyNotFoundException e) {
-                            // 忽略不支持或不存在的字段
+
+                            // 获取封面
+                            List<Artwork> artworkList = tag.getArtworkList();
+                            if (!artworkList.isEmpty()) {
+                                Artwork artwork = artworkList.get(0);
+                                byte[] imageData = artwork.getBinaryData();
+                                String mime = artwork.getMimeType();
+                                String base64 = Base64.getEncoder().encodeToString(imageData);
+                                String dataUri = "data:" + mime + ";base64," + base64;
+                                request.setAttribute("cover", dataUri);
+
+                                // 输出 Base64 前 20 个字符
+                                System.out.println("Cover(Base64 20 chars): " + (base64.length() > 20 ? base64.substring(0, 20) : base64));
+                            }
                         }
-                    }
 
-                    // 获取封面
-                    List<Artwork> artworkList = tag.getArtworkList();
-                    if (!artworkList.isEmpty()) {
-                        Artwork artwork = artworkList.get(0);
-                        byte[] imageData = artwork.getBinaryData();
-                        String mime = artwork.getMimeType();
-                        String base64 = Base64.getEncoder().encodeToString(imageData);
-                        String dataUri = "data:" + mime + ";base64," + base64;
-                        request.setAttribute("cover", dataUri);
+                        // 音频文件信息
+                        if (header != null) {
+                            request.setAttribute("duration", header.getTrackLength());
+                            request.setAttribute("bitrate", header.getBitRate());
+                            request.setAttribute("sampleRate", header.getSampleRateAsNumber());
+                            request.setAttribute("channels", header.getChannels());
+                            request.setAttribute("encodingType", header.getEncodingType());
 
-                        // 输出 Base64 前 20 个字符
-                        System.out.println("Cover(Base64 20 chars): " + (base64.length() > 20 ? base64.substring(0, 20) : base64));
+                            System.out.println("Duration: " + header.getTrackLength());
+                            System.out.println("Bitrate: " + header.getBitRate());
+                            System.out.println("SampleRate: " + header.getSampleRateAsNumber());
+                            System.out.println("Channels: " + header.getChannels());
+                            System.out.println("EncodingType: " + header.getEncodingType());
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
-
-                // 音频文件信息
-                if (header != null) {
-                    request.setAttribute("duration", header.getTrackLength());
-                    request.setAttribute("bitrate", header.getBitRate());
-                    request.setAttribute("sampleRate", header.getSampleRateAsNumber());
-                    request.setAttribute("channels", header.getChannels());
-                    request.setAttribute("encodingType", header.getEncodingType());
-
-                    System.out.println("Duration: " + header.getTrackLength());
-                    System.out.println("Bitrate: " + header.getBitRate());
-                    System.out.println("SampleRate: " + header.getSampleRateAsNumber());
-                    System.out.println("Channels: " + header.getChannels());
-                    System.out.println("EncodingType: " + header.getEncodingType());
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
+                return "InsightfulVerse/AudioPlayer";
             }
         }
-
-        return "InsightfulVerse/APlayer";
+        System.out.println(file);
+        return "InsightfulVerse/Player";
     }
 
     @RequestMapping("/InsightfulVerse/Reader")
     public String IVIEPReader(HttpServletRequest request) {
         File file = (File) request.getSession().getAttribute("file");
         request.setAttribute("file", file);
-        return "InsightfulVerse/Reader";
+        switch (file.getType().toLowerCase()) {
+            case "doc", "docx" -> {
+                return "InsightfulVerse/WordReader";
+            }
+            case "xls", "xlsm", "xlsx" -> {
+                return "InsightfulVerse/ExcelReader";
+            }
+            case "ppt", "pptx" -> {
+                return "InsightfulVerse/PowerPointReader";
+            }
+            case "pdf" -> {
+                return "InsightfulVerse/PortableReader";
+            }
+            case "epub" -> {
+                return "InsightfulVerse/BookReader";
+            }
+            default -> {
+                return "InsightfulVerse/TextReader";
+            }
+        }
     }
 
     @RequestMapping("/InsightfulVerse/Painter")
@@ -370,14 +389,11 @@ public class InsightfulVerseController {
         File file = fileService.getFileById(fileId);
         request.getSession().setAttribute("file", file);
         switch (file.getType().toLowerCase()) {
-            case "pdf", "ppt", "xls", "xlsx", "doc", "docx" -> {
+            case "pdf", "ppt", "pptx", "xls", "xlsm", "xlsx", "doc", "docx", "epub" -> {
                 return "redirect:/InsightfulVerse/Reader";
             }
-            case "mp4", "mkv", "mov", "wmv" -> {
-                return "redirect:/InsightfulVerse/VPlayer";
-            }
-            case "wav", "wma", "mp3", "flac", "m4a" -> {
-                return "redirect:/InsightfulVerse/APlayer";
+            case "mp4", "mkv", "mov", "wmv", "wav", "wma", "mp3", "flac", "m4a" -> {
+                return "redirect:/InsightfulVerse/Player";
             }
             case "jpg", "jpeg", "heif", "raw", "png", "gif", "webp" -> {
                 return "redirect:/InsightfulVerse/Painter";
@@ -387,7 +403,7 @@ public class InsightfulVerseController {
                 return "redirect:/InsightfulVerse/Code";
             }
             default -> {
-                return "../../" + file.getFilePath();
+                return "redirect:/InsightfulVerse/Reader";
             }
         }
     }

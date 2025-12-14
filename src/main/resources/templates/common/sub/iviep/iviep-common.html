@@ -15,8 +15,8 @@
 -->
 
 <link rel="icon" href="/image/logo.png" type="image/png">
-<link rel="stylesheet" href="/lib/bootstrap.min.css">
-<link rel="stylesheet" href="/lib/bootstrap-icons.min.css">
+<link rel="stylesheet" href="/lib/bootstrap-5.3.8-dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="/lib/bootstrap-icons-1.13.1/bootstrap-icons.min.css">
 <style>
     /* Main */
     body {
@@ -42,8 +42,8 @@
     /* NavBar */
     .navbar {
         margin-top: 1rem;
-        margin-left: 8%;
-        margin-right: 8%;
+        margin-left: 6%;
+        margin-right: 6%;
         font-size: 1.2rem;
         background-color: #fff;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.117);
@@ -61,6 +61,7 @@
     }
 
     .navbar-brand {
+        margin-left: 3%;
         color: #333;
         font-weight: bold;
     }
@@ -69,9 +70,21 @@
         border: none;
     }
 
+    .navbar .container {
+        margin-right: 3%;
+    }
+
     .navbar-nav .nav-link {
         font-weight: bold;
         transition: 0.3s;
+    }
+
+    .navbar-brand:hover {
+        text-shadow: 0 0 11px rgba(140,140,140,1.0);
+    }
+
+    .nav-link:hover {
+        text-shadow: 0 0 9px rgba(140,140,140,1.0);
     }
 
     /* MainContent */
@@ -291,7 +304,7 @@
 
 <!-- Bootstrap Bundle with Popper -->
 <script src="/lib/popper.min.js"></script>
-<script src="/lib/bootstrap.min.js"></script>
+<script src="/lib/bootstrap-5.3.8-dist/js/bootstrap.min.js"></script>
 <!-- =========================
   .liquid — softer reflective border + improved blur/refraction
   - initial sample + follow scroll/resize (throttled)

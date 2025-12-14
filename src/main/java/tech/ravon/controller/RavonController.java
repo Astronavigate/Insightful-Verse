@@ -42,6 +42,19 @@ public class RavonController {
         return "test";
     }
 
+    @RequestMapping("/testW")
+    public String testWord() {
+        return "testWord";
+    }
+    @RequestMapping("/testS")
+    public String testExcel() {
+        return "testExcel";
+    }
+    @RequestMapping("/testP")
+    public String testPPT() {
+        return "testPPT";
+    }
+
     @RequestMapping("/about")
     public ModelAndView About() {
         ModelAndView mv = new ModelAndView("About");
