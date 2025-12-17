@@ -24,6 +24,7 @@
         min-height: 100vh;
         display: flex;
         flex-direction: column;
+        padding-top: 8.5vh;
     }
 
     .link {
@@ -245,9 +246,10 @@
     }
 
     /* Relyer */
-    iframe {
+    /* iframe {
         margin-top: 1rem;
     }
+    */
 
     /* personal */
     .contain {
@@ -460,7 +462,6 @@
                         }
                     }catch(e){}
                 });
-                console.log(`[LIQUID SAMPLE] Sampling under <${el.tagName.toLowerCase()} class="${el.className}"> at Y: ${y}`);
                 return out.length ? out : null;
             }catch(e){ return null; }
         }
@@ -645,14 +646,22 @@
             }
 
             let tries = 0;
+            // 标志：确保 padding-top 只设置一次
+            let paddingTopSet = false;
+
             function attempt(){
                 tries++;
                 const h = measure(el);
+
+                // 核心优化：在高度稳定后，立即设置 Body Padding，优先保证内容可见性
+                if (isFirst && el.tagName === 'NAV' && h > 0 && !paddingTopSet) {
+                    document.documentElement.style.setProperty('--nav-height', h + 'px');
+                    document.body.style.setProperty('padding-top', (h + TOP_GAP) + 'px');
+                    paddingTopSet = true;
+                }
+
                 if(h > 0 || tries >= RETRIES){
-                    if(isFirst && el.tagName === 'NAV'){
-                        document.documentElement.style.setProperty('--nav-height', h + 'px');
-                        document.body.style.setProperty('padding-top', (h + TOP_GAP) + 'px');
-                    }
+                    // 找到了有效高度，或重试次数用尽，则进入视觉效果计算
                     const samples = sampleUnder(el);
                     const analysis = samples ? { avgRGB: avgRGB(samples), avgLum: samples.map(s=>luminance([s[0],s[1],s[2]])).reduce((a,b)=>a+b,0)/samples.length } : null;
                     applyVisual(el, analysis);
@@ -710,4 +719,3 @@
 
     })();
 </script>
-

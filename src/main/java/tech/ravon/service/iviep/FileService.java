@@ -32,9 +32,9 @@ public interface FileService {
 
     List<File> getCourseFiles(String courseId);
 
-    void deleteFile(String fileId);
+    void deleteFile(HttpServletRequest request, String fileId);
 
-    void deleteCourseFiles(String courseId);
+    void deleteCourseFiles(HttpServletRequest request, String courseId);
 
     void updFile(HttpServletRequest request, HttpServletResponse response);
 

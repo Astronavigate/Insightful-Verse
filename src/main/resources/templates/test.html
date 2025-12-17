@@ -1,101 +1,231 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>DOCX 文档预览 - 秩序化渲染</title>
+    <title>EPUB Reader - System View (Dependency Fix)</title>
 
-    <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
-    <script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/docx-preview/dist/docx-preview.css" />
+    <script src="/lib/jszip-3.10.1/dist/jszip.min.js"></script>
+
+    <script src="/lib/epub.js-0.3.88/epub.min.js"></script>
 
     <style>
-        /* 极简与冷峻风格样式：突出内容，保持克制 */
         body {
-            background-color: #1a1a1a; /* 深色背景，夜色意象 */
-            color: #e0e0e0;
             margin: 0;
-            padding: 40px 0;
-            font-family: Consolas, 'Microsoft YaHei', sans-serif;
+            background: #0a0a0a; /* 极深黑，夜色 */
+            color: #ddd; /* 冰白文字 */
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
         }
-        #document-container {
-            width: 800px; /* 设定固定宽度，体现秩序与架构 */
-            min-height: 900px;
-            margin: 0 auto;
-            padding: 40px;
-            background-color: #ffffff; /* 文档内容区域保持冰白背景 */
-            color: #000000;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* 沉稳的阴影 */
-            border: 1px solid #333333; /* 钢的边缘 */
-            /* docx-preview 库会在这里渲染内容 */
+
+        #toolbar {
+            height: 48px;
+            background: #1e1e1e; /* 深灰/钢色 */
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            z-index: 10;
         }
-        .loading {
-            text-align: center;
-            color: #007acc; /* 深蓝提示色 */
-            padding: 50px;
+
+        #viewer {
+            height: calc(100vh - 48px);
+        }
+
+        button {
+            background: #2b2b2b;
+            color: #ccc;
+            border: 1px solid #444;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s, color 0.2s;
+            border-radius: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        ::selection {
+            background: rgba(100, 149, 237, 0.3);
+        }
+
+        /* 强制覆盖 epub.js 内部可能存在的白色背景 */
+        #viewer iframe {
+            background-color: #0a0a0a !important;
         }
     </style>
 </head>
 <body>
 
-<div id="document-container" class="loading">
-    <p>独行至远，洞察超越。正在获取文档...</p>
+<div id="toolbar">
+    <button onclick="next()">NEXT ▶</button>
+    <button onclick="prev()">◀ PREV</button>
+    <button onclick="addBookmark()">MARK 🔖</button>
+    <button onclick="addHighlight()">HIGHLIGHT 🖍</button>
 </div>
 
+<div id="viewer"></div>
+
 <script>
-    // 目标文档路径
-    const DOCX_URL = "/doc/test.docx";
-    // 渲染容器
-    const container = document.getElementById("document-container");
+    /*************************************
+     * 核心配置
+     *************************************/
+    const bookId = 1000000000;
+    const userId = 1000000000;
+    const epubUrl = "/doc/test.epub";
+    const isLogin = userId !== null;
+    const HIGHLIGHT_COLOR = "rgba(100, 149, 237, 0.5)";
 
-    /**
-     * [意志与理智] 核心文档加载与渲染模块
-     */
-    async function loadAndRenderDocx() {
-        try {
-            // 1. 发起网络请求，获取文档二进制数据
-            // responseType 必须设置为 'arraybuffer' 以获取文件字节流，这是 docx-preview 所需的输入格式。
-            const response = await fetch(DOCX_URL);
+    console.log("System Status [Start]: EPUB Reader Initializing.");
 
-            if (!response.ok) {
-                // 严格的逻辑检查，拒绝模糊状态
-                throw new Error(`无法获取文件。HTTP 状态码: ${response.status}`);
-            }
-
-            // 2. 将响应体转换为 ArrayBuffer
-            const docxArrayBuffer = await response.arrayBuffer();
-
-            // 3. 定义渲染选项 (Options) - 保持极简默认
-            const renderOptions = {
-                className: "docx",     // 默认样式类名
-                inWrapper: true,       // 启用包装器，保持页面结构秩序
-                ignoreWidth: false,    // 保留文档宽度信息
-            };
-
-            // 清除加载提示
-            container.classList.remove('loading');
-            container.innerHTML = '文档解析中...';
-
-            // 4. 调用 docx.renderAsync 异步渲染
-            // 将 ArrayBuffer 和容器传入，实现纯前端解析
-            await docx.renderAsync(docxArrayBuffer, container, null, renderOptions);
-
-            console.log(`[秩序] 文档：${DOCX_URL} 渲染成功，功能已实现。`);
-
-        } catch (error) {
-            console.error("[错误] 文档渲染失败:", error);
-            // 失败处理：克制且清晰地显示错误
-            container.classList.remove('loading');
-            container.innerHTML = `
-                <div style="color: #d9534f; text-align: center; padding: 50px;">
-                    [错误] 渲染失败。请确认路径和服务器配置正确。<br>
-                    原因: ${error.message}
-                </div>
-            `;
-        }
+    // 检查依赖 (System Integrity Check)
+    if (typeof JSZip === 'undefined') {
+        console.error("CRITICAL ERROR: JSZip dependency missing. Cannot parse EPUB file.");
+    }
+    if (typeof ePub === 'undefined') {
+        console.error("CRITICAL ERROR: 'epub.js' dependency missing.");
     }
 
-    // 启动流程
-    loadAndRenderDocx();
+    try {
+        /*************************************
+         * 初始化 EPUB
+         *************************************/
+        const book = ePub(epubUrl);
+
+        console.log("Status [Book Instance]: Created successfully.");
+
+        const rendition = book.renderTo("viewer", {
+            width: "100%",
+            height: "100%",
+            spread: "none",
+            themes: {
+                "night": {
+                    "body": { "background": "#0a0a0a !important", "color": "#ddd !important" },
+                    "p": { "color": "#ddd !important" },
+                    "a": { "color": "#6495ED !important" }
+                }
+            }
+        });
+
+        rendition.themes.select("night");
+
+        // 遵循官方文档：先 renderTo，后 display。
+        console.log("Status [Rendition]: Calling display() for initial rendering.");
+        rendition.display();
+
+        // 确保深色样式注入
+        rendition.on("rendered", function(e) {
+            const frameBody = e.document.body;
+            if (frameBody) {
+                frameBody.style.setProperty('background-color', '#0a0a0a', 'important');
+                frameBody.style.setProperty('color', '#ddd', 'important');
+                console.log("Status [Styles]: Dark theme successfully injected.");
+            }
+        });
+
+        // 延迟所有异步操作，仅在解析成功后进行
+        book.ready.then(() => {
+            console.log("Status [Book Ready]: Data parsed successfully. Loading annotations.");
+            loadAnnotations();
+        }).catch(error => {
+            // 捕获 EPUB 文件解析失败的错误
+            console.error("CRITICAL: EPUB file load/parse error. Check dependencies or server MIME Type.", error);
+            document.getElementById('viewer').innerHTML = `<div style="color: red; padding: 20px;">系统错误：EPUB 文件无法解析。详情请检查 Console。</div>`;
+        });
+
+        /********************
+         * 翻页、加载标注、保存等功能实现 (Functionality)
+         ********************/
+        function next() { rendition.next(); }
+        function prev() { rendition.prev(); }
+
+        function loadAnnotations() {
+            if (!isLogin) {
+                loadLocalAnnotations();
+                return;
+            }
+            fetch(`/api/annotation/list?userId=${userId}&bookId=${bookId}`)
+                .then(r => r.json())
+                .then(list => {
+                    list.forEach(a => applyAnnotation(a));
+                })
+                .catch(e => console.error("Error loading remote annotations:", e));
+        }
+
+        function applyAnnotation(a) {
+            if (a.type === "highlight") {
+                rendition.annotations.highlight(
+                    a.cfi,
+                    {},
+                    () => {},
+                    "highlight",
+                    { fill: a.color || HIGHLIGHT_COLOR }
+                );
+            }
+        }
+
+        function loadLocalAnnotations() {
+            try {
+                const list = JSON.parse(localStorage.getItem(bookId) || "[]");
+                list.forEach(a => applyAnnotation(a));
+            } catch (e) {
+                console.error("Local storage corruption detected.", e);
+            }
+        }
+
+        function saveLocal(annotation) {
+            const list = JSON.parse(localStorage.getItem(bookId) || "[]");
+            list.push(annotation);
+            localStorage.setItem(bookId, JSON.stringify(list));
+        }
+
+        function addBookmark() {
+            const cfi = rendition.currentLocation().start.cfi;
+            const annotation = { userId, bookId, type: "bookmark", cfi };
+            save(annotation);
+        }
+
+        function addHighlight() {
+            alert("请选中文本，创建高亮。");
+            const handleSelected = function (cfiRange) {
+                rendition.off("selected", handleSelected);
+                if (!cfiRange) return;
+                const annotation = { userId, bookId, type: "highlight", cfi: cfiRange, color: HIGHLIGHT_COLOR };
+                save(annotation);
+            };
+            rendition.on("selected", handleSelected);
+        }
+
+        function save(annotation) {
+            if (!isLogin) {
+                saveLocal(annotation);
+                applyAnnotation(annotation);
+                return;
+            }
+
+            fetch("/api/annotation/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(annotation)
+            })
+                .then(response => {
+                    if (response.ok) {
+                        applyAnnotation(annotation);
+                    } else {
+                        console.error("Server save failed with status:", response.status);
+                    }
+                })
+                .catch(e => console.error("Network or save error:", e));
+        }
+
+    } catch (e) {
+        console.error("Critical Initialization Failure (Try-Catch Block):", e);
+    }
 </script>
 
 </body>

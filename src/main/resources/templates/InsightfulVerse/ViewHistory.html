@@ -103,7 +103,7 @@
     <form action="/InsightfulVerse/ViewHistory" class="form-inline">
         <div class="input-group mb-3">
             <span class="input-group-text" th:text="#{insightful.view.perpage}">Displayed per page:</span>
-            <input type="number" class="form-control" min="1" name="max"
+            <input type="number" class="form-control" min="1" max="200" name="max"
                    th:placeholder="#{insightful.view.placeholder}"
                    th:value="${param.max != null ? param.max : 15}">
             <button class="btn btn-outline-secondary" type="submit" th:text="#{insightful.view.refresh}">Refresh</button>

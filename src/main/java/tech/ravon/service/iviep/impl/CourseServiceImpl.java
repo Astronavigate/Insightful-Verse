@@ -16,6 +16,7 @@
 
 package tech.ravon.service.iviep.impl;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import tech.ravon.mapper.CourseDao;
 import tech.ravon.mapper.FileDao;
@@ -55,12 +56,12 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public void deleteCourse(String courseId) {
+    public void deleteCourse(HttpServletRequest request, String courseId) {
         List<File> files = fileService.getCourseFiles(courseId);
         for (File file : files) {
             viewRecordService.delRecordByFileId(String.valueOf(file.getFileId()));
         }
-        fileService.deleteCourseFiles(courseId);
+        fileService.deleteCourseFiles(request, courseId);
         courseDao.deleteCourse(courseId);
     }
 

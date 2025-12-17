@@ -285,7 +285,7 @@ public class InsightfulVerseController {
                 return "InsightfulVerse/PowerPointReader";
             }
             case "pdf" -> {
-                return "InsightfulVerse/PortableReader";
+                return "InsightfulVerse/PostScriptReader";
             }
             case "epub" -> {
                 return "InsightfulVerse/BookReader";
@@ -395,10 +395,10 @@ public class InsightfulVerseController {
             case "mp4", "mkv", "mov", "wmv", "wav", "wma", "mp3", "flac", "m4a" -> {
                 return "redirect:/InsightfulVerse/Player";
             }
-            case "jpg", "jpeg", "heif", "raw", "png", "gif", "webp" -> {
+            case "jpg", "jpeg", "heif", "raw", "png", "gif", "webp", "ico" -> {
                 return "redirect:/InsightfulVerse/Painter";
             }
-            case "cpp", "py", "c", "java", "html", "css", "js", "jsp", "php", "aspx" -> {
+            case "cpp", "py", "c", "h", "java", "html", "css", "js", "jsp", "php", "aspx", "ts", "rs", "sql" -> {
                 request.getSession().setAttribute("codeFile", true);
                 return "redirect:/InsightfulVerse/Code";
             }
@@ -435,7 +435,7 @@ public class InsightfulVerseController {
         if (user == null || user.getUserId() == null || (!user.getAuthority().equals("infinite") && !user.getAuthority().equals("admin"))) {
             return "redirect:/InsightfulVerse/CourseInfo?courseId=" + courseId;
         }
-        fileService.deleteFile(fileId);
+        fileService.deleteFile(request, fileId);
         return "redirect:" + request.getHeader("Referer");
     }
 
@@ -476,7 +476,7 @@ public class InsightfulVerseController {
         }
 
         // 删除课程
-        courseService.deleteCourse(courseId);
+        courseService.deleteCourse(request, courseId);
 
         // 获取来源页
         String referer = request.getHeader("Referer");

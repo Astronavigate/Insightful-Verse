@@ -16,6 +16,7 @@
 
 package tech.ravon.service.iviep;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import tech.ravon.model.iviep.Course;
 
@@ -26,7 +27,7 @@ public interface CourseService {
 
     List<Course> allCourse();
 
-    void deleteCourse(String courseId);
+    void deleteCourse(HttpServletRequest request, String courseId);
 
     void updateCourse(Course course);
 

@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="'Insightful PDF Reader ' + ${file != null ? ' - ' + file.fileName : 'None'}">PDF Reader</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}"/>
+
+    <!-- PDF.js 库 (使用CDN) -->
+    <script src="/lib/pdfjs-3.11.174/pdf.min.js"></script>
+    <script src="/lib/pdfjs-3.11.174/pdf.worker.min.js"></script>
+
+    <style>
+        :root {
+            --header-h: 72px;
+            --glass-bg: rgba(255,255,255,0.04);
+            --glass-border: rgba(255,255,255,0.06);
+            --primary-text: #e6eef8;
+            --secondary-text: #adb5bd;
+            --background-dark: #0a0a0a;
+            --border-subtle: rgba(255,255,255,0.02);
+            --control-bg: rgba(18,18,18,0.5);
+            --highlight-color: #4a67a0;
+        }
+        html, body {
+            height:100%;
+            margin:0;
+            background:var(--background-dark);
+            color:var(--primary-text);
+            font-family:system-ui, sans-serif;
+            overflow:hidden;
+        }
+        .reader-wrap {
+            height: calc(100vh - var(--header-h));
+            display:flex;
+            flex-direction:column;
+            padding:24px;
+            box-sizing:border-box;
+            align-items:center;
+        }
+        #pdfContainer {
+            width:100%;
+            max-width:1400px;
+            flex:1;
+            border-radius:16px;
+            background:var(--glass-bg);
+            backdrop-filter:blur(12px);
+            border:1px solid var(--glass-border);
+            overflow:hidden;
+            display:flex;
+            flex-direction:column;
+        }
+        #controls {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:10px 16px;
+            gap:12px;
+            background:var(--control-bg);
+            border-bottom:1px solid var(--border-subtle);
+        }
+        .controls-left, .controls-center, .controls-right { display:flex; align-items:center; gap:8px; }
+
+        .control-btn {
+            height:34px;
+            padding:6px 10px;
+            border-radius:8px;
+            border:1px solid rgba(255,255,255,0.08);
+            background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            color:#e9eef8;
+            cursor:pointer;
+            font-weight:400;
+            font-size: 0.9rem;
+            box-shadow:0 2px 8px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .control-btn:hover:not(:disabled) {
+            background:rgba(255,255,255,0.05);
+            box-shadow:0 4px 12px rgba(0,0,0,0.5);
+        }
+        .control-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+        #viewerWrapper {
+            flex:1;
+            display:flex;
+            background:linear-gradient(180deg,#0a0a0a,#0b0b0b);
+            border-top:1px solid var(--border-subtle);
+            position:relative;
+            overflow:auto;
+        }
+        #pdfViewer {
+            flex:1;
+            width:100%;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            padding:20px;
+            overflow-y:auto;
+        }
+
+        /* PDF页面容器 */
+        .pdf-page-container {
+            position: relative;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            background: #fff;
+            max-width: 100%;
+        }
+
+        .pdf-page-canvas {
+            display: block;
+            cursor: text;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 文本选择覆盖层 */
+        .text-layer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.2;
+            line-height: 1.0;
+        }
+
+        .text-layer > span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+        }
+
+        .text-layer ::selection {
+            background: rgba(74, 103, 160, 0.3);
+        }
+
+        /* 高光覆盖层 */
+        .highlight-overlay {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .highlight-rect {
+            position: absolute;
+            border-radius: 2px;
+            mix-blend-mode: multiply;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .highlight-rect:hover {
+            opacity: 0.8;
+        }
+
+        /* 页码指示器 */
+        .page-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #tocDrawer {
+            position:absolute;
+            left:16px;
+            top:16px;
+            bottom:16px;
+            width:360px;
+            max-width:36%;
+            background:rgba(32,32,32,0.8);
+            border-radius:12px;
+            backdrop-filter:blur(8px);
+            border:1px solid rgba(255,255,255,0.04);
+            overflow:auto;
+            padding:12px;
+            display:none;
+            z-index:1200;
+            color:var(--secondary-text);
+            box-shadow:0 8px 40px rgba(0,0,0,0.8);
+        }
+        #tocDrawer h3 {
+            margin:0 0 8px 0;
+            color:#fff;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:8px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 8px;
+        }
+        #tocList { margin-top:8px; }
+        .toc-item {
+            padding:8px 10px;
+            border-radius:6px;
+            cursor:pointer;
+            color:var(--secondary-text);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:8px;
+            transition: background 0.15s;
+        }
+        .toc-item:hover { background:rgba(255,255,255,0.05); color:var(--primary-text); }
+        .bookmark-label { color:#80a2ff; font-weight:600; }
+        .toc-children { margin-left:8px; }
+
+        #pdfViewer::-webkit-scrollbar { width:12px; height:12px; }
+        #pdfViewer::-webkit-scrollbar-track { background: rgba(192,192,192,0.2); border-radius:6px; }
+        #pdfViewer::-webkit-scrollbar-thumb { background: rgba(224,224,224,0.3); border-radius:6px; }
+        #pdfViewer::-webkit-scrollbar-thumb:hover { background: rgba(224,224,224,0.6); }
+
+        #tocDrawer::-webkit-scrollbar { width:12px; height:12px; }
+        #tocDrawer::-webkit-scrollbar-track { background: rgba(224,224,224,0.2); border-radius:6px; }
+        #tocDrawer::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius:6px; }
+        #tocDrawer::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.6); }
+
+        .icon-btn { border:none; background:transparent; color:var(--secondary-text); cursor:pointer; padding:4px; border-radius:6px; transition: all 0.15s; }
+        .icon-btn:hover { background: rgba(255,255,255,0.08); color:var(--primary-text); }
+
+        .error-msg { color:#93c5fd; padding:16px; text-align:center; font-weight:600; }
+
+        .color-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .color-swatch:hover {
+            border-color: #e6eef8;
+        }
+        .color-swatch.active {
+            border-color: #6495ED !important;
+            box-shadow: 0 0 8px #6495ED;
+        }
+
+        /* 页码显示 */
+        #pageInfo {
+            min-width: 100px;
+            text-align: center;
+        }
+
+        /* 加载指示器 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 进度条 */
+        .progress-container {
+            width: 100%;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background-color: #4a67a0;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* 简化后的控制栏布局 */
+        .simplified-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+    </style>
+
+    <!-- 导入公共组件 -->
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
+</head>
+<body style="background-color: #0a0a0a">
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="reader-wrap">
+    <div id="pdfContainer">
+        <div id="controls">
+            <div class="simplified-controls">
+                <div class="controls-left">
+                    <button class="control-btn" id="tocBtn" title="Table of Contents">
+                        <i class="bi bi-list"></i> TOC
+                    </button>
+                    <button class="control-btn" id="bookmarkBtn" title="Bookmark Current Page">
+                        <i class="bi bi-bookmark"></i> MARK
+                    </button>
+                    <button class="control-btn" id="highlightBtn" title="Highlight Selection">
+                        <i class="bi bi-highlighter"></i> HIGHLIGHT
+                    </button>
+                    <button class="control-btn" id="eraserBtn" title="Eraser Mode">
+                        <i class="bi bi-eraser"></i> ERASE
+                    </button>
+                </div>
+
+                <div class="controls-center">
+                    <!-- 缩放控件 -->
+                    <button class="control-btn" id="zoomOutBtn" title="Zoom Out">
+                        <i class="bi bi-dash"></i>
+                    </button>
+                    <span id="zoomLevel" class="control-btn" style="cursor:default">100%</span>
+                    <button class="control-btn" id="zoomInBtn" title="Zoom In">
+                        <i class="bi bi-plus"></i>
+                    </button>
+                </div>
+
+                <div class="controls-right">
+                    <!-- 只显示页码信息，不显示导航按钮 -->
+                    <span id="pageInfo" class="control-btn" style="cursor:default; min-width: 120px;">
+            Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+          </span>
+                    <button class="control-btn" id="downloadBtn" title="Download PDF">
+                        <i class="bi bi-download"></i> Download
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewerWrapper">
+            <div id="pdfViewer">
+                <div style="text-align: center; padding: 50px;">
+                    <div class="loading" style="margin: 0 auto 20px;"></div>
+                    <p>Loading PDF reader...</p>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="loadingProgress"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="tocDrawer" aria-hidden="true">
+                <h3>Table of Contents <button id="tocCloseBtn" class="icon-btn" title="Close">✕</button></h3>
+                <div id="tocList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框部分（与EPUB阅读器相同） -->
+<div class="modal fade" id="bookmarkModal" tabindex="-1" aria-labelledby="bookmarkModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #181818; border: 1px solid rgba(255,255,255,0.1);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <h5 class="modal-title" id="bookmarkModalLabel" style="color: #fff;"><i class="bi bi-bookmark me-2"></i>BOOKMARK Current Page</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bookmarkForm">
+                    <div class="mb-3">
+                        <label for="bookmarkLabel" class="form-label" style="color: #ccc;">Annotation / Label (Optional)</label>
+                        <input type="text" class="form-control" id="bookmarkLabel" maxlength="200" placeholder="E.g., Key Insight on Chapter 3" style="background: #0a0a0a; color: #fff; border-color: rgba(255,255,255,0.2);">
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background: #444; border:none; color:#ddd;">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="bookmarkSaveBtn" style="background: #007bff; border:none; color:#fff;">Save Bookmark</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="highlightModal" tabindex="-1" aria-labelledby="highlightModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #181818; border: 1px solid rgba(255,255,255,0.1);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <h5 class="modal-title" id="highlightModalLabel" style="color: #fff;"><i class="bi bi-highlighter me-2"></i>HIGHLIGHT Select Color & Add Note</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body">
+                <form id="highlightForm">
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #ccc;">Select Tone</label>
+                        <div id="colorSelector" class="d-flex flex-wrap justify-content-center p-2 rounded" style="background: #0a0a0a; border: 1px solid rgba(255,255,255,0.1); gap: 10px;">
+                            <button type="button" class="color-swatch active" data-color="rgba(74,103,160,0.48)" title="Deep Blue (Primary)" style="background: rgba(74,103,160,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(102,153,204,0.48)" title="Icy Cyan" style="background: rgba(102,153,204,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(150,150,150,0.48)" title="Steel Gray" style="background: rgba(150,150,150,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(192,192,192,0.48)" title="Ice Silver" style="background: rgba(192,192,192,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(230,230,230,0.48)" title="Snow White" style="background: rgba(230,230,230,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(50,50,50,0.48)" title="Smoke Gray" style="background: rgba(50,50,50,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(0,0,0,0.48)" title="Shadow Black" style="background: rgba(0,0,0,0.48);"></button> </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="highlightNote" class="form-label" style="color: #ccc;">Annotation / Insight (Optional)</label>
+                        <input type="text" class="form-control" id="highlightNote" maxlength="200" placeholder="E.g., Core concept related to this highlight" style="background: #0a0a0a; color: #fff; border-color: rgba(255,255,255,0.2);">
+                    </div>
+
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="highlightCancelBtn" style="background: #444; border:none; color:#ddd;">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="highlightSaveBtn" style="background: #007bff; border:none; color:#fff;">Save Highlight</button>
+                    </div>
+                    <input type="hidden" id="highlightCfiRange" value="">
+                    <input type="hidden" id="highlightPageNum" value="">
+                    <input type="hidden" id="highlightRects" value="">
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="background: #181818; border: 1px solid rgba(255,255,255,0.1);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <h5 class="modal-title" id="infoModalLabel" style="color: #fff;"><i class="bi bi-info-circle me-1"></i> <span id="infoModalTitle">Notification</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body" id="infoModalBody" style="color: #ccc;">
+                Message content.
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.15);">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="infoModalCancelBtn" style="background: #444; border:none; color:#ddd; display:none;">Cancel</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="infoModalConfirmBtn" style="background: #007bff; border:none; color:#fff;">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var FILE_PATH = /*[[${file != null ? file.filePath : ''}]]*/ '';
+    var FILE_ID = /*[[${file != null ? file.fileId : ''}]]*/ '';
+    var CURRENT_USER_ID = /*[[${session.user != null ? session.user.userId : 'null'}]]*/ null;
+    /*]]>*/
+</script>
+
+<script>
+    // ==
+    // 1. 全局变量与 DOM 元素获取
+    // ==
+
+    // CSRF 辅助函数
+    function getCsrfHeaders() {
+        try {
+            const tokenMeta = document.querySelector('meta[name="_csrf"]');
+            const headerMeta = document.querySelector('meta[name="_csrf_header"]');
+            if (tokenMeta && headerMeta) {
+                const token = tokenMeta.getAttribute('content');
+                const headerName = headerMeta.getAttribute('content');
+                const h = {};
+                h[headerName] = token;
+                return h;
+            }
+        } catch (e) {}
+        return {};
+    }
+
+    // 界面元素
+    const pdfViewer = document.getElementById('pdfViewer');
+    const tocBtn = document.getElementById('tocBtn');
+    const tocDrawer = document.getElementById('tocDrawer');
+    const tocList = document.getElementById('tocList');
+    const tocCloseBtn = document.getElementById('tocCloseBtn');
+
+    // 页码显示
+    const currentPageSpan = document.getElementById('currentPage');
+    const totalPagesSpan = document.getElementById('totalPages');
+
+    // 缩放控件
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    const zoomLevelSpan = document.getElementById('zoomLevel');
+
+    // 功能按钮
+    const bookmarkBtn = document.getElementById('bookmarkBtn');
+    const highlightBtn = document.getElementById('highlightBtn');
+    const eraserBtnEl = document.getElementById('eraserBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // 加载进度条
+    const loadingProgress = document.getElementById('loadingProgress');
+
+    // 模态框相关
+    const infoModalElement = document.getElementById('infoModal');
+    const highlightModalElement = document.getElementById('highlightModal');
+    const bookmarkModalElement = document.getElementById('bookmarkModal');
+    const infoModalTitle = document.getElementById('infoModalTitle');
+    const infoModalBody = document.getElementById('infoModalBody');
+    let infoModalConfirmBtn = document.getElementById('infoModalConfirmBtn');
+    let infoModalCancelBtn = document.getElementById('infoModalCancelBtn');
+
+    // Bootstrap Modal 实例
+    let bookmarkModal = null, highlightModal = null, infoModal = null;
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        bookmarkModal = new bootstrap.Modal(bookmarkModalElement, {});
+        highlightModal = new bootstrap.Modal(highlightModalElement, {});
+        infoModal = new bootstrap.Modal(infoModalElement, {});
+    } else {
+        console.error("Bootstrap JS not found. Modals will not function.");
+    }
+
+    // 表单元素
+    const bookmarkForm = document.getElementById('bookmarkForm');
+    const bookmarkLabelInput = document.getElementById('bookmarkLabel');
+
+    const highlightForm = document.getElementById('highlightForm');
+    const highlightNoteInput = document.getElementById('highlightNote');
+    const highlightCfiRangeInput = document.getElementById('highlightCfiRange');
+    const highlightPageNumInput = document.getElementById('highlightPageNum');
+    const highlightRectsInput = document.getElementById('highlightRects');
+    const colorSelector = document.getElementById('colorSelector');
+
+    // 核心逻辑变量
+    let pdfDocument = null;
+    let currentPageNum = 1;
+    let totalPages = 0;
+    let currentScale = 1.3;
+    let viewerReady = false;
+    let stableBookId = null;
+    let allPagesRendered = false;
+
+    // 状态管理
+    const DEFAULT_HIGHLIGHT_COLOR = "rgba(74, 103, 160, 0.48)";
+    let selectedHighlightColor = DEFAULT_HIGHLIGHT_COLOR;
+    const STORAGE_PREFIX = "pdf_annotations_";
+
+    // 存储当前选区和相关信息
+    let currentSelection = {
+        pageNum: null,
+        rects: [],
+        text: null,
+        startPos: null,
+        endPos: null
+    };
+
+    // 存储高光覆盖层引用
+    let highlightOverlays = {};
+    let highlightElements = {};
+
+    // 本地缓存服务端的标注列表
+    let currentServerAnnotations = [];
+
+    // 页面渲染队列
+    let pageRenderQueue = [];
+    let renderingInProgress = false;
+    let renderedPages = 0;
+
+    // ==
+    // 2. 辅助工具函数
+    // ==
+
+    function showInfoModal(title, message, isConfirm = false, onConfirm = () => {}) {
+        if (!infoModal) {
+            isConfirm ? onConfirm(window.confirm(message)) : window.alert(message);
+            return;
+        }
+
+        infoModalTitle.textContent = title;
+        infoModalBody.innerHTML = message;
+
+        infoModalConfirmBtn.textContent = isConfirm ? 'Confirm' : 'OK';
+        infoModalCancelBtn.style.display = isConfirm ? 'inline-block' : 'none';
+
+        const cloneConfirm = infoModalConfirmBtn.cloneNode(true);
+        infoModalConfirmBtn.parentNode.replaceChild(cloneConfirm, infoModalConfirmBtn);
+        infoModalConfirmBtn = cloneConfirm;
+
+        const cloneCancel = infoModalCancelBtn.cloneNode(true);
+        infoModalCancelBtn.parentNode.replaceChild(cloneCancel, infoModalCancelBtn);
+        infoModalCancelBtn = cloneCancel;
+
+        if (isConfirm) {
+            infoModalConfirmBtn.addEventListener('click', () => { infoModal.hide(); onConfirm(true); }, { once: true });
+            infoModalCancelBtn.addEventListener('click', () => { infoModal.hide(); onConfirm(false); }, { once: true });
+        } else {
+            infoModalConfirmBtn.addEventListener('click', () => { infoModal.hide(); onConfirm(); }, { once: true });
+        }
+
+        infoModal.show();
+    }
+
+    function isPdf(path) {
+        return path && (path.toLowerCase().endsWith('.pdf') || path.toLowerCase().indexOf('.pdf?') !== -1);
+    }
+
+    function getStableBookId() {
+        if (typeof FILE_ID !== 'undefined' && FILE_ID && String(FILE_ID).trim() !== '') return String(FILE_ID);
+        return FILE_PATH || 'unknown-pdf';
+    }
+
+    function saveAnnotationLocal(id, ann) {
+        try {
+            const arr = JSON.parse(localStorage.getItem(STORAGE_PREFIX+id) || "[]");
+            arr.push(ann);
+            localStorage.setItem(STORAGE_PREFIX+id, JSON.stringify(arr));
+        } catch(e){ console.error(e); }
+    }
+
+    // 计算矩形的唯一ID（用于标识高光）
+    function getRectId(rect, pageNum) {
+        return `page${pageNum}_${Math.round(rect[0])}_${Math.round(rect[1])}_${Math.round(rect[2])}_${Math.round(rect[3])}`;
+    }
+
+    // 生成PDF位置标识符（替代CFI）
+    function generatePdfLocation(pageNum, rects) {
+        if (!rects || rects.length === 0) {
+            return `page:${pageNum}`;
+        }
+
+        // 取第一个矩形作为位置参考
+        const rect = rects[0];
+        return `page:${pageNum}|rect:${rect[0]},${rect[1]},${rect[2]},${rect[3]}`;
+    }
+
+    // 解析PDF位置标识符
+    function parsePdfLocation(location) {
+        if (!location) return { pageNum: 1 };
+
+        if (location.startsWith('page:')) {
+            const parts = location.split('|');
+            const pagePart = parts[0];
+            const pageNum = parseInt(pagePart.replace('page:', ''));
+
+            let rect = null;
+            if (parts.length > 1 && parts[1].startsWith('rect:')) {
+                const rectPart = parts[1].replace('rect:', '');
+                rect = rectPart.split(',').map(coord => parseFloat(coord));
+            }
+
+            return { pageNum, rect };
+        }
+
+        // 向后兼容：如果是数字，直接作为页码
+        const pageNum = parseInt(location);
+        if (!isNaN(pageNum)) return { pageNum };
+
+        return { pageNum: 1 };
+    }
+
+    // ==
+    // 3. API 交互函数（与EPUB阅读器相同）
+    // ==
+
+    async function saveAnnotationToServer(ann, type) {
+        try {
+            const headers = Object.assign({ 'Content-Type': 'application/json' }, getCsrfHeaders());
+            const res = await fetch('/api/annotation/save', {
+                method: 'POST', credentials: 'same-origin', headers: headers, body: JSON.stringify(ann)
+            });
+            if (!res.ok) {
+                console.warn(`save ${type} failed:`, res.status);
+                saveAnnotationLocal(ann.bookId, ann);
+            }
+        } catch (e) {
+            console.warn(`save ${type} error`, e);
+            saveAnnotationLocal(ann.bookId, ann);
+        }
+    }
+
+    async function deleteAnnotationFromServer(id) {
+        try {
+            const headers = Object.assign({ 'Content-Type': 'application/x-www-form-urlencoded' }, getCsrfHeaders());
+            const res = await fetch(`/api/annotation/delete?id=${encodeURIComponent(id)}`, {
+                method: 'POST', credentials: 'same-origin', headers: headers
+            });
+            return res.ok;
+        } catch (e) {
+            console.error('deleteAnnotationFromServer error', e);
+            return false;
+        }
+    }
+
+    async function fetchAnnotations() {
+        try {
+            const bookId = stableBookId || getStableBookId();
+            const res = await fetch(`/api/annotation/list?bookId=${encodeURIComponent(bookId)}`, {
+                credentials: 'same-origin'
+            });
+
+            if (res.ok) {
+                return await res.json();
+            } else {
+                console.warn("Failed to fetch annotations:", res.status);
+                return [];
+            }
+        } catch (e) {
+            console.warn("Error fetching annotations:", e);
+            return [];
+        }
+    }
+
+    // ==
+    // 4. PDF 高光渲染与管理
+    // ==
+
+    // 在指定页面上渲染高光
+    function renderHighlightOnPage(pageNum, highlight) {
+        const pageContainer = document.getElementById(`pdf-page-${pageNum}`);
+        if (!pageContainer) return;
+
+        const canvas = pageContainer.querySelector('.pdf-page-canvas');
+        if (!canvas) return;
+
+        // 解析位置信息
+        const location = highlight.cfi ? parsePdfLocation(highlight.cfi) : { pageNum: pageNum };
+        const rect = location.rect || (highlight.rects ? highlight.rects[0] : null);
+        if (!rect) return;
+
+        // 创建或获取高光覆盖层
+        let overlay = highlightOverlays[pageNum];
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'highlight-overlay';
+            overlay.style.width = canvas.style.width;
+            overlay.style.height = canvas.style.height;
+            pageContainer.appendChild(overlay);
+            highlightOverlays[pageNum] = overlay;
+        }
+
+        // 创建高光矩形
+        const highlightRect = document.createElement('div');
+        highlightRect.className = 'highlight-rect';
+        highlightRect.style.left = `${rect[0]}px`;
+        highlightRect.style.top = `${rect[1]}px`;
+        highlightRect.style.width = `${rect[2] - rect[0]}px`;
+        highlightRect.style.height = `${rect[3] - rect[1]}px`;
+        highlightRect.style.backgroundColor = highlight.color || DEFAULT_HIGHLIGHT_COLOR;
+
+        // 存储引用以便删除
+        const rectId = getRectId(rect, pageNum);
+        if (!highlightElements[pageNum]) highlightElements[pageNum] = {};
+        highlightElements[pageNum][rectId] = {
+            element: highlightRect,
+            annotation: highlight
+        };
+
+        // 点击高光可以查看/删除
+        highlightRect.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const ann = highlightElements[pageNum][rectId].annotation;
+            showInfoModal(
+                'Highlight',
+                ann.content ? `Note: ${ann.content}` : 'No note attached',
+                true,
+                async (confirmed) => {
+                    if (confirmed) {
+                        // 用户确认删除
+                        await deleteAnnotationFromServer(ann.id);
+                        await refreshAnnotationsAndToc();
+                    }
+                }
+            );
+        });
+
+        overlay.appendChild(highlightRect);
+    }
+
+    // 渲染所有高光
+    function renderHighlights(annotations) {
+        // 清除现有高光
+        Object.values(highlightOverlays).forEach(overlay => {
+            if (overlay && overlay.parentNode) {
+                overlay.innerHTML = '';
+            }
+        });
+
+        // 清空存储
+        highlightElements = {};
+
+        // 渲染新高光
+        const highlights = annotations.filter(a => a.type === 'highlight');
+        highlights.forEach(highlight => {
+            const location = parsePdfLocation(highlight.cfi);
+            renderHighlightOnPage(location.pageNum, highlight);
+        });
+    }
+
+    // 清除特定页面上的高光
+    function clearHighlightsOnPage(pageNum) {
+        if (highlightOverlays[pageNum]) {
+            highlightOverlays[pageNum].innerHTML = '';
+        }
+        if (highlightElements[pageNum]) {
+            delete highlightElements[pageNum];
+        }
+    }
+
+    // ==
+    // 5. 选区处理逻辑
+    // ==
+
+    function storeSelection(pageNum, rects, text, startPos, endPos) {
+        currentSelection = {
+            pageNum,
+            rects,
+            text,
+            startPos,
+            endPos
+        };
+    }
+
+    function clearSelection() {
+        // 重置选区存储
+        currentSelection = {
+            pageNum: null,
+            rects: [],
+            text: null,
+            startPos: null,
+            endPos: null
+        };
+        document.querySelectorAll('.text-selection-overlay').forEach(el => {
+            el.style.backgroundColor = "rgba(255,255,255,0)";
+        });
+    }
+
+    // 在页面上显示选区视觉反馈
+    function showSelectionOverlay(pageNum, rects) {
+        const pageContainer = document.getElementById(`pdf-page-${pageNum}`);
+        if (!pageContainer) return;
+
+        // 清除旧的选区覆盖层
+        const oldOverlays = pageContainer.querySelectorAll('.text-selection-overlay');
+        oldOverlays.forEach(el => {
+            if (el.parentNode) el.parentNode.removeChild(el);
+        });
+
+        // 为每个矩形创建选区覆盖层
+        rects.forEach(rect => {
+            const overlay = document.createElement('div');
+            overlay.className = 'text-selection-overlay';
+            overlay.style.position = 'absolute';
+            overlay.style.left = `${rect[0]}px`;
+            overlay.style.top = `${rect[1]}px`;
+            overlay.style.width = `${rect[2] - rect[0]}px`;
+            overlay.style.height = `${rect[3] - rect[1]}px`;
+            overlay.style.backgroundColor = 'rgba(74, 103, 160, 0.3)';
+            overlay.style.pointerEvents = 'none';
+            overlay.style.zIndex = '5';
+            pageContainer.appendChild(overlay);
+        });
+    }
+
+    // ==
+    // 6. TOC + 书签管理
+    // ==
+
+    async function loadBookmarksAndRenderToc() {
+        try {
+            const bookId = stableBookId || getStableBookId();
+            stableBookId = bookId;
+
+            // 获取标注列表
+            const serverList = await fetchAnnotations();
+            currentServerAnnotations = serverList;
+
+            // 提取书签
+            const bookmarks = serverList
+                .filter(a => a.type === 'bookmark')
+                .map((a, idx) => {
+                    const location = parsePdfLocation(a.cfi);
+                    return {
+                        id: 'bm-' + a.id,
+                        label: (a.content && a.content.trim()) ? a.content : `Bookmark ${idx + 1}`,
+                        pageNum: location.pageNum,
+                        annotationId: a.id,
+                        isBookmark: true
+                    };
+                });
+
+            // 生成PDF大纲（简单版本 - 页码列表）
+            const pdfOutline = [];
+            for (let i = 1; i <= totalPages; i++) {
+                pdfOutline.push({
+                    label: `Page ${i}`,
+                    pageNum: i,
+                    isPage: true
+                });
+            }
+
+            // 合并书签和页面大纲
+            const combined = [];
+            if (bookmarks.length) {
+                combined.push({
+                    label: "📌 Bookmarks",
+                    pageNum: null,
+                    subitems: bookmarks
+                });
+            }
+
+            combined.push({
+                label: "📄 Pages",
+                pageNum: null,
+                subitems: pdfOutline
+            });
+
+            renderTocDom(combined);
+
+            // 渲染高光
+            renderHighlights(serverList);
+
+        } catch (e) {
+            console.error("loadBookmarksAndRenderToc error", e);
+        }
+    }
+
+    function renderTocDom(tocArray) {
+        tocList.innerHTML = '';
+
+        const walk = (items, container, level = 0) => {
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'toc-item';
+                row.style.paddingLeft = (8 + level * 12) + 'px';
+
+                const left = document.createElement('div');
+                left.style.display = 'flex';
+                left.style.alignItems = 'center';
+                left.style.gap = '8px';
+                left.style.flex = '1';
+
+                const label = document.createElement('span');
+                label.textContent = item.label || 'Untitled';
+                if (item.isBookmark) label.classList.add('bookmark-label');
+
+                left.appendChild(label);
+
+                const right = document.createElement('div');
+                right.style.display = 'flex';
+                right.style.gap = '6px';
+
+                if (item.isBookmark && item.annotationId) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'icon-btn';
+                    delBtn.title = 'Delete bookmark';
+                    delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    delBtn.onclick = async (ev) => {
+                        ev.stopPropagation();
+                        showInfoModal('Confirm Deletion', 'Delete this bookmark?', true, async (confirmed) => {
+                            if (confirmed) {
+                                await deleteAnnotationFromServer(item.annotationId);
+                                await loadBookmarksAndRenderToc();
+                            }
+                        });
+                    };
+                    right.appendChild(delBtn);
+                }
+
+                row.appendChild(left);
+                row.appendChild(right);
+
+                row.onclick = (ev) => {
+                    if (ev.target && ev.target.closest('.icon-btn')) {
+                        ev.stopPropagation();
+                        return;
+                    }
+
+                    if (item.pageNum) {
+                        // 滚动到指定页面
+                        const pageElement = document.getElementById(`pdf-page-${item.pageNum}`);
+                        if (pageElement) {
+                            pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            updateCurrentPageFromScroll();
+                        }
+                        tocDrawer.style.display = 'none';
+                    } else if (item.label === "📌 Bookmarks" || item.label === "📄 Pages" || item.subitems) {
+                        // 组标题点击无操作
+                    }
+                };
+
+                container.appendChild(row);
+
+                if (item.subitems && item.subitems.length) {
+                    walk(item.subitems, container, level + 1);
+                }
+            });
+        };
+
+        walk(tocArray, tocList, 0);
+    }
+
+    // ==
+    // 7. 书签功能
+    // ==
+
+    bookmarkBtn.addEventListener('click', async () => {
+        if (!viewerReady || !pdfDocument) return showInfoModal('Status', 'Reader not ready.', false);
+
+        if (bookmarkModal) {
+            bookmarkLabelInput.value = '';
+            bookmarkModal.show();
+        } else {
+            const label = prompt('Bookmark label (optional)', '');
+            const location = generatePdfLocation(currentPageNum);
+
+            const ann = {
+                bookId: stableBookId || getStableBookId(),
+                type: 'bookmark',
+                cfi: location,
+                content: (label && label.trim()) || "",
+            };
+
+            await saveAnnotationToServer(ann, 'bookmark');
+            await loadBookmarksAndRenderToc();
+            tocDrawer.style.display = 'block';
+        }
+    });
+
+    if (bookmarkForm) {
+        bookmarkForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (bookmarkModal) bookmarkModal.hide();
+
+            const location = generatePdfLocation(currentPageNum);
+            const label = bookmarkLabelInput.value.trim();
+
+            const ann = {
+                bookId: stableBookId || getStableBookId(),
+                type: 'bookmark',
+                cfi: location,
+                content: label || "",
+            };
+
+            await saveAnnotationToServer(ann, 'bookmark');
+            await loadBookmarksAndRenderToc();
+            tocDrawer.style.display = 'block';
+        });
+    }
+
+    // ==
+    // 8. 高光和擦除操作处理
+    // ==
+
+    async function handleHighlightAction() {
+        if (!currentSelection.rects || currentSelection.rects.length === 0) {
+            showInfoModal('No Selection', 'Please select text first, then click HIGHLIGHT.', false);
+            return;
+        }
+
+        // 重置颜色 UI
+        colorSelector.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        const defaultSwatch = colorSelector.querySelector(`[data-color="${DEFAULT_HIGHLIGHT_COLOR}"]`);
+        if (defaultSwatch) defaultSwatch.classList.add('active');
+        selectedHighlightColor = DEFAULT_HIGHLIGHT_COLOR;
+
+        // 显示高光模态框
+        highlightCfiRangeInput.value = generatePdfLocation(currentSelection.pageNum, currentSelection.rects);
+        highlightPageNumInput.value = currentSelection.pageNum;
+        highlightRectsInput.value = JSON.stringify(currentSelection.rects);
+        highlightNoteInput.value = '';
+
+        if (highlightModal) {
+            highlightModal.show();
+        }
+    }
+
+    async function handleEraserAction() {
+        if (!currentSelection.rects || currentSelection.rects.length === 0) {
+            showInfoModal('No Selection', 'Please select text first, then click ERASE.', false);
+            return;
+        }
+
+        const highlights = currentServerAnnotations.filter(a => a.type === 'highlight');
+        let deletedCount = 0;
+
+        for (const ann of highlights) {
+            const location = parsePdfLocation(ann.cfi);
+
+            // 简单重叠检测：如果高光在同一页面
+            if (location.pageNum === currentSelection.pageNum) {
+                // 这里可以添加更精确的重叠检测逻辑
+                clearHighlightsOnPage(location.pageNum);
+
+                const ok = await deleteAnnotationFromServer(ann.id);
+                if(ok) deletedCount++;
+            }
+        }
+
+        if (deletedCount > 0) {
+            await refreshAnnotationsAndToc();
+
+            showInfoModal('Eraser', `Successfully removed ${deletedCount} highlights.`);
+        } else {
+            showInfoModal('Eraser', 'No highlights found in the selected area.', false);
+        }
+
+        clearSelection();
+    }
+
+    // ==
+    // 9. 数据加载与刷新
+    // ==
+
+    async function refreshAnnotationsAndToc() {
+        if (!viewerReady) return;
+
+        try {
+            await loadBookmarksAndRenderToc();
+        } catch (e) {
+            console.error("refreshAnnotationsAndToc error", e);
+        }
+    }
+
+    // ==
+    // 10. UI 渲染与事件绑定
+    // ==
+
+    // 颜色选择器事件
+    if (colorSelector) {
+        colorSelector.addEventListener('click', (e) => {
+            const swatch = e.target.closest('.color-swatch');
+            if (swatch) {
+                colorSelector.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                swatch.classList.add('active');
+                selectedHighlightColor = swatch.dataset.color;
+            }
+        });
+    }
+
+    // 高光保存表单提交
+    if (highlightForm) {
+        highlightForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (highlightModal) highlightModal.hide();
+
+            const cfiRange = highlightCfiRangeInput.value;
+            const pageNum = parseInt(highlightPageNumInput.value);
+            const rects = JSON.parse(highlightRectsInput.value || '[]');
+            const note = highlightNoteInput.value.trim();
+            const finalColor = selectedHighlightColor || DEFAULT_HIGHLIGHT_COLOR;
+
+            const ann = {
+                bookId: stableBookId,
+                type: 'highlight',
+                cfi: cfiRange,
+                color: finalColor,
+                content: note || "",
+                rects: rects
+            };
+
+            // 乐观 UI 更新
+            renderHighlightOnPage(pageNum, ann);
+
+            await saveAnnotationToServer(ann, 'highlight');
+            await refreshAnnotationsAndToc();
+
+            clearSelection();
+        });
+
+        highlightModalElement.addEventListener('hidden.bs.modal', function () {
+            highlightCfiRangeInput.value = '';
+            highlightNoteInput.value = '';
+            highlightRectsInput.value = '';
+        });
+    }
+
+    // 按钮事件绑定
+    highlightBtn.addEventListener('click', async () => {
+        if (!viewerReady) return;
+        await handleHighlightAction();
+    });
+
+    if (eraserBtnEl) {
+        eraserBtnEl.addEventListener('click', async () => {
+            if (!viewerReady) return;
+            await handleEraserAction();
+        });
+    }
+
+    // 目录按钮
+    tocBtn.addEventListener('click', () => {
+        if (!viewerReady) return;
+        tocDrawer.style.display = (tocDrawer.style.display === 'block') ? 'none' : 'block';
+    });
+
+    // 下载按钮
+    downloadBtn.addEventListener('click', async () => {
+        try {
+            const a = document.createElement('a');
+            a.href = FILE_PATH;
+            a.download = FILE_PATH.split('/').pop();
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (e) { console.error(e); }
+    });
+
+    // 目录关闭按钮
+    tocCloseBtn.addEventListener('click', () => { tocDrawer.style.display = 'none'; });
+
+    // 键盘操作（只保留缩放功能）
+    window.addEventListener('keydown', (e) => {
+        if (!viewerReady) return;
+        if (document.querySelector('.modal.show')) return;
+        if (tocDrawer.style.display === 'block') return;
+
+        // 缩放快捷键
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === '+' || e.key === '=') {
+                zoomIn();
+                e.preventDefault();
+            } else if (e.key === '-') {
+                zoomOut();
+                e.preventDefault();
+            } else if (e.key === '0') {
+                // 重置缩放
+                currentScale = 1.3;
+                updateZoom();
+                reloadAllPages();
+                e.preventDefault();
+            }
+        }
+    });
+
+    // ==
+    // 11. PDF.js 核心功能 - 优化版本
+    // ==
+
+    // 渲染单页PDF（带文本层，提高DPI）
+    async function renderPage(pageNum) {
+        if (!pdfDocument || pageNum < 1 || pageNum > totalPages) return;
+
+        // 检查是否已经渲染过该页面
+        let pageContainer = document.getElementById(`pdf-page-${pageNum}`);
+        if (pageContainer) return;
+
+        try {
+            // 加载页面
+            const page = await pdfDocument.getPage(pageNum);
+
+            // 创建页面容器
+            pageContainer = document.createElement('div');
+            pageContainer.id = `pdf-page-${pageNum}`;
+            pageContainer.className = 'pdf-page-container';
+
+            // 创建Canvas
+            const canvas = document.createElement('canvas');
+            canvas.className = 'pdf-page-canvas';
+
+            // 提高DPI设置以获得更高清晰度
+            // 使用更高的缩放比例和分辨率
+            const pixelRatio = window.devicePixelRatio || 1;
+            const scale = currentScale * pixelRatio;
+
+            const viewport = page.getViewport({ scale: scale });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            // 设置显示尺寸（考虑像素比）
+            canvas.style.width = `${viewport.width / pixelRatio}px`;
+            canvas.style.height = `${viewport.height / pixelRatio}px`;
+
+            pageContainer.appendChild(canvas);
+            pdfViewer.appendChild(pageContainer);
+
+            // 渲染PDF页面到Canvas
+            const renderContext = {
+                canvasContext: canvas.getContext('2d'),
+                viewport: viewport
+            };
+
+            await page.render(renderContext).promise;
+
+            // 渲染文本层（用于文本选择）
+            await renderTextLayer(page, pageNum, viewport, pageContainer);
+
+            // 渲染该页面的高光
+            renderPageHighlights(pageNum);
+
+            // 更新进度
+            renderedPages++;
+            updateLoadingProgress();
+
+        } catch (error) {
+            console.error(`Error rendering page ${pageNum}:`, error);
+        }
+    }
+
+    // 渲染所有页面
+    async function renderAllPages() {
+        if (!pdfDocument || totalPages <= 0) return;
+
+        // 清空当前内容
+        pdfViewer.innerHTML = '';
+
+        // 重置状态
+        renderedPages = 0;
+        highlightOverlays = {};
+        highlightElements = {};
+
+        // 创建所有页面的渲染任务
+        const renderPromises = [];
+        for (let i = 1; i <= totalPages; i++) {
+            renderPromises.push(renderPage(i));
+        }
+
+        // 并行渲染所有页面
+        await Promise.allSettled(renderPromises);
+
+        allPagesRendered = true;
+
+        // 更新页面信息
+        updateCurrentPageFromScroll();
+    }
+
+    // 渲染文本层
+    async function renderTextLayer(page, pageNum, viewport, container) {
+        try {
+            // 获取文本内容
+            const textContent = await page.getTextContent();
+
+            // 创建文本层容器
+            const textLayerDiv = document.createElement('div');
+            textLayerDiv.className = 'text-layer';
+            textLayerDiv.style.width = `${viewport.width}px`;
+            textLayerDiv.style.height = `${viewport.height}px`;
+
+            // 创建文本片段
+            pdfjsLib.renderTextLayer({
+                textContent: textContent,
+                container: textLayerDiv,
+                viewport: viewport,
+                textDivs: []
+            });
+
+            container.appendChild(textLayerDiv);
+
+            // 设置文本选择事件
+            setupTextSelection(pageNum, textLayerDiv, viewport);
+
+        } catch (error) {
+            console.error(`Error rendering text layer for page ${pageNum}:`, error);
+        }
+    }
+
+    // 设置文本选择
+    function setupTextSelection(pageNum, textLayer, viewport) {
+        let isSelecting = false;
+        let startX, startY, endX, endY;
+        let selectionOverlay = null;
+
+        textLayer.addEventListener('mousedown', (e) => {
+            isSelecting = true;
+            const rect = textLayer.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+
+            // 清除之前的选区
+            clearSelection();
+
+            // 创建选区覆盖层
+            selectionOverlay = document.createElement('div');
+            selectionOverlay.style.position = 'absolute';
+            selectionOverlay.style.border = '1px dashed rgba(74, 103, 160, 0.5)';
+            selectionOverlay.style.backgroundColor = 'rgba(74, 103, 160, 0.1)';
+            selectionOverlay.style.pointerEvents = 'none';
+            textLayer.parentNode.appendChild(selectionOverlay);
+        });
+
+        textLayer.addEventListener('mousemove', (e) => {
+            if (!isSelecting) return;
+
+            const rect = textLayer.getBoundingClientRect();
+            endX = e.clientX - rect.left;
+            endY = e.clientY - rect.top;
+
+            // 更新选区覆盖层
+            if (selectionOverlay) {
+                const left = Math.min(startX, endX);
+                const top = Math.min(startY, endY);
+                const width = Math.abs(endX - startX);
+                const height = Math.abs(endY - startY);
+
+                selectionOverlay.style.left = `${left}px`;
+                selectionOverlay.style.top = `${top}px`;
+                selectionOverlay.style.width = `${width}px`;
+                selectionOverlay.style.height = `${height}px`;
+            }
+        });
+
+        textLayer.addEventListener('mouseup', async (e) => {
+            if (!isSelecting) return;
+
+            isSelecting = false;
+            const rect = textLayer.getBoundingClientRect();
+            endX = e.clientX - rect.left;
+            endY = e.clientY - rect.top;
+
+            // 移除选区覆盖层
+            if (selectionOverlay && selectionOverlay.parentNode) {
+                selectionOverlay.parentNode.removeChild(selectionOverlay);
+            }
+
+            // 计算选区矩形
+            const left = Math.min(startX, endX);
+            const top = Math.min(startY, endY);
+            const right = Math.max(startX, endX);
+            const bottom = Math.max(startY, endY);
+
+            // 只选择有实际大小的区域
+            if (Math.abs(right - left) > 5 && Math.abs(bottom - top) > 5) {
+                const selectionRect = [left, top, right, bottom];
+
+                // 获取选区文本
+                let selectedText = '';
+                const textSpans = textLayer.querySelectorAll('span');
+                textSpans.forEach(span => {
+                    const spanRect = span.getBoundingClientRect();
+                    const containerRect = textLayer.getBoundingClientRect();
+
+                    const spanLeft = spanRect.left - containerRect.left;
+                    const spanTop = spanRect.top - containerRect.top;
+                    const spanRight = spanLeft + spanRect.width;
+                    const spanBottom = spanTop + spanRect.height;
+
+                    // 检查是否有重叠
+                    if (spanLeft < right && spanRight > left && spanTop < bottom && spanBottom > top) {
+                        selectedText += span.textContent + ' ';
+                    }
+                });
+
+                // 存储选区信息
+                storeSelection(pageNum, [selectionRect], selectedText.trim(),
+                    {x: left, y: top}, {x: right, y: bottom});
+
+                // 显示选区视觉反馈
+                showSelectionOverlay(pageNum, [selectionRect]);
+            }
+        });
+    }
+
+    // 渲染特定页面的高光
+    function renderPageHighlights(pageNum) {
+        const highlights = currentServerAnnotations.filter(a => {
+            if (a.type !== 'highlight') return false;
+            const location = parsePdfLocation(a.cfi);
+            return location.pageNum === pageNum;
+        });
+
+        highlights.forEach(highlight => {
+            renderHighlightOnPage(pageNum, highlight);
+        });
+    }
+
+    // 根据滚动位置更新当前页码
+    function updateCurrentPageFromScroll() {
+        if (!allPagesRendered || totalPages === 0) return;
+
+        const viewerRect = pdfViewer.getBoundingClientRect();
+        const viewerCenter = viewerRect.top + viewerRect.height / 2;
+
+        let closestPage = 1;
+        let minDistance = Infinity;
+
+        // 查找最接近视口中心的页面
+        for (let i = 1; i <= totalPages; i++) {
+            const pageElement = document.getElementById(`pdf-page-${i}`);
+            if (pageElement) {
+                const pageRect = pageElement.getBoundingClientRect();
+                const pageCenter = pageRect.top + pageRect.height / 2;
+                const distance = Math.abs(pageCenter - viewerCenter);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestPage = i;
+                }
+            }
+        }
+
+        if (closestPage !== currentPageNum) {
+            currentPageNum = closestPage;
+            currentPageSpan.textContent = currentPageNum;
+        }
+    }
+
+    // 更新加载进度
+    function updateLoadingProgress() {
+        if (totalPages > 0) {
+            const progress = Math.round((renderedPages / totalPages) * 100);
+            loadingProgress.style.width = `${progress}%`;
+        }
+    }
+
+    // 缩放功能
+    function zoomIn() {
+        if (currentScale < 3.0) {
+            currentScale += 0.1;
+            currentScale = Math.round(currentScale * 10) / 10; // 保留一位小数
+            updateZoom();
+            reloadAllPages();
+        }
+    }
+
+    function zoomOut() {
+        if (currentScale > 0.5) {
+            currentScale -= 0.1;
+            currentScale = Math.round(currentScale * 10) / 10; // 保留一位小数
+            updateZoom();
+            reloadAllPages();
+        }
+    }
+
+    function updateZoom() {
+        zoomLevelSpan.textContent = `${Math.round(currentScale * 100)}%`;
+    }
+
+    // 重新加载所有页面
+    async function reloadAllPages() {
+        if (!viewerReady) return;
+
+        // 重置渲染状态
+        allPagesRendered = false;
+
+        // 重新渲染所有页面
+        await renderAllPages();
+    }
+
+    // 设置控件状态
+    function setControlsEnabled(enabled) {
+        [bookmarkBtn, highlightBtn, tocBtn, zoomInBtn, zoomOutBtn].forEach(b => {
+            if (b) b.disabled = !enabled;
+        });
+        if(eraserBtnEl) eraserBtnEl.disabled = !enabled;
+        if(downloadBtn) downloadBtn.disabled = !enabled;
+    }
+
+    // ==
+    // 12. 初始化PDF.js - 优化版本
+    // ==
+
+    async function loadPdf(url) {
+        if (!isPdf(url)) {
+            pdfViewer.innerHTML = `<div class="error-msg">Unsupported format. Only .pdf is accepted.</div>`;
+            return;
+        }
+
+        pdfViewer.innerHTML = `
+      <div style="text-align: center; padding: 50px;">
+        <div class="loading" style="margin: 0 auto 20px;"></div>
+        <p>Loading PDF...</p>
+        <div class="progress-container">
+          <div class="progress-bar" id="loadingProgress"></div>
+        </div>
+      </div>
+    `;
+
+        try {
+            // 检查PDF.js是否已加载
+            if (typeof pdfjsLib === 'undefined') {
+                throw new Error('PDF.js library not loaded. Please check the script sources.');
+            }
+
+            // 设置PDF.js worker路径
+            pdfjsLib.GlobalWorkerOptions.workerSrc =
+                '/lib/pdfjs-3.11.174/pdf.worker.min.js';
+
+            console.log('Loading PDF from:', url);
+
+            // 加载PDF文档
+            const loadingTask = pdfjsLib.getDocument(url);
+            pdfDocument = await loadingTask.promise;
+
+            // 获取总页数
+            totalPages = pdfDocument.numPages;
+            totalPagesSpan.textContent = totalPages;
+
+            // 设置初始页码
+            currentPageNum = 1;
+            currentPageSpan.textContent = currentPageNum;
+
+            // 设置缩放级别（提高清晰度）
+            updateZoom();
+
+            // 设置阅读器就绪状态
+            viewerReady = true;
+            stableBookId = getStableBookId();
+            setControlsEnabled(true);
+
+            // 加载标注
+            await refreshAnnotationsAndToc();
+
+            // 一次性渲染所有页面
+            await renderAllPages();
+
+            // 所有页面渲染完成，隐藏加载进度条
+            loadingProgress.style.width = '100%';
+
+        } catch (e) {
+            console.error('loadPdf error', e);
+            pdfViewer.innerHTML = `
+        <div class="error-msg">
+          <h3>Failed to load PDF</h3>
+          <p>${e.message}</p>
+          <p>Please check:</p>
+          <ul style="text-align: left; display: inline-block;">
+            <li>PDF file URL is correct</li>
+            <li>PDF.js library is loaded</li>
+            <li>Browser supports PDF rendering</li>
+          </ul>
+        </div>
+      `;
+        }
+    }
+
+    // ==
+    // 13. 事件监听器绑定
+    // ==
+
+    // 缩放控制
+    zoomInBtn.addEventListener('click', zoomIn);
+    zoomOutBtn.addEventListener('click', zoomOut);
+
+    // 点击页面外部清除选择
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.pdf-page-container') &&
+            !e.target.closest('.control-btn') &&
+            !e.target.closest('.modal')) {
+            clearSelection();
+        }
+    });
+
+    // 页面滚动时更新当前页码
+    pdfViewer.addEventListener('scroll', () => {
+        updateCurrentPageFromScroll();
+    });
+
+    // ==
+    // 14. 初始化入口
+    // ==
+
+    if (!FILE_PATH || FILE_PATH.trim() === '') {
+        pdfViewer.innerHTML = `<div class="error-msg">No file specified.</div>`;
+    } else {
+        // 确保PDF.js库加载完成后初始化
+        if (typeof pdfjsLib !== 'undefined') {
+            loadPdf(FILE_PATH);
+        } else {
+            // 如果库未加载，等待一下再试
+            setTimeout(() => {
+                if (typeof pdfjsLib !== 'undefined') {
+                    loadPdf(FILE_PATH);
+                } else {
+                    pdfViewer.innerHTML = `
+            <div class="error-msg">
+              PDF.js library failed to load. Please check your internet connection or
+              download the library files to your server.
+            </div>
+          `;
+                }
+            }, 1000);
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,10 +1,1132 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+    <meta charset="utf-8"/>
+    <title th:text="'Insightful EPUB Reader ' + ${file != null ? ' - ' + file.fileName : 'None'}">EPUB Reader</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}"/>
+
+    <script src="/lib/jszip-3.10.1/dist/jszip.min.js"></script>
+    <script src="/lib/epub.js-0.3.88/epub.min.js"></script>
+
+    <style>
+        :root {
+            --header-h: 72px;
+            --glass-bg: rgba(255,255,255,0.04);
+            --glass-border: rgba(255,255,255,0.06);
+            --primary-text: #e6eef8;
+            --secondary-text: #adb5bd;
+            --background-dark: #0a0a0a;
+            --border-subtle: rgba(255,255,255,0.02);
+            --control-bg: rgba(18,18,18,0.5);
+            --highlight-color: #4a67a0;
+        }
+        html, body {
+            height:100%;
+            margin:0;
+            background:var(--background-dark);
+            color:var(--primary-text);
+            font-family:system-ui, sans-serif;
+            overflow:hidden;
+        }
+        .reader-wrap {
+            height: calc(100vh - var(--header-h));
+            display:flex;
+            flex-direction:column;
+            padding:24px;
+            box-sizing:border-box;
+            align-items:center;
+        }
+        #epubContainer {
+            width:100%;
+            max-width:1400px;
+            flex:1;
+            border-radius:16px;
+            background:var(--glass-bg);
+            backdrop-filter:blur(12px);
+            border:1px solid var(--glass-border);
+            overflow:hidden;
+            display:flex;
+            flex-direction:column;
+        }
+        #controls {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:10px 16px;
+            gap:12px;
+            background:var(--control-bg);
+            border-bottom:1px solid var(--border-subtle);
+        }
+        .controls-left, .controls-center, .controls-right { display:flex; align-items:center; gap:8px; }
+
+        /* 控件按钮样式优化：字号小，不加粗，图标居中 */
+        .control-btn {
+            height:34px;
+            padding:6px 10px;
+            border-radius:8px;
+            border:1px solid rgba(255,255,255,0.08);
+            background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            color:#e9eef8;
+            cursor:pointer;
+            font-weight:400; /* 移除加粗 */
+            font-size: 0.9rem; /* 调小字号 */
+            box-shadow:0 2px 8px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .control-btn:hover:not(:disabled) {
+            background:rgba(255,255,255,0.05);
+            box-shadow:0 4px 12px rgba(0,0,0,0.5);
+        }
+        .control-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+        #viewerWrapper {
+            flex:1;
+            display:flex;
+            background:linear-gradient(180deg,#0a0a0a,#0b0b0b);
+            border-top:1px solid var(--border-subtle);
+            position:relative;
+        }
+        #viewer { flex:1; width:100%; height:100%; display:flex; justify-content:center; align-items:center; }
+        #viewer iframe { background:#0a0a0a !important; }
+
+        #tocDrawer {
+            position:absolute;
+            left:16px;
+            top:16px;
+            bottom:16px;
+            width:360px;
+            max-width:36%;
+            background:rgba(32,32,32,0.8);
+            border-radius:12px;
+            backdrop-filter:blur(8px);
+            border:1px solid rgba(255,255,255,0.04);
+            overflow:auto;
+            padding:12px;
+            display:none;
+            z-index:1200;
+            color:var(--secondary-text);
+            box-shadow:0 8px 40px rgba(0,0,0,0.8);
+        }
+        #tocDrawer h3 {
+            margin:0 0 8px 0;
+            color:#fff;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:8px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 8px;
+        }
+        #tocList { margin-top:8px; }
+        .toc-item {
+            padding:8px 10px;
+            border-radius:6px;
+            cursor:pointer;
+            color:var(--secondary-text);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:8px;
+            transition: background 0.15s;
+        }
+        .toc-item:hover { background:rgba(255,255,255,0.05); color:var(--primary-text); }
+        .bookmark-label { color:#80a2ff; font-weight:600; }
+        .toc-children { margin-left:8px; }
+
+        #tocDrawer::-webkit-scrollbar { width:12px; height:12px; }
+        #tocDrawer::-webkit-scrollbar-track { background: rgba(224,224,224,0.2); border-radius:6px; }
+        #tocDrawer::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius:6px; }
+        #tocDrawer::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.6); }
+
+        .icon-btn { border:none; background:transparent; color:var(--secondary-text); cursor:pointer; padding:4px; border-radius:6px; transition: all 0.15s; }
+        .icon-btn:hover { background: rgba(255,255,255,0.08); color:var(--primary-text); }
+
+        .error-msg { color:#93c5fd; padding:16px; text-align:center; font-weight:600; }
+
+        .color-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .color-swatch:hover {
+            border-color: #e6eef8;
+        }
+        .color-swatch.active {
+            border-color: #6495ED !important;
+            box-shadow: 0 0 8px #6495ED;
+        }
+    </style>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
+</head>
+<body style="background-color: #0a0a0a">
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="reader-wrap">
+    <div id="epubContainer">
+        <div id="controls">
+            <div class="controls-left">
+                <button class="control-btn" id="tocBtn" title="Table of Contents">
+                    <i class="bi bi-list"></i> TOC
+                </button>
+                <button class="control-btn" id="bookmarkBtn" title="Bookmark Current Location">
+                    <i class="bi bi-bookmark"></i> MARK
+                </button>
+                <button class="control-btn" id="highlightBtn" title="Highlight Selection">
+                    <i class="bi bi-highlighter"></i> HIGHLIGHT
+                </button>
+                <button class="control-btn" id="eraserBtn" title="Eraser Mode">
+                    <i class="bi bi-eraser"></i> ERASE
+                </button>
+            </div>
+
+            <div class="controls-center"></div>
+
+            <div class="controls-right">
+                <button class="control-btn" id="prevBtn" title="Previous Page">
+                    <i class="bi bi-arrow-left"></i> Prev
+                </button>
+                <button class="control-btn" id="nextBtn" title="Next Page">
+                    Next <i class="bi bi-arrow-right"></i>
+                </button>
+                <button class="control-btn" id="downloadBtn" title="Download EPUB">
+                    <i class="bi bi-download"></i> Download
+                </button>
+            </div>
+        </div>
+
+        <div id="viewerWrapper">
+            <div id="viewer">Initializing reader...</div>
+            <div id="tocDrawer" aria-hidden="true">
+                <h3>Table of Contents <button id="tocCloseBtn" class="icon-btn" title="Close">✕</button></h3>
+                <div id="tocList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="bookmarkModal" tabindex="-1" aria-labelledby="bookmarkModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #181818; border: 1px solid rgba(255,255,255,0.1);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <h5 class="modal-title" id="bookmarkModalLabel" style="color: #fff;"><i class="bi bi-bookmark me-2"></i>MARK Current Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bookmarkForm">
+                    <div class="mb-3">
+                        <label for="bookmarkLabel" class="form-label" style="color: #ccc;">Annotation / Label (Optional)</label>
+                        <input type="text" class="form-control" id="bookmarkLabel" maxlength="200" placeholder="E.g., Key Insight on Chapter 3" style="background: #0a0a0a; color: #fff; border-color: rgba(255,255,255,0.2);">
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background: #444; border:none; color:#ddd;">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="bookmarkSaveBtn" style="background: #007bff; border:none; color:#fff;">Save Bookmark</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="highlightModal" tabindex="-1" aria-labelledby="highlightModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #181818; border: 1px solid rgba(255,255,255,0.1);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <h5 class="modal-title" id="highlightModalLabel" style="color: #fff;"><i class="bi bi-highlighter me-2"></i>HIGHLIGHT Select Color & Add Note</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body">
+                <form id="highlightForm">
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #ccc;">Select Tone</label>
+                        <div id="colorSelector" class="d-flex flex-wrap justify-content-center p-2 rounded" style="background: #0a0a0a; border: 1px solid rgba(255,255,255,0.1); gap: 10px;">
+                            <button type="button" class="color-swatch active" data-color="rgba(74,103,160,0.48)" title="Deep Blue (Primary)" style="background: rgba(74,103,160,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(102,153,204,0.48)" title="Icy Cyan" style="background: rgba(102,153,204,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(150,150,150,0.48)" title="Steel Gray" style="background: rgba(150,150,150,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(192,192,192,0.48)" title="Ice Silver" style="background: rgba(192,192,192,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(230,230,230,0.48)" title="Snow White" style="background: rgba(230,230,230,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(50,50,50,0.48)" title="Smoke Gray" style="background: rgba(50,50,50,0.48);"></button> <button type="button" class="color-swatch" data-color="rgba(0,0,0,0.48)" title="Shadow Black" style="background: rgba(0,0,0,0.48);"></button> </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="highlightNote" class="form-label" style="color: #ccc;">Annotation / Insight (Optional)</label>
+                        <input type="text" class="form-control" id="highlightNote" maxlength="200" placeholder="E.g., Core concept related to this highlight" style="background: #0a0a0a; color: #fff; border-color: rgba(255,255,255,0.2);">
+                    </div>
+
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="highlightCancelBtn" style="background: #444; border:none; color:#ddd;">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="highlightSaveBtn" style="background: #007bff; border:none; color:#fff;">Save Highlight</button>
+                    </div>
+                    <input type="hidden" id="highlightCfiRange" value="">
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="background: #181818; border: 1px solid rgba(255,255,255,0.1);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <h5 class="modal-title" id="infoModalLabel" style="color: #fff;"><i class="bi bi-info-circle me-1"></i> <span id="infoModalTitle">Notification</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body" id="infoModalBody" style="color: #ccc;">
+                Message content.
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.15);">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="infoModalCancelBtn" style="background: #444; border:none; color:#ddd; display:none;">Cancel</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="infoModalConfirmBtn" style="background: #007bff; border:none; color:#fff;">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var FILE_PATH = /*[[${file != null ? file.filePath : ''}]]*/ '';
+    var FILE_ID  = /*[[${file != null ? file.fileId : ''}]]*/ '';
+    var CURRENT_USER_ID = /*[[${session.user != null ? session.user.userId : 'null'}]]*/ null;
+    /*]]>*/
+</script>
+
+<script>
+    // ==========================================
+    // 1. 全局变量与 DOM 元素获取
+    // ==========================================
+
+    // CSRF 辅助函数
+    function getCsrfHeaders() {
+        try {
+            const tokenMeta = document.querySelector('meta[name="_csrf"]');
+            const headerMeta = document.querySelector('meta[name="_csrf_header"]');
+            if (tokenMeta && headerMeta) {
+                const token = tokenMeta.getAttribute('content');
+                const headerName = headerMeta.getAttribute('content');
+                const h = {};
+                h[headerName] = token;
+                return h;
+            }
+        } catch (e) {}
+        return {};
+    }
+
+    // 界面元素
+    const viewer = document.getElementById('viewer');
+    const tocBtn = document.getElementById('tocBtn');
+    const tocDrawer = document.getElementById('tocDrawer');
+    const tocList = document.getElementById('tocList');
+    const tocCloseBtn = document.getElementById('tocCloseBtn');
+
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const bookmarkBtn = document.getElementById('bookmarkBtn');
+    const highlightBtn = document.getElementById('highlightBtn');
+    const eraserBtnEl = document.getElementById('eraserBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // 模态框相关
+    const infoModalElement = document.getElementById('infoModal');
+    const highlightModalElement = document.getElementById('highlightModal');
+    const bookmarkModalElement = document.getElementById('bookmarkModal');
+    const infoModalTitle = document.getElementById('infoModalTitle');
+    const infoModalBody = document.getElementById('infoModalBody');
+    let infoModalConfirmBtn = document.getElementById('infoModalConfirmBtn');
+    let infoModalCancelBtn = document.getElementById('infoModalCancelBtn');
+
+    // Bootstrap Modal 实例
+    let bookmarkModal = null, highlightModal = null, infoModal = null;
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        bookmarkModal = new bootstrap.Modal(bookmarkModalElement, {});
+        highlightModal = new bootstrap.Modal(highlightModalElement, {});
+        infoModal = new bootstrap.Modal(infoModalElement, {});
+    } else {
+        console.error("Bootstrap JS not found. Modals will not function.");
+    }
+
+    // 表单元素
+    const bookmarkForm = document.getElementById('bookmarkForm');
+    const bookmarkLabelInput = document.getElementById('bookmarkLabel');
+
+    const highlightForm = document.getElementById('highlightForm');
+    const highlightNoteInput = document.getElementById('highlightNote');
+    const highlightCfiRangeInput = document.getElementById('highlightCfiRange');
+    const colorSelector = document.getElementById('colorSelector');
+
+    // 核心逻辑变量
+    let book = null;
+    let rendition = null;
+    let locationsGenerated = false;
+    let readerReady = false;
+    let stableBookId = null;
+
+    // 状态管理
+    const DEFAULT_HIGHLIGHT_COLOR = "rgba(224, 224, 0, 0.4)";
+    let selectedHighlightColor = DEFAULT_HIGHLIGHT_COLOR;
+    const STORAGE_PREFIX = "epub_annotations_";
+
+    // 存储当前选区和相关信息
+    let currentSelection = {
+        cfiRange: null,
+        contents: null,
+        text: null
+    };
+
+    // 本地缓存服务端的高光列表
+    let currentServerAnnotations = [];
+
+    // ==========================================
+    // 2. 辅助工具函数
+    // ==========================================
+
+    function showInfoModal(title, message, isConfirm = false, onConfirm = () => {}) {
+        if (!infoModal) {
+            isConfirm ? onConfirm(window.confirm(message)) : window.alert(message);
+            return;
+        }
+
+        infoModalTitle.textContent = title;
+        infoModalBody.innerHTML = message;
+
+        infoModalConfirmBtn.textContent = isConfirm ? 'Confirm' : 'OK';
+        infoModalCancelBtn.style.display = isConfirm ? 'inline-block' : 'none';
+
+        const cloneConfirm = infoModalConfirmBtn.cloneNode(true);
+        infoModalConfirmBtn.parentNode.replaceChild(cloneConfirm, infoModalConfirmBtn);
+        infoModalConfirmBtn = cloneConfirm;
+
+        const cloneCancel = infoModalCancelBtn.cloneNode(true);
+        infoModalCancelBtn.parentNode.replaceChild(cloneCancel, infoModalCancelBtn);
+        infoModalCancelBtn = cloneCancel;
+
+        if (isConfirm) {
+            infoModalConfirmBtn.addEventListener('click', () => { infoModal.hide(); onConfirm(true); }, { once: true });
+            infoModalCancelBtn.addEventListener('click', () => { infoModal.hide(); onConfirm(false); }, { once: true });
+        } else {
+            infoModalConfirmBtn.addEventListener('click', () => { infoModal.hide(); onConfirm(); }, { once: true });
+        }
+
+        infoModal.show();
+    }
+
+    function isEpub(path) { return path && path.toLowerCase().endsWith('.epub'); }
+
+    function getStableBookId() {
+        if (typeof FILE_ID !== 'undefined' && FILE_ID && String(FILE_ID).trim() !== '') return String(FILE_ID);
+        try { if (book && book.package && book.package.metadata && book.package.metadata.identifier) return book.package.metadata.identifier; } catch(e){}
+        return FILE_PATH || 'unknown-book';
+    }
+
+    function saveAnnotationLocal(id, ann) {
+        try {
+            const arr = JSON.parse(localStorage.getItem(STORAGE_PREFIX+id) || "[]");
+            arr.push(ann);
+            localStorage.setItem(STORAGE_PREFIX+id, JSON.stringify(arr));
+        } catch(e){ console.error(e); }
+    }
+
+    // ==========================================
+    // 3. API 交互函数
+    // ==========================================
+
+    async function saveAnnotationToServer(ann, type) {
+        try {
+            const headers = Object.assign({ 'Content-Type': 'application/json' }, getCsrfHeaders());
+            const res = await fetch('/api/annotation/save', {
+                method: 'POST', credentials: 'same-origin', headers: headers, body: JSON.stringify(ann)
+            });
+            if (!res.ok) {
+                console.warn(`save ${type} failed:`, res.status);
+                saveAnnotationLocal(ann.bookId, ann);
+            }
+        } catch (e) {
+            console.warn(`save ${type} error`, e);
+            saveAnnotationLocal(ann.bookId, ann);
+        }
+    }
+
+    async function deleteAnnotationFromServer(id) {
+        try {
+            const headers = Object.assign({ 'Content-Type': 'application/x-www-form-urlencoded' }, getCsrfHeaders());
+            const res = await fetch(`/api/annotation/delete?id=${encodeURIComponent(id)}`, {
+                method: 'POST', credentials: 'same-origin', headers: headers
+            });
+            return res.ok;
+        } catch (e) {
+            console.error('deleteAnnotationFromServer error', e);
+            return false;
+        }
+    }
+
+    // ==========================================
+    // 4. CFI 重叠检测与高光管理
+    // ==========================================
+
+    function isCfiOverlap(cfiA, cfiB) {
+        if (!cfiA || !cfiB) return false;
+        if (cfiA === cfiB) return true;
+        try {
+            const rangeA = rendition.getRange(cfiA);
+            const rangeB = rendition.getRange(cfiB);
+            if (rangeA && rangeB) {
+                return (rangeA.compareBoundaryPoints(Range.END_TO_START, rangeB) < 0) &&
+                    (rangeA.compareBoundaryPoints(Range.START_TO_END, rangeB) > 0);
+            }
+        } catch (e) {
+            return (cfiA.includes(cfiB) || cfiB.includes(cfiA));
+        }
+        return false;
+    }
+
+    function renderHighlights(annotations) {
+        if (!rendition) return;
+
+        const highlights = annotations.filter(a => a.type === 'highlight');
+
+        highlights.forEach(a => {
+            try {
+                rendition.annotations.add('highlight', a.cfi, {}, null, 'db-highlight', {
+                    fill: a.color || DEFAULT_HIGHLIGHT_COLOR,
+                    'fill-opacity': '0.3',
+                    'mix-blend-mode': 'multiply'
+                });
+            } catch (e) {
+                console.warn('Failed to render highlight:', a.cfi, e);
+            }
+        });
+    }
+
+    // ==========================================
+    // 5. 选区处理逻辑
+    // ==========================================
+
+    function storeSelection(cfiRange, contents) {
+        if (!cfiRange) return;
+
+        // 存储新的选区
+        currentSelection = {
+            cfiRange: cfiRange,
+            contents: contents,
+            text: null
+        };
+
+        // 尝试获取选区文本
+        try {
+            if (contents && contents.window) {
+                const selection = contents.window.getSelection();
+                currentSelection.text = selection.toString();
+            }
+        } catch(e) {
+            console.warn('Failed to get selection text:', e);
+        }
+    }
+
+    function clearSelection() {
+        // 清除浏览器选区
+        try {
+            if (rendition && rendition.getContents) {
+                rendition.getContents().forEach(c => {
+                    if(c.window) c.window.getSelection().removeAllRanges();
+                });
+            }
+        } catch(e) {}
+
+        // 重置选区存储
+        currentSelection = {
+            cfiRange: null,
+            contents: null,
+            text: null
+        };
+    }
+
+    /********************
+     * TOC + Bookmarks
+     ********************/
+    async function loadBookmarksAndRenderToc() {
+        try {
+            const bookId = stableBookId || getStableBookId();
+            stableBookId = bookId;
+            let serverList = [];
+            try {
+                const res = await fetch(`/api/annotation/list?bookId=${encodeURIComponent(bookId)}`, { credentials: 'same-origin' });
+                if (res.ok) serverList = await res.json();
+                else {
+                    console.warn("annotation list server returned", res.status);
+                }
+            } catch (e) {
+                console.warn("annotation list fetch error", e);
+            }
+
+            const bookmarks = serverList
+                .filter(a => a.type === 'bookmark')
+                .map((a, idx) => ({
+                    id: 'bm-' + a.id,
+                    label: (a.content && a.content.trim()) ? a.content : `Bookmark ${idx + 1}`,
+                    href: a.cfi,
+                    annotationId: a.id
+                }));
+
+            let baseToc = [];
+            try {
+                if (book && book.navigation && book.navigation.toc) baseToc = JSON.parse(JSON.stringify(book.navigation.toc));
+                else if (book && book.loaded && book.loaded.navigation) {
+                    const nav = await book.loaded.navigation;
+                    baseToc = nav && nav.toc ? nav.toc : [];
+                }
+            } catch (e) { console.warn("get base toc fail", e); }
+
+            const combined = [];
+            if (bookmarks.length) {
+                const bmItems = bookmarks.map(b => ({ label: b.label, href: b.href, annotationId: b.annotationId, isBookmark: true }));
+                combined.push({ label: "📌 Bookmarks", href: null, subitems: bmItems });
+            }
+            baseToc.forEach(item => combined.push(item));
+
+            renderTocDom(combined);
+
+            serverList.filter(a => a.type === 'highlight').forEach(a => {
+                try {
+                    // Use a.color if defined, otherwise fall back to default
+                    if (a.cfi && rendition) rendition.annotations.highlight(a.cfi, {}, () => {}, 'db-highlight', { fill: a.color || DEFAULT_HIGHLIGHT_COLOR });
+                } catch (e) { console.warn("apply highlight fail", e); }
+            });
+
+        } catch (e) {
+            console.error("loadBookmarksAndRenderToc error", e);
+        }
+    }
+
+    // render combined TOC structure into DOM (recursive)
+    function renderTocDom(tocArray) {
+        tocList.innerHTML = '';
+        const walk = (items, container, level=0) => {
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'toc-item';
+                row.style.paddingLeft = (8 + level * 12) + 'px';
+
+                const left = document.createElement('div');
+                left.style.display = 'flex';
+                left.style.alignItems = 'center';
+                left.style.gap = '8px';
+                left.style.flex = '1';
+
+                const label = document.createElement('span');
+                label.textContent = item.label || item.title || 'Untitled';
+                if (item.isBookmark) label.classList.add('bookmark-label');
+
+                left.appendChild(label);
+
+                const right = document.createElement('div');
+                right.style.display = 'flex'; right.style.gap = '6px';
+
+                if (item.isBookmark && item.annotationId) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'icon-btn';
+                    delBtn.title = 'Delete bookmark';
+                    delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    delBtn.onclick = async (ev) => {
+                        ev.stopPropagation();
+                        // 替换 confirm 为 showInfoModal
+                        showInfoModal('Confirm Deletion', 'Delete this bookmark?', true, async (confirmed) => {
+                            if (confirmed) {
+                                await deleteBookmark(item.annotationId);
+                            }
+                        });
+                    };
+                    right.appendChild(delBtn);
+                }
+
+                row.appendChild(left);
+                row.appendChild(right);
+
+                row.onclick = (ev) => {
+                    if (ev.target && ev.target.closest('.icon-btn')) {
+                        ev.stopPropagation();
+                        return;
+                    }
+
+                    if (item.href) {
+                        try {
+                            rendition.display(item.href).then(() => {
+                                tocDrawer.style.display = 'none';
+                            });
+                        } catch (e) {
+                            console.warn('TOC jump error', e);
+                        }
+                    } else if (item.label === "📌 Bookmarks" || item.subitems) {
+                        console.log(`Ignoring click on group header: ${item.label}`);
+                    }
+                };
+
+                container.appendChild(row);
+
+                if (item.subitems && item.subitems.length) {
+                    walk(item.subitems, container, level + 1);
+                }
+            });
+        };
+
+        walk(tocArray, tocList, 0);
+    }
+
+    async function deleteBookmark(annotationId) {
+        try {
+            const headers = Object.assign({ 'Content-Type': 'application/x-www-form-urlencoded' }, getCsrfHeaders());
+            const res = await fetch(`/api/annotation/delete?id=${encodeURIComponent(annotationId)}`, {
+                method: 'POST', credentials: 'same-origin', headers: headers
+            });
+            if (res.ok) {
+                await loadBookmarksAndRenderToc();
+            } else {
+                const txt = await res.text().catch(()=>'(no body)');
+                showInfoModal('Delete Failed', `Delete failed: ${res.status}. Details: ${txt.substring(0, 80)}`, false);
+            }
+        } catch (e) {
+            console.error('deleteBookmark error', e);
+            showInfoModal('Delete Failed', 'Delete failed: Network or unexpected error.', false);
+        }
+    }
+
+    /********************
+     * Bookmark flow (Uses Modal)
+     ********************/
+    bookmarkBtn.addEventListener('click', async () => {
+        if (!readerReady || !rendition) return showInfoModal('Status', 'Reader not ready.', false);
+        const loc = rendition.currentLocation && rendition.currentLocation();
+        if (!loc || !loc.start || !loc.start.cfi) return showInfoModal('Status', 'Cannot get current location (CFI).', false);
+
+        if (bookmarkModal) {
+            bookmarkLabelInput.value = '';
+            bookmarkModal.show();
+        } else {
+            // Should not happen if Bootstrap is loaded
+            const label = prompt('Bookmark label (optional)', '');
+            const cfi = loc && loc.start && loc.start.cfi;
+            if (!cfi) return;
+
+            const ann = {
+                bookId: stableBookId || getStableBookId(),
+                type: 'bookmark',
+                cfi: cfi,
+                content: (label && label.trim()) || "",
+            };
+
+            await saveAnnotationToServer(ann, 'bookmark');
+            await loadBookmarksAndRenderToc();
+            tocDrawer.style.display = 'block';
+        }
+    });
+
+    if (bookmarkForm) {
+        bookmarkForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (bookmarkModal) bookmarkModal.hide();
+
+            const loc = rendition.currentLocation && rendition.currentLocation();
+            const cfi = loc && loc.start && loc.start.cfi ? loc.start.cfi : null;
+            if (!cfi) return showInfoModal('Error', 'Location lost during bookmark save.', false);
+
+            const label = bookmarkLabelInput.value.trim();
+
+            const ann = {
+                bookId: stableBookId || getStableBookId(),
+                type: 'bookmark',
+                cfi: cfi,
+                content: label || "",
+            };
+
+            await saveAnnotationToServer(ann, 'bookmark');
+            await loadBookmarksAndRenderToc();
+            tocDrawer.style.display = 'block';
+        });
+    }
+
+    // ==========================================
+    // 6. 高光和擦除操作处理
+    // ==========================================
+
+    async function handleHighlightAction() {
+        if (!currentSelection.cfiRange) {
+            showInfoModal('No Selection', 'Please select text first, then click HIGHLIGHT.', false);
+            return;
+        }
+
+        // 重置颜色 UI
+        colorSelector.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        const defaultSwatch = colorSelector.querySelector(`[data-color="${DEFAULT_HIGHLIGHT_COLOR}"]`);
+        if (defaultSwatch) defaultSwatch.classList.add('active');
+        selectedHighlightColor = DEFAULT_HIGHLIGHT_COLOR;
+
+        // 显示高光模态框
+        highlightCfiRangeInput.value = currentSelection.cfiRange;
+        highlightNoteInput.value = '';
+        if (highlightModal) {
+            highlightModal.show();
+        }
+    }
+
+    async function handleEraserAction() {
+        if (!currentSelection.cfiRange) {
+            showInfoModal('No Selection', 'Please select text first, then click ERASE.', false);
+            return;
+        }
+
+        const highlights = currentServerAnnotations.filter(a => a.type === 'highlight');
+        let deletedCount = 0;
+
+        for (const ann of highlights) {
+            if (isCfiOverlap(currentSelection.cfiRange, ann.cfi)) {
+                try {
+                    rendition.annotations.remove(ann.cfi, 'highlight');
+                } catch(e) { console.warn('Official remove failed', e); }
+
+                const views = rendition.views();
+                views.forEach(view => {
+                    if (view.pane) {
+                        view.pane.render();
+                    }
+                });
+
+                const ok = await deleteAnnotationFromServer(ann.id);
+                if(ok) deletedCount++;
+            }
+        }
+
+        if (deletedCount > 0) {
+            const currentLocation = rendition.currentLocation().start.cfi;
+            rendition.display(currentLocation);
+
+            showInfoModal('Eraser', `Successfully removed ${deletedCount} highlights.`);
+            await refreshAnnotationsAndToc();
+        } else {
+            showInfoModal('Eraser', 'No highlights found in the selected area.', false);
+        }
+
+        clearSelection();
+    }
+
+    // ==========================================
+    // 7. 数据加载与刷新
+    // ==========================================
+
+    async function refreshAnnotationsAndToc() {
+        if (!readerReady) return;
+
+        try {
+            const bookId = stableBookId || getStableBookId();
+            stableBookId = bookId;
+
+            let serverList = [];
+            try {
+                const res = await fetch(`/api/annotation/list?bookId=${encodeURIComponent(bookId)}`, { credentials: 'same-origin' });
+                if (res.ok) serverList = await res.json();
+            } catch (e) { console.warn("fetch annotations fail", e); }
+
+            currentServerAnnotations = serverList;
+
+            // 渲染 TOC
+            const bookmarks = serverList.filter(a => a.type === 'bookmark').map((a, idx) => ({
+                id: 'bm-' + a.id,
+                label: (a.content && a.content.trim()) ? a.content : `Bookmark ${idx + 1}`,
+                href: a.cfi,
+                annotationId: a.id,
+                isBookmark: true
+            }));
+
+            let baseToc = [];
+            try {
+                if (book.navigation && book.navigation.toc) baseToc = book.navigation.toc;
+            } catch (e) {}
+
+            const combined = [];
+            if (bookmarks.length) {
+                const bmItems = bookmarks.map(b => ({ label: b.label, href: b.href, annotationId: b.annotationId, isBookmark: true }));
+                combined.push({ label: "📌 Bookmarks", href: null, subitems: bmItems });
+            }
+            baseToc.forEach(item => combined.push(item));
+
+            renderTocDom(combined);
+
+            // 渲染高光
+            renderHighlights(serverList);
+
+        } catch (e) {
+            console.error("refreshAnnotationsAndToc error", e);
+        }
+    }
+
+    // ==========================================
+    // 8. UI 渲染与事件绑定
+    // ==========================================
+
+    function renderTocDom(tocArray) {
+        tocList.innerHTML = '';
+        const walk = (items, container, level=0) => {
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'toc-item';
+                row.style.paddingLeft = (8 + level * 12) + 'px';
+
+                const left = document.createElement('div');
+                left.style.cssText = 'display:flex; align-items:center; gap:8px; flex:1; overflow:hidden;';
+
+                const label = document.createElement('span');
+                label.textContent = item.label || item.title || 'Untitled';
+                label.style.cssText = 'white-space:nowrap; text-overflow:ellipsis; overflow:hidden;';
+                if (item.isBookmark) label.classList.add('bookmark-label');
+                left.appendChild(label);
+
+                const right = document.createElement('div');
+                if (item.isBookmark && item.annotationId) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'icon-btn';
+                    delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    delBtn.title = 'Delete Bookmark';
+                    delBtn.onclick = async (ev) => {
+                        ev.stopPropagation();
+                        showInfoModal('Confirm', 'Delete this bookmark?', true, async (confirmed) => {
+                            if (confirmed) {
+                                await deleteAnnotationFromServer(item.annotationId);
+                                await refreshAnnotationsAndToc();
+                            }
+                        });
+                    };
+                    right.appendChild(delBtn);
+                }
+
+                row.appendChild(left);
+                row.appendChild(right);
+
+                row.onclick = (ev) => {
+                    if (ev.target.closest('.icon-btn')) return;
+                    if (item.href) {
+                        rendition.display(item.href).then(() => {
+                            tocDrawer.style.display = 'none';
+                        });
+                    }
+                };
+
+                container.appendChild(row);
+                if (item.subitems && item.subitems.length) {
+                    walk(item.subitems, container, level + 1);
+                }
+            });
+        };
+        walk(tocArray, tocList, 0);
+    }
+
+    // 颜色选择器事件
+    if (colorSelector) {
+        colorSelector.addEventListener('click', (e) => {
+            const swatch = e.target.closest('.color-swatch');
+            if (swatch) {
+                colorSelector.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                swatch.classList.add('active');
+                selectedHighlightColor = swatch.dataset.color;
+            }
+        });
+    }
+
+    // 高光保存表单提交
+    if (highlightForm) {
+        highlightForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (highlightModal) highlightModal.hide();
+
+            const cfiRange = highlightCfiRangeInput.value;
+            const note = highlightNoteInput.value.trim();
+            const finalColor = selectedHighlightColor || DEFAULT_HIGHLIGHT_COLOR;
+
+            const ann = {
+                bookId: stableBookId,
+                type: 'highlight',
+                cfi: cfiRange,
+                color: finalColor,
+                content: note || ""
+            };
+
+            // 乐观 UI 更新
+            rendition.annotations.add('highlight', cfiRange, {}, null, 'db-highlight', { fill: finalColor });
+
+            await saveAnnotationToServer(ann, 'highlight');
+            await refreshAnnotationsAndToc();
+
+            clearSelection();
+        });
+
+        highlightModalElement.addEventListener('hidden.bs.modal', function () {
+            highlightCfiRangeInput.value = '';
+            highlightNoteInput.value = '';
+        });
+    }
+
+    // 按钮事件绑定
+    highlightBtn.addEventListener('click', async () => {
+        if (!readerReady) return;
+        await handleHighlightAction();
+    });
+
+    if (eraserBtnEl) {
+        eraserBtnEl.addEventListener('click', async () => {
+            if (!readerReady) return;
+            await handleEraserAction();
+        });
+    }
+
+    // 书签按钮
+    bookmarkBtn.addEventListener('click', async () => {
+        if (!readerReady || !rendition) return;
+        const loc = rendition.currentLocation();
+        const cfi = loc && loc.start && loc.start.cfi;
+        if (!cfi) return showInfoModal('Error', 'Cannot get current location.', false);
+
+        if (bookmarkModal) {
+            bookmarkLabelInput.value = '';
+            bookmarkModal.show();
+        }
+    });
+
+    // 书签保存表单提交
+    if (bookmarkForm) {
+        bookmarkForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (bookmarkModal) bookmarkModal.hide();
+
+            const loc = rendition.currentLocation();
+            const cfi = loc && loc.start && loc.start.cfi;
+            if (!cfi) return;
+
+            const label = bookmarkLabelInput.value.trim();
+            const ann = {
+                bookId: stableBookId,
+                type: 'bookmark',
+                cfi: cfi,
+                content: label || "",
+            };
+
+            await saveAnnotationToServer(ann, 'bookmark');
+            await refreshAnnotationsAndToc();
+            tocDrawer.style.display = 'block';
+        });
+    }
+
+    tocBtn.addEventListener('click', () => {
+        if (!readerReady) return;
+        tocDrawer.style.display = (tocDrawer.style.display === 'block') ? 'none' : 'block';
+    });
+
+    // 下载与导航
+    downloadBtn.addEventListener('click', async () => {
+        try {
+            const a = document.createElement('a');
+            a.href = FILE_PATH;
+            a.download = FILE_PATH.split('/').pop();
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (e) { console.error(e); }
+    });
+
+    prevBtn.addEventListener('click', () => { if (readerReady) rendition.prev(); });
+    nextBtn.addEventListener('click', () => { if (readerReady) rendition.next(); });
+    tocCloseBtn.addEventListener('click', () => { tocDrawer.style.display = 'none'; });
+
+    // 键盘操作
+    window.addEventListener('keydown', (e) => {
+        if (!readerReady) return;
+        if (document.querySelector('.modal.show')) return;
+        if (tocDrawer.style.display === 'block') return;
+
+        if (e.key === 'ArrowLeft' || e.key === 'PageUp') { rendition.prev(); e.preventDefault(); }
+        else if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.code === 'Space') { rendition.next(); e.preventDefault(); }
+    });
+
+    function setControlsEnabled(enabled) {
+        [prevBtn, nextBtn, bookmarkBtn, highlightBtn, tocBtn].forEach(b => b.disabled = !enabled);
+        if(eraserBtnEl) eraserBtnEl.disabled = !enabled;
+    }
+
+    // ==========================================
+    // 9. 初始化 ePub.js
+    // ==========================================
+
+    async function loadEpub(url) {
+        if (!isEpub(url)) {
+            viewer.innerHTML = `<div class="error-msg">Unsupported format. Only .epub is accepted.</div>`;
+            return;
+        }
+        viewer.innerHTML = '';
+
+        try {
+            book = ePub(url);
+
+            rendition = book.renderTo('viewer', {
+                width: '100%',
+                height: '100%',
+                spread: 'none',
+                flow: 'paginated'
+            });
+
+            // 主题与样式
+            try {
+                rendition.themes.register('night', {
+                    'body': { 'background': '#0a0a0a', 'color': '#ddd' },
+                    'p': { 'color': '#ddd' },
+                    '::selection': { 'background': 'rgba(255,255,0,0.3)' }
+                });
+                rendition.themes.select('night');
+            } catch(e) {}
+
+            // 渲染回调
+            rendition.on('rendered', (section, view) => {
+                try {
+                    if (view && view.document && view.document.body) {
+                        view.document.body.style.backgroundColor = '#0a0a0a';
+                        view.document.body.style.color = '#ddd';
+                    }
+                } catch (e) {}
+            });
+
+            // --- 关键修改：只存储选区，不立即处理 ---
+            rendition.on('selected', (cfiRange, contents) => {
+                storeSelection(cfiRange, contents);
+            });
+
+            // 启动渲染
+            await rendition.display();
+
+            // 后续加载
+            readerReady = true;
+            stableBookId = getStableBookId();
+            setControlsEnabled(true);
+
+            // 加载标注
+            await refreshAnnotationsAndToc();
+
+            // 生成 Locations
+            if (!locationsGenerated) {
+                book.locations.generate().then(() => { locationsGenerated = true; }).catch(console.warn);
+            }
+
+        } catch (e) {
+            console.error('loadEpub error', e);
+            viewer.innerHTML = `<div class="error-msg">Load Failed: ${e.message}</div>`;
+        }
+    }
+
+    // 入口
+    if (!FILE_PATH || FILE_PATH.trim() === '') {
+        viewer.innerHTML = `<div class="error-msg">No file specified.</div>`;
+    } else {
+        loadEpub(FILE_PATH);
+    }
+</script>
 </body>
 </html>
