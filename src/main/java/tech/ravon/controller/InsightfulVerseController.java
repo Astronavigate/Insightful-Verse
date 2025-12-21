@@ -276,22 +276,22 @@ public class InsightfulVerseController {
         request.setAttribute("file", file);
         switch (file.getType().toLowerCase()) {
             case "doc", "docx" -> {
-                return "InsightfulVerse/WordReader";
+                return "InsightfulVerse/Reader/WordReader";
             }
             case "xls", "xlsm", "xlsx" -> {
-                return "InsightfulVerse/ExcelReader";
+                return "InsightfulVerse/Reader/ExcelReader";
             }
             case "ppt", "pptx" -> {
-                return "InsightfulVerse/PowerPointReader";
+                return "InsightfulVerse/Reader/PowerPointReader";
             }
             case "pdf" -> {
-                return "InsightfulVerse/PostScriptReader";
+                return "InsightfulVerse/Reader/PostScriptReader";
             }
             case "epub" -> {
-                return "InsightfulVerse/BookReader";
+                return "InsightfulVerse/Reader/BookReader";
             }
             default -> {
-                return "InsightfulVerse/TextReader";
+                return "InsightfulVerse/Reader/TextReader";
             }
         }
     }

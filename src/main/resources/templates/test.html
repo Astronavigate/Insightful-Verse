@@ -1,232 +1,85 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>EPUB Reader - System View (Dependency Fix)</title>
+<style>
+@font-face {
+font-family: 'Segoe Boot Semilight';
+src: url('/lib/fonts/segoe_slboot.ttf') format('truetype');
+}
 
-    <script src="/lib/jszip-3.10.1/dist/jszip.min.js"></script>
+/* 加载动画覆盖层 */
+#bootOverlay {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: var(--background-dark);
+z-index: 1000;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+}
 
-    <script src="/lib/epub.js-0.3.88/epub.min.js"></script>
+.boot-spinner {
+font-family: 'Segoe Boot Semilight';
+font-size: 42px;
+color: var(--ice-white);
+line-height: 1;
+}
+</style>
 
-    <style>
-        body {
-            margin: 0;
-            background: #0a0a0a; /* 极深黑，夜色 */
-            color: #ddd; /* 冰白文字 */
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
-        }
 
-        #toolbar {
-            height: 48px;
-            background: #1e1e1e; /* 深灰/钢色 */
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            gap: 16px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-            z-index: 10;
-        }
+<div class="reader-wrap">
+    <div id="textContainer">
+        <!-- 加载动画 -->
+        <div id="bootOverlay">
+            <div class="boot-spinner" id="bootAnim"></div>
+            <div class="control-text" style="margin-top:20px; opacity:0.4;">BUFFERING_PPT_STREAM...</div>
+        </div>
 
-        #viewer {
-            height: calc(100vh - 48px);
-        }
-
-        button {
-            background: #2b2b2b;
-            color: #ccc;
-            border: 1px solid #444;
-            padding: 8px 14px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.2s, color 0.2s;
-            border-radius: 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        button:hover {
-            background: #444;
-            color: #fff;
-        }
-
-        ::selection {
-            background: rgba(100, 149, 237, 0.3);
-        }
-
-        /* 强制覆盖 epub.js 内部可能存在的白色背景 */
-        #viewer iframe {
-            background-color: #0a0a0a !important;
-        }
-    </style>
-</head>
-<body>
-
-<div id="toolbar">
-    <button onclick="next()">NEXT ▶</button>
-    <button onclick="prev()">◀ PREV</button>
-    <button onclick="addBookmark()">MARK 🔖</button>
-    <button onclick="addHighlight()">HIGHLIGHT 🖍</button>
+    </div>
 </div>
 
-<div id="viewer"></div>
 
 <script>
-    /*************************************
-     * 核心配置
-     *************************************/
-    const bookId = 1000000000;
-    const userId = 1000000000;
-    const epubUrl = "/doc/test.epub";
-    const isLogin = userId !== null;
-    const HIGHLIGHT_COLOR = "rgba(100, 149, 237, 0.5)";
+// --- 加载帧动画 (E052-E0CB) ---
+const startAnim = () => {
+const el = document.getElementById('bootAnim');
 
-    console.log("System Status [Start]: EPUB Reader Initializing.");
+let curr = 0xE052;
+return setInterval(() => {
+el.innerText = String.fromCharCode(curr);
+if (++curr > 0xE0CB) curr = 0xE052;
+}, 40);
+};
+const animId = startAnim();
 
-    // 检查依赖 (System Integrity Check)
-    if (typeof JSZip === 'undefined') {
-        console.error("CRITICAL ERROR: JSZip dependency missing. Cannot parse EPUB file.");
-    }
-    if (typeof ePub === 'undefined') {
-        console.error("CRITICAL ERROR: 'epub.js' dependency missing.");
-    }
+$(function() {
+    // 初始化 PPTXjs
+    $("#pptx-viewer").pptxToHtml({
+        pptxFileUrl: FILE_PATH,
+        slideMode: false,
+        keyBoardShortCut: true,
+        mediaProcess: true,
+        slidesScale: "100%"
+    });
 
-    try {
-        /*************************************
-         * 初始化 EPUB
-         *************************************/
-        const book = ePub(epubUrl);
+    // 下载按钮
+    $("#downloadBtn").on("click", function() {
+        const fileName = FILE_PATH.split("/").pop().split("?")[0];
+        const a = document.createElement("a");
+        a.href = FILE_PATH;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    });
 
-        console.log("Status [Book Instance]: Created successfully.");
-
-        const rendition = book.renderTo("viewer", {
-            width: "100%",
-            height: "100%",
-            spread: "none",
-            themes: {
-                "night": {
-                    "body": { "background": "#0a0a0a !important", "color": "#ddd !important" },
-                    "p": { "color": "#ddd !important" },
-                    "a": { "color": "#6495ED !important" }
-                }
-            }
-        });
-
-        rendition.themes.select("night");
-
-        // 遵循官方文档：先 renderTo，后 display。
-        console.log("Status [Rendition]: Calling display() for initial rendering.");
-        rendition.display();
-
-        // 确保深色样式注入
-        rendition.on("rendered", function(e) {
-            const frameBody = e.document.body;
-            if (frameBody) {
-                frameBody.style.setProperty('background-color', '#0a0a0a', 'important');
-                frameBody.style.setProperty('color', '#ddd', 'important');
-                console.log("Status [Styles]: Dark theme successfully injected.");
-            }
-        });
-
-        // 延迟所有异步操作，仅在解析成功后进行
-        book.ready.then(() => {
-            console.log("Status [Book Ready]: Data parsed successfully. Loading annotations.");
-            loadAnnotations();
-        }).catch(error => {
-            // 捕获 EPUB 文件解析失败的错误
-            console.error("CRITICAL: EPUB file load/parse error. Check dependencies or server MIME Type.", error);
-            document.getElementById('viewer').innerHTML = `<div style="color: red; padding: 20px;">系统错误：EPUB 文件无法解析。详情请检查 Console。</div>`;
-        });
-
-        /********************
-         * 翻页、加载标注、保存等功能实现 (Functionality)
-         ********************/
-        function next() { rendition.next(); }
-        function prev() { rendition.prev(); }
-
-        function loadAnnotations() {
-            if (!isLogin) {
-                loadLocalAnnotations();
-                return;
-            }
-            fetch(`/api/annotation/list?userId=${userId}&bookId=${bookId}`)
-                .then(r => r.json())
-                .then(list => {
-                    list.forEach(a => applyAnnotation(a));
-                })
-                .catch(e => console.error("Error loading remote annotations:", e));
-        }
-
-        function applyAnnotation(a) {
-            if (a.type === "highlight") {
-                rendition.annotations.highlight(
-                    a.cfi,
-                    {},
-                    () => {},
-                    "highlight",
-                    { fill: a.color || HIGHLIGHT_COLOR }
-                );
-            }
-        }
-
-        function loadLocalAnnotations() {
-            try {
-                const list = JSON.parse(localStorage.getItem(bookId) || "[]");
-                list.forEach(a => applyAnnotation(a));
-            } catch (e) {
-                console.error("Local storage corruption detected.", e);
-            }
-        }
-
-        function saveLocal(annotation) {
-            const list = JSON.parse(localStorage.getItem(bookId) || "[]");
-            list.push(annotation);
-            localStorage.setItem(bookId, JSON.stringify(list));
-        }
-
-        function addBookmark() {
-            const cfi = rendition.currentLocation().start.cfi;
-            const annotation = { userId, bookId, type: "bookmark", cfi };
-            save(annotation);
-        }
-
-        function addHighlight() {
-            alert("请选中文本，创建高亮。");
-            const handleSelected = function (cfiRange) {
-                rendition.off("selected", handleSelected);
-                if (!cfiRange) return;
-                const annotation = { userId, bookId, type: "highlight", cfi: cfiRange, color: HIGHLIGHT_COLOR };
-                save(annotation);
-            };
-            rendition.on("selected", handleSelected);
-        }
-
-        function save(annotation) {
-            if (!isLogin) {
-                saveLocal(annotation);
-                applyAnnotation(annotation);
-                return;
-            }
-
-            fetch("/api/annotation/save", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(annotation)
-            })
-                .then(response => {
-                    if (response.ok) {
-                        applyAnnotation(annotation);
-                    } else {
-                        console.error("Server save failed with status:", response.status);
-                    }
-                })
-                .catch(e => console.error("Network or save error:", e));
-        }
-
-    } catch (e) {
-        console.error("Critical Initialization Failure (Try-Catch Block):", e);
-    }
+    // 全屏按钮
+    $("#fullScreenBtn").on("click", function() {
+        const elem = document.getElementById("pptx-viewer");
+        if (elem.requestFullscreen) elem.requestFullscreen();
+        else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+        else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+    });
+});
 </script>
-
-</body>
-</html>

@@ -1,0 +1,356 @@
+<!--
+  Copyright 2025 Astronavigate
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="'Insightful TEXT Reader ' + ${file != null ? ' - ' + file.fileName : 'None'}">Raven Reader</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}"/>
+
+    <style>
+        :root {
+            --header-h: 72px;
+            --glass-bg: rgba(18, 18, 18, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary-text: #e6eef8;
+            --secondary-text: #adb5bd;
+            --background-dark: #050505;
+            --ice-white: #ffffff;
+            --silver-mercury: rgba(255, 255, 255, 0.35);
+            --radius-btn: 8px;
+            --mono-font: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: var(--background-dark) !important;
+            color: var(--primary-text);
+            font-family: system-ui, -apple-system, sans-serif; /* 默认字体 */
+            overflow: hidden;
+        }
+
+        .reader-wrap {
+            height: calc(100vh - var(--header-h));
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            box-sizing: border-box;
+            align-items: center;
+        }
+
+        #textContainer {
+            width: 100%;
+            max-width: 1400px;
+            flex: 1;
+            border-radius: 12px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(50px) saturate(120%);
+            -webkit-backdrop-filter: blur(50px) saturate(120%);
+
+            /* 动态高光边框核心实现 */
+            border: 1px solid var(--glass-border);
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+            box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, 0.1),
+                    0 30px 80px rgba(0, 0, 0, 0.8);
+
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 控制栏：去掉特定字体设置，回归默认 */
+        #controls {
+            display: flex;
+            align-items: center;
+            height: 60px;
+            padding: 0 24px;
+            background: rgba(255, 255, 255, 0.02);
+            z-index: 100;
+        }
+
+        .simplified-controls {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            position: relative;
+        }
+
+        .controls-left { display: flex; gap: 12px; align-items: center; flex: 1; }
+        .controls-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+        .controls-right { display: flex; gap: 12px; align-items: center; flex: 1; justify-content: flex-end; }
+
+        /* 进度条位置：置于 Control 和 Viewer 之间 */
+        .progress-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            height: 2px; /* 更细，更具锋芒 */
+            z-index: 101;
+        }
+        #loadingProgress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, transparent, var(--ice-white));
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+            transition: width 0.15s ease-out;
+        }
+
+        /* 下拉菜单 */
+        .shadow-select-container { position: relative; width: 170px; }
+        .custom-select-trigger {
+            height: 34px;
+            padding: 0 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            color: var(--ice-white);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .custom-options {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0; right: 0;
+            background: #111111;
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            display: none;
+            z-index: 1000;
+            padding: 6px 0;
+            list-style: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,1);
+        }
+        .custom-options.active { display: block; animation: fadeIn 0.2s ease; }
+        .custom-options li {
+            padding: 10px 16px;
+            color: var(--secondary-text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .custom-options li:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
+        /* 按钮与文本指标 */
+        .control-btn {
+            height: 34px;
+            padding: 0 14px;
+            border-radius: var(--radius-btn);
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--ice-white);
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
+        .control-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.4); }
+
+        .control-text { font-size: 0.85rem; color: var(--secondary-text); letter-spacing: 0.5px; }
+        #charCount { color: var(--ice-white); font-weight: 500; }
+
+        /* 阅读区域：收窄空挡 */
+        #viewerWrapper { flex: 1; position: relative; overflow: hidden; background: rgba(0,0,0,0.1); }
+        #textViewer {
+            height: 100%;
+            padding: 40px 15px;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        .text-paper {
+            width: 100%;
+            max-width: 1200px;
+            line-height: 1.8;
+            font-size: 1.1rem;
+            color: var(--secondary-text);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .text-paper.mono { font-family: var(--mono-font); font-size: 1rem; }
+
+        /* 滚动条：汞银质感 */
+        #textViewer::-webkit-scrollbar { width: 6px; height: 6px; }
+        #textViewer::-webkit-scrollbar-thumb {
+            background: var(--silver-mercury);
+            border-radius: 10px;
+        }
+        #textViewer::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .spinner {
+            width: 24px; height: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-top-color: var(--ice-white);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
+</head>
+<body>
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="reader-wrap">
+    <div id="textContainer">
+        <div id="controls">
+            <div class="simplified-controls">
+                <div class="controls-left">
+                    <div class="shadow-select-container" id="encodingDropdown">
+                        <div class="custom-select-trigger">
+                            <span><i class="bi bi-cpu"></i> <span id="selectedEncoding">UTF-8</span></span>
+                            <i class="bi bi-chevron-down" style="font-size: 0.7rem; opacity: 0.5;"></i>
+                        </div>
+                        <ul class="custom-options">
+                            <li data-value="UTF-8">UTF-8</li>
+                            <li data-value="CP1252">CP1252</li>
+                            <li data-value="GBK">GBK</li>
+                            <li data-value="UTF-16LE">UTF-16 LE</li>
+                            <li data-value="UTF-16BE">UTF-16 BE</li>
+                        </ul>
+                    </div>
+                    <button class="control-btn" id="fontToggleBtn" title="Typeface"><i class="bi bi-fonts"></i></button>
+                </div>
+
+                <div class="controls-center">
+                    <span class="control-text">METRICS: <span id="charCount">0</span> CHARS</span>
+                </div>
+
+                <div class="controls-right">
+                    <button class="control-btn" id="downloadBtn" title="Download TEXT"><i class="bi bi-download"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="progress-container">
+            <div id="loadingProgress"></div>
+        </div>
+
+        <div id="viewerWrapper">
+            <div id="textViewer">
+                <article class="text-paper" id="textContent">
+                    <div style="display: flex; flex-direction: column; align-items: center; margin-top: 120px; gap: 20px;">
+                        <div class="spinner"></div>
+                        <span class="control-text" style="opacity: 0.4;">BUFFERING_STREAM...</span>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    class RavenTextReader {
+        constructor() {
+            this.container = document.getElementById('textContainer');
+            this.contentArea = document.getElementById('textContent');
+            this.progressBar = document.getElementById('loadingProgress');
+            this.viewer = document.getElementById('textViewer');
+            this.charCountEl = document.getElementById('charCount');
+            this.encodingTrigger = document.querySelector('.custom-select-trigger');
+            this.encodingOptions = document.querySelector('.custom-options');
+
+            this.rawBuffer = null;
+            this.currentEncoding = "UTF-8";
+            this.init();
+        }
+
+        init() {
+            this.encodingTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.encodingOptions.classList.toggle('active');
+            });
+            this.encodingOptions.querySelectorAll('li').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    this.currentEncoding = e.target.getAttribute('data-value');
+                    document.getElementById('selectedEncoding').innerText = this.currentEncoding;
+                    this.render();
+                });
+            });
+            document.addEventListener('click', () => this.encodingOptions.classList.remove('active'));
+
+            document.getElementById('fontToggleBtn').addEventListener('click', () => {
+                this.contentArea.classList.toggle('mono');
+            });
+
+            this.viewer.addEventListener('scroll', () => {
+                const scrolled = this.viewer.scrollTop;
+                const total = this.viewer.scrollHeight - this.viewer.clientHeight;
+                const progress = total <= 0 ? 0 : scrolled / total;
+
+                this.progressBar.style.width = (progress * 100) + "%";
+
+                // 动态调整边框亮度 (0.08 到 0.25 之间的变化)
+                const glowIntensity = 0.08 + (progress * 0.12);
+                const shadowIntensity = 0.8 + (progress * 0.1);
+                this.container.style.borderColor = `rgba(255, 255, 255, ${glowIntensity})`;
+                this.container.style.boxShadow = `0 0 0 1px rgba(255, 255, 255, ${glowIntensity / 2}), 0 40px 100px rgba(0,0,0,${shadowIntensity})`;
+            });
+
+            document.getElementById('downloadBtn').addEventListener('click', () => {
+                const url = /*[[${file != null ? file.filePath : ''}]]*/ '';
+                if (url) { const a = document.createElement('a'); a.href = url; a.download = /*[[${file != null ? file.fileName : ''}]]*/ ''; a.click(); }
+            });
+        }
+
+        async loadFile(url) {
+            try {
+                const response = await fetch(url);
+                this.rawBuffer = await response.arrayBuffer();
+                this.render();
+            } catch (err) { this.showError("STREAM_FAILURE"); }
+        }
+
+        render() {
+            if (!this.rawBuffer) return;
+            const text = new TextDecoder(this.currentEncoding).decode(this.rawBuffer);
+            this.contentArea.textContent = text;
+            this.charCountEl.innerText = text.length.toLocaleString();
+            this.viewer.scrollTop = 0;
+            this.progressBar.style.width = "0%";
+        }
+
+        showError(msg) { this.contentArea.innerHTML = `<div style="text-align:center; padding-top:100px;" class="control-text">${msg}</div>`; }
+    }
+
+    const reader = new RavenTextReader();
+    const filePath = /*[[${file != null ? file.filePath : ''}]]*/ '';
+    if (filePath) reader.loadFile(filePath);
+</script>
+</body>
+</html>

@@ -1,3 +1,19 @@
+<!--
+  Copyright 2025 Astronavigate
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -9,29 +25,35 @@
     <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}"/>
 
     <!-- PDF.js 库 (使用CDN) -->
+    <script src="/lib/jquery-3.7.1/dist/jquery.min.js"></script>
     <script src="/lib/pdfjs-3.11.174/pdf.min.js"></script>
     <script src="/lib/pdfjs-3.11.174/pdf.worker.min.js"></script>
 
     <style>
         :root {
             --header-h: 72px;
-            --glass-bg: rgba(255,255,255,0.04);
-            --glass-border: rgba(255,255,255,0.06);
+            --glass-bg: rgba(18, 18, 18, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
             --primary-text: #e6eef8;
             --secondary-text: #adb5bd;
-            --background-dark: #0a0a0a;
+            --background-dark: #050505;
+            --ice-white: #ffffff;
+            --silver-mercury: rgba(255, 255, 255, 0.35);
+            --radius-btn: 8px;
             --border-subtle: rgba(255,255,255,0.02);
-            --control-bg: rgba(18,18,18,0.5);
+            --control-bg: rgba(255, 255, 255, 0.02);
             --highlight-color: #4a67a0;
         }
+
         html, body {
             height:100%;
             margin:0;
-            background:var(--background-dark);
+            background: var(--background-dark) !important;
             color:var(--primary-text);
-            font-family:system-ui, sans-serif;
+            font-family:system-ui, -apple-system, sans-serif;
             overflow:hidden;
         }
+
         .reader-wrap {
             height: calc(100vh - var(--header-h));
             display:flex;
@@ -40,68 +62,156 @@
             box-sizing:border-box;
             align-items:center;
         }
+
         #pdfContainer {
             width:100%;
             max-width:1400px;
             flex:1;
             border-radius:16px;
-            background:var(--glass-bg);
-            backdrop-filter:blur(12px);
-            border:1px solid var(--glass-border);
-            overflow:hidden;
-            display:flex;
-            flex-direction:column;
+            background: var(--glass-bg);
+            backdrop-filter: blur(50px) saturate(120%);
+            -webkit-backdrop-filter: blur(50px) saturate(120%);
+
+            border: 1px solid var(--glass-border);
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+            box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, 0.1),
+                    0 30px 80px rgba(0, 0, 0, 0.8);
+
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
+
         #controls {
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            padding:10px 16px;
-            gap:12px;
+            display: flex;
+            align-items: center;
+            height: 60px;
+            padding: 0 24px;
             background:var(--control-bg);
-            border-bottom:1px solid var(--border-subtle);
+            z-index: 100;
         }
-        .controls-left, .controls-center, .controls-right { display:flex; align-items:center; gap:8px; }
+
+        .simplified-controls {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            position: relative;
+        }
+
+        .controls-left { display: flex; gap: 12px; align-items: center; flex: 1; color: var(--ice-white); }
+        .controls-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex: 1;
+            color: var(--ice-white);
+        }
+        .controls-right { display: flex; gap: 12px; align-items: center; flex: 1; justify-content: flex-end; color: var(--ice-white); }
+
+        .progress-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            height: 2px;
+            z-index: 101;
+        }
+        #loadingProgress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, transparent, var(--ice-white));
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+            transition: width 0.3s ease-out;
+        }
+
+        .progress-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: progressShimmer 2s infinite;
+        }
+        @keyframes progressShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .shadow-select-container { position: relative; width: 170px; }
+        .custom-select-trigger {
+            height: 34px;
+            padding: 0 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            color: var(--ice-white);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .custom-options {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0; right: 0;
+            background: #111111;
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            display: none;
+            z-index: 1000;
+            padding: 6px 0;
+            list-style: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,1);
+        }
+        .custom-options.active { display: block; animation: fadeIn 0.2s ease; }
+        .custom-options li {
+            padding: 10px 16px;
+            color: var(--secondary-text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .custom-options li:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
 
         .control-btn {
-            height:34px;
-            padding:6px 10px;
-            border-radius:8px;
-            border:1px solid rgba(255,255,255,0.08);
-            background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-            color:#e9eef8;
-            cursor:pointer;
-            font-weight:400;
-            font-size: 0.9rem;
-            box-shadow:0 2px 8px rgba(0,0,0,0.4);
-            transition: all 0.2s;
-            display: inline-flex;
+            height: 34px;
+            padding: 0 14px;
+            border-radius: var(--radius-btn);
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--ice-white);
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 4px;
+            gap: 8px;
+            transition: 0.3s;
         }
-        .control-btn:hover:not(:disabled) {
-            background:rgba(255,255,255,0.05);
-            box-shadow:0 4px 12px rgba(0,0,0,0.5);
-        }
+        .control-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.4); }
+
+        .control-text { font-size: 0.85rem; color: var(--secondary-text); letter-spacing: 0.5px; }
+        #charCount { color: var(--ice-white); font-weight: 500; }
+
         .control-btn:disabled { opacity:0.4; cursor:not-allowed; }
 
-        #viewerWrapper {
-            flex:1;
-            display:flex;
-            background:linear-gradient(180deg,#0a0a0a,#0b0b0b);
-            border-top:1px solid var(--border-subtle);
-            position:relative;
-            overflow:auto;
-        }
+        #viewerWrapper { flex: 1; position: relative; overflow: hidden; background: rgba(0,0,0,0.1); }
         #pdfViewer {
-            flex:1;
-            width:100%;
-            display:flex;
+            height: 100%;
+            padding: 20px;
+            overflow: auto;
+            display: flex;
+            /*justify-content: center;*/
+            flex: 1;
             flex-direction:column;
             align-items:center;
-            padding:20px;
-            overflow-y:auto;
         }
 
         /* PDF页面容器 */
@@ -111,6 +221,16 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             background: #fff;
             max-width: 100%;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: pageFadeIn 0.4s ease forwards;
+        }
+
+        @keyframes pageFadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .pdf-page-canvas {
@@ -227,15 +347,54 @@
         .bookmark-label { color:#80a2ff; font-weight:600; }
         .toc-children { margin-left:8px; }
 
-        #pdfViewer::-webkit-scrollbar { width:12px; height:12px; }
-        #pdfViewer::-webkit-scrollbar-track { background: rgba(192,192,192,0.2); border-radius:6px; }
-        #pdfViewer::-webkit-scrollbar-thumb { background: rgba(224,224,224,0.3); border-radius:6px; }
-        #pdfViewer::-webkit-scrollbar-thumb:hover { background: rgba(224,224,224,0.6); }
+        #pdfViewer::-webkit-scrollbar { width: 6px; height: 6px; }
+        #pdfViewer::-webkit-scrollbar-thumb {
+            background: var(--silver-mercury);
+            border-radius: 10px;
+        }
+        #pdfViewer::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
 
+        #tocDrawer::-webkit-scrollbar { width: 6px; height: 6px; }
+        #tocDrawer::-webkit-scrollbar-thumb {
+            background: var(--silver-mercury);
+            border-radius: 10px;
+        }
+        #tocDrawer::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
+
+        /*
         #tocDrawer::-webkit-scrollbar { width:12px; height:12px; }
         #tocDrawer::-webkit-scrollbar-track { background: rgba(224,224,224,0.2); border-radius:6px; }
         #tocDrawer::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius:6px; }
         #tocDrawer::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.6); }
+        */
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .loading-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            gap: 20px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--ice-white);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            color: var(--secondary-text);
+            font-size: 14px;
+            text-align: center;
+        }
 
         .icon-btn { border:none; background:transparent; color:var(--secondary-text); cursor:pointer; padding:4px; border-radius:6px; transition: all 0.15s; }
         .icon-btn:hover { background: rgba(255,255,255,0.08); color:var(--primary-text); }
@@ -265,43 +424,32 @@
             text-align: center;
         }
 
-        /* 加载指示器 */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
+        /* Loading */
+        @font-face {
+            font-family: 'Segoe Boot Semilight';
+            src: url('/lib/fonts/segoe_slboot.ttf') format('truetype');
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* 进度条 */
-        .progress-container {
-            width: 100%;
-            background-color: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 4px;
-            background-color: #4a67a0;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        /* 简化后的控制栏布局 */
-        .simplified-controls {
+        /* 加载动画覆盖层 */
+        #bootOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--background-dark);
+            z-index: 1000;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            width: 100%;
+        }
+
+        .boot-spinner {
+            font-family: 'Segoe Boot Semilight';
+            font-size: 42px;
+            color: var(--ice-white);
+            line-height: 1;
         }
     </style>
 
@@ -309,25 +457,28 @@
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
     <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
 </head>
-<body style="background-color: #0a0a0a">
+<body>
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
 <div class="reader-wrap">
     <div id="pdfContainer">
+        <div id="bootOverlay">
+            <div class="boot-spinner" id="bootAnim"></div>
+        </div>
         <div id="controls">
             <div class="simplified-controls">
                 <div class="controls-left">
                     <button class="control-btn" id="tocBtn" title="Table of Contents">
-                        <i class="bi bi-list"></i> TOC
+                        <i class="bi bi-list"></i>
                     </button>
                     <button class="control-btn" id="bookmarkBtn" title="Bookmark Current Page">
-                        <i class="bi bi-bookmark"></i> MARK
+                        <i class="bi bi-bookmark"></i>
                     </button>
                     <button class="control-btn" id="highlightBtn" title="Highlight Selection">
-                        <i class="bi bi-highlighter"></i> HIGHLIGHT
+                        <i class="bi bi-highlighter"></i>
                     </button>
                     <button class="control-btn" id="eraserBtn" title="Eraser Mode">
-                        <i class="bi bi-eraser"></i> ERASE
+                        <i class="bi bi-eraser"></i>
                     </button>
                 </div>
 
@@ -336,7 +487,7 @@
                     <button class="control-btn" id="zoomOutBtn" title="Zoom Out">
                         <i class="bi bi-dash"></i>
                     </button>
-                    <span id="zoomLevel" class="control-btn" style="cursor:default">100%</span>
+                    <span id="zoomLevel" style="cursor:default">100%</span>
                     <button class="control-btn" id="zoomInBtn" title="Zoom In">
                         <i class="bi bi-plus"></i>
                     </button>
@@ -344,25 +495,22 @@
 
                 <div class="controls-right">
                     <!-- 只显示页码信息，不显示导航按钮 -->
-                    <span id="pageInfo" class="control-btn" style="cursor:default; min-width: 120px;">
+                    <span id="pageInfo" style="cursor:default; min-width: 120px;">
             Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
           </span>
                     <button class="control-btn" id="downloadBtn" title="Download PDF">
-                        <i class="bi bi-download"></i> Download
+                        <i class="bi bi-download"></i>
                     </button>
                 </div>
             </div>
         </div>
 
+        <div class="progress-container">
+            <div id="loadingProgress"></div>
+        </div>
+
         <div id="viewerWrapper">
             <div id="pdfViewer">
-                <div style="text-align: center; padding: 50px;">
-                    <div class="loading" style="margin: 0 auto 20px;"></div>
-                    <p>Loading PDF reader...</p>
-                    <div class="progress-container">
-                        <div class="progress-bar" id="loadingProgress"></div>
-                    </div>
-                </div>
             </div>
             <div id="tocDrawer" aria-hidden="true">
                 <h3>Table of Contents <button id="tocCloseBtn" class="icon-btn" title="Close">✕</button></h3>
@@ -449,13 +597,26 @@
 
 <script th:inline="javascript">
     /*<![CDATA[*/
-    var FILE_PATH = /*[[${file != null ? file.filePath : ''}]]*/ '';
-    var FILE_ID = /*[[${file != null ? file.fileId : ''}]]*/ '';
-    var CURRENT_USER_ID = /*[[${session.user != null ? session.user.userId : 'null'}]]*/ null;
+    const FILE_PATH = /*[[${file != null ? file.filePath : ''}]]*/ '';
+    const FILE_NAME = /*[[${file != null ? file.fileName : ''}]]*/ '';
+    const FILE_TYPE = /*[[${file != null ? file.type : ''}]]*/ '';
+    const FILE_ID = /*[[${file != null ? file.fileId : ''}]]*/ '';
+    const CURRENT_USER_ID = /*[[${session.user != null ? session.user.userId : 'null'}]]*/ null;
     /*]]>*/
 </script>
 
 <script>
+    // --- 加载帧动画 (E052-E0CB) ---
+    const startAnim = () => {
+        const el = document.getElementById('bootAnim');
+
+        let curr = 0xE052;
+        return setInterval(() => {
+            el.innerText = String.fromCharCode(curr);
+            if (++curr > 0xE0CB) curr = 0xE052;
+        }, 40);
+    };
+
     // ==
     // 1. 全局变量与 DOM 元素获取
     // ==
@@ -478,6 +639,7 @@
 
     // 界面元素
     const pdfViewer = document.getElementById('pdfViewer');
+    const container = document.getElementById('pdfContainer');
     const tocBtn = document.getElementById('tocBtn');
     const tocDrawer = document.getElementById('tocDrawer');
     const tocList = document.getElementById('tocList');
@@ -499,7 +661,7 @@
     const downloadBtn = document.getElementById('downloadBtn');
 
     // 加载进度条
-    const loadingProgress = document.getElementById('loadingProgress');
+    const progressBar = document.getElementById('loadingProgress');
 
     // 模态框相关
     const infoModalElement = document.getElementById('infoModal');
@@ -570,7 +732,14 @@
     // 2. 辅助工具函数
     // ==
 
-    function showInfoModal(title, message, isConfirm = false, onConfirm = () => {}) {
+    function showInfoModal(
+        title,
+        message,
+        isConfirm = false,
+        onConfirm = () => {},
+        confirmText = null,
+        cancelText = null
+    ) {
         if (!infoModal) {
             isConfirm ? onConfirm(window.confirm(message)) : window.alert(message);
             return;
@@ -579,8 +748,19 @@
         infoModalTitle.textContent = title;
         infoModalBody.innerHTML = message;
 
-        infoModalConfirmBtn.textContent = isConfirm ? 'Confirm' : 'OK';
+        // 设置确认按钮文本
+        if (confirmText !== null) {
+            infoModalConfirmBtn.textContent = confirmText;
+        } else {
+            infoModalConfirmBtn.textContent = isConfirm ? 'Confirm' : 'OK';
+        }
+
         infoModalCancelBtn.style.display = isConfirm ? 'inline-block' : 'none';
+
+        // 设置取消按钮文本
+        if (cancelText !== null && isConfirm) {
+            infoModalCancelBtn.textContent = cancelText;
+        }
 
         const cloneConfirm = infoModalConfirmBtn.cloneNode(true);
         infoModalConfirmBtn.parentNode.replaceChild(cloneConfirm, infoModalConfirmBtn);
@@ -591,10 +771,19 @@
         infoModalCancelBtn = cloneCancel;
 
         if (isConfirm) {
-            infoModalConfirmBtn.addEventListener('click', () => { infoModal.hide(); onConfirm(true); }, { once: true });
-            infoModalCancelBtn.addEventListener('click', () => { infoModal.hide(); onConfirm(false); }, { once: true });
+            infoModalConfirmBtn.addEventListener('click', () => {
+                infoModal.hide();
+                onConfirm(true);
+            }, { once: true });
+            infoModalCancelBtn.addEventListener('click', () => {
+                infoModal.hide();
+                onConfirm(false);
+            }, { once: true });
         } else {
-            infoModalConfirmBtn.addEventListener('click', () => { infoModal.hide(); onConfirm(); }, { once: true });
+            infoModalConfirmBtn.addEventListener('click', () => {
+                infoModal.hide();
+                onConfirm();
+            }, { once: true });
         }
 
         infoModal.show();
@@ -769,7 +958,8 @@
                         await deleteAnnotationFromServer(ann.id);
                         await refreshAnnotationsAndToc();
                     }
-                }
+                },
+                "Delete"
             );
         });
 
@@ -1198,7 +1388,7 @@
         try {
             const a = document.createElement('a');
             a.href = FILE_PATH;
-            a.download = FILE_PATH.split('/').pop();
+            a.download = FILE_NAME + "." + FILE_TYPE;
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -1253,12 +1443,14 @@
             pageContainer.id = `pdf-page-${pageNum}`;
             pageContainer.className = 'pdf-page-container';
 
+            // 设置延迟动画 - 确保页码顺序
+            pageContainer.style.animationDelay = `${(pageNum - 1) * 0.1}s`;
+
             // 创建Canvas
             const canvas = document.createElement('canvas');
             canvas.className = 'pdf-page-canvas';
 
             // 提高DPI设置以获得更高清晰度
-            // 使用更高的缩放比例和分辨率
             const pixelRatio = window.devicePixelRatio || 1;
             const scale = currentScale * pixelRatio;
 
@@ -1271,7 +1463,23 @@
             canvas.style.height = `${viewport.height / pixelRatio}px`;
 
             pageContainer.appendChild(canvas);
-            pdfViewer.appendChild(pageContainer);
+
+            // 按页码顺序插入到正确位置
+            const existingPages = Array.from(pdfViewer.querySelectorAll('.pdf-page-container'));
+            let inserted = false;
+
+            for (let i = 0; i < existingPages.length; i++) {
+                const existingPageNum = parseInt(existingPages[i].id.replace('pdf-page-', ''));
+                if (pageNum < existingPageNum) {
+                    pdfViewer.insertBefore(pageContainer, existingPages[i]);
+                    inserted = true;
+                    break;
+                }
+            }
+
+            if (!inserted) {
+                pdfViewer.appendChild(pageContainer);
+            }
 
             // 渲染PDF页面到Canvas
             const renderContext = {
@@ -1289,35 +1497,39 @@
 
             // 更新进度
             renderedPages++;
-            updateLoadingProgress();
 
         } catch (error) {
             console.error(`Error rendering page ${pageNum}:`, error);
         }
     }
 
-    // 渲染所有页面
+    // 按顺序渲染所有页面
     async function renderAllPages() {
         if (!pdfDocument || totalPages <= 0) return;
 
-        // 清空当前内容
+        // 清空当前内容（保留加载状态）
+        const loadingState = document.getElementById('loadingState');
         pdfViewer.innerHTML = '';
+        if (loadingState) {
+            pdfViewer.appendChild(loadingState);
+        }
 
         // 重置状态
         renderedPages = 0;
         highlightOverlays = {};
         highlightElements = {};
 
-        // 创建所有页面的渲染任务
-        const renderPromises = [];
+        // 按页码顺序渲染所有页面
         for (let i = 1; i <= totalPages; i++) {
-            renderPromises.push(renderPage(i));
+            await renderPage(i);
         }
 
-        // 并行渲染所有页面
-        await Promise.allSettled(renderPromises);
-
         allPagesRendered = true;
+
+        // 隐藏加载状态
+        if (loadingState) {
+            loadingState.style.display = 'none';
+        }
 
         // 更新页面信息
         updateCurrentPageFromScroll();
@@ -1493,19 +1705,11 @@
         }
     }
 
-    // 更新加载进度
-    function updateLoadingProgress() {
-        if (totalPages > 0) {
-            const progress = Math.round((renderedPages / totalPages) * 100);
-            loadingProgress.style.width = `${progress}%`;
-        }
-    }
-
     // 缩放功能
     function zoomIn() {
         if (currentScale < 3.0) {
             currentScale += 0.1;
-            currentScale = Math.round(currentScale * 10) / 10; // 保留一位小数
+            currentScale = Math.round(currentScale * 10) / 10;
             updateZoom();
             reloadAllPages();
         }
@@ -1514,7 +1718,7 @@
     function zoomOut() {
         if (currentScale > 0.5) {
             currentScale -= 0.1;
-            currentScale = Math.round(currentScale * 10) / 10; // 保留一位小数
+            currentScale = Math.round(currentScale * 10) / 10;
             updateZoom();
             reloadAllPages();
         }
@@ -1530,6 +1734,12 @@
 
         // 重置渲染状态
         allPagesRendered = false;
+
+        // 显示加载状态
+        const loadingState = document.getElementById('loadingState');
+        if (loadingState) {
+            loadingState.style.display = 'flex';
+        }
 
         // 重新渲染所有页面
         await renderAllPages();
@@ -1549,24 +1759,26 @@
     // ==
 
     async function loadPdf(url) {
+        const animId = startAnim();
+        
         if (!isPdf(url)) {
             pdfViewer.innerHTML = `<div class="error-msg">Unsupported format. Only .pdf is accepted.</div>`;
+            clearInterval(animId);
+            // 隐藏加载覆盖层 (使用渐隐效果更符合你的冷峻美学)
+            $("#bootOverlay").fadeOut(600, function () {
+                $().remove(); // 彻底从 DOM 中移除
+            });
             return;
         }
-
-        pdfViewer.innerHTML = `
-      <div style="text-align: center; padding: 50px;">
-        <div class="loading" style="margin: 0 auto 20px;"></div>
-        <p>Loading PDF...</p>
-        <div class="progress-container">
-          <div class="progress-bar" id="loadingProgress"></div>
-        </div>
-      </div>
-    `;
 
         try {
             // 检查PDF.js是否已加载
             if (typeof pdfjsLib === 'undefined') {
+                clearInterval(animId);
+                // 隐藏加载覆盖层 (使用渐隐效果更符合你的冷峻美学)
+                $("#bootOverlay").fadeOut(600, function () {
+                    $().remove(); // 彻底从 DOM 中移除
+                });
                 throw new Error('PDF.js library not loaded. Please check the script sources.');
             }
 
@@ -1599,11 +1811,14 @@
             // 加载标注
             await refreshAnnotationsAndToc();
 
-            // 一次性渲染所有页面
+            // 一次性渲染所有页面（按顺序）
             await renderAllPages();
 
-            // 所有页面渲染完成，隐藏加载进度条
-            loadingProgress.style.width = '100%';
+            clearInterval(animId);
+            // 隐藏加载覆盖层 (使用渐隐效果更符合你的冷峻美学)
+            $("#bootOverlay").fadeOut(600, function () {
+                $().remove(); // 彻底从 DOM 中移除
+            });
 
         } catch (e) {
             console.error('loadPdf error', e);
@@ -1619,6 +1834,11 @@
           </ul>
         </div>
       `;
+            clearInterval(animId);
+            // 隐藏加载覆盖层 (使用渐隐效果更符合你的冷峻美学)
+            $("#bootOverlay").fadeOut(600, function () {
+                $().remove(); // 彻底从 DOM 中移除
+            });
         }
     }
 
@@ -1670,6 +1890,28 @@
             }, 1000);
         }
     }
+
+    viewer = document.getElementById('pdfViewer');
+    progressBar.style.width = "0%";
+
+    viewer.addEventListener('scroll', () => {
+        const scrolled = viewer.scrollTop;
+        const total = viewer.scrollHeight - viewer.clientHeight;
+        const progress = total <= 0 ? 0 : scrolled / total;
+
+        progressBar.style.width = (progress * 100) + "%";
+
+        // 动态调整边框亮度 (0.08 到 0.25 之间的变化)
+        const glowIntensity = 0.08 + (progress * 0.12);
+        const shadowIntensity = 0.8 + (progress * 0.1);
+        container.style.borderColor = `rgba(255, 255, 255, ${glowIntensity})`;
+        container.style.boxShadow = `0 0 0 1px rgba(255, 255, 255, ${glowIntensity / 2}), 0 40px 100px rgba(0,0,0,${shadowIntensity})`;
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+        const url = /*[[${file != null ? file.filePath : ''}]]*/ '';
+        if (url) { const a = document.createElement('a'); a.href = url; a.download = /*[[${file != null ? file.fileName : ''}]]*/ ''; a.click(); }
+    });
 </script>
 </body>
 </html>
