@@ -1,267 +1,685 @@
+<!--
+  Copyright 2025 Astronavigate
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="'Insightful Verse Reader ' + ${file != null ? ' - ' + file.fileName : 'None'}">Excel Reader</title>
+    <title th:text="'Insightful Excel Reader ' + ${file != null ? ' - ' + file.fileName : 'None'}">Excel Reader</title>
     <style>
-        :root { --header-h: 72px; }
+        :root {
+            --header-h: 72px;
+            --glass-bg: rgba(18, 18, 18, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary-text: #e6eef8;
+            --secondary-text: #adb5bd;
+            --background-dark: #050505;
+            --ice-white: #ffffff;
+            --silver-mercury: rgba(255, 255, 255, 0.35);
+            --radius-btn: 8px;
+        }
 
         body, html {
-            margin:0; padding:0; height:100%;
-            background-color:#0a0a0a;
-            font-family:system-ui, sans-serif;
-            color:#fff;
-            overflow:hidden;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: var(--background-dark) !important;
+            color: var(--primary-text);
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
         }
 
         .excel-wrap {
             height: calc(100vh - var(--header-h));
-            display:flex;
-            flex-direction:column;
-            align-items:center;
-            justify-content:flex-start;
-            padding:32px 24px;
-            box-sizing:border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 24px;
+            box-sizing: border-box;
+            align-items: center;
         }
 
         #excelContainer {
-            width:100%;
-            height:100%;
-            max-width:1400px;
-            display:flex;
-            flex-direction:column;
-            border-radius:16px;
-            background-color: rgba(255,255,255,0.6);
-            backdrop-filter: blur(12px);
-            overflow:hidden;
-            padding:16px;
-            box-sizing:border-box;
-            justify-content: flex-start;
-            align-items: center; /* 内容水平居中 */
+            width: 100%;
+            max-width: 1400px;
+            flex: 1;
+            border-radius: 12px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(50px) saturate(120%);
+            -webkit-backdrop-filter: blur(50px) saturate(120%);
+
+            border: 1px solid var(--glass-border);
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+            box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, 0.1),
+                    0 30px 80px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
 
         /* Controls */
         #controls {
-            display:flex;
-            align-items:center;
-            width:100%; /* 占满父元素宽度 */
-            gap:12px;
-            padding:6px 12px;
-            border-radius:12px;
-            margin-bottom:12px;
-            font-size:14px;
-            background-color: rgba(255,255,255,0.6);
-            backdrop-filter: blur(8px);
-            color:#000;
-            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            height: 60px;
+            padding: 0 24px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 100;
         }
 
-        #controls .control-item {
-            display:flex;
-            align-items:center;
-            gap:4px;
+        .controls-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex: 1;
+            color: var(--ice-white);
         }
 
-        #controls label {
-            display:flex;
-            align-items:center;
-            height:28px;
+        .controls-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            color: var(--ice-white);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
         }
 
-        #controls select.form-select {
-            width:auto;
-            min-width:180px;
-            max-width:360px;
-            height:28px;
+        .controls-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex: 1;
+            justify-content: flex-end;
+            color: var(--ice-white);
         }
 
-        #controls input {
-            width:80px;
-            height:28px;
-            text-align:center;
+        /* 进度条 */
+        .progress-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            height: 2px;
+            z-index: 101;
         }
 
-        #controls button {
-            height:28px;
-            padding:0 12px;
-            border:none;
-            border-radius:6px;
-            background-color:#007bff;
-            color:#fff;
-            cursor:pointer;
-            font-size:0.875rem;
+        #loadingProgress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, transparent, var(--ice-white));
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+            transition: width 0.15s ease-out;
         }
-        #controls button:hover { background-color:#0056b3; }
 
-        /* Viewer wrapper */
+        /* 控制按钮 */
+        .control-btn {
+            height: 34px;
+            padding: 0 14px;
+            border-radius: var(--radius-btn);
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--ice-white);
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .control-text {
+            font-size: 0.85rem;
+            color: var(--secondary-text);
+            letter-spacing: 0.5px;
+        }
+
+        /* 下拉菜单样式 */
+        .shadow-select-container {
+            position: relative;
+            width: 170px;
+        }
+
+        .custom-select-trigger {
+            height: 34px;
+            padding: 0 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            color: var(--ice-white);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .custom-select-trigger:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .custom-options {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: #111111;
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            display: none;
+            z-index: 1000;
+            padding: 6px 0;
+            list-style: none;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 1);
+        }
+
+        .custom-options.active {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .custom-options li {
+            padding: 10px 16px;
+            color: var(--secondary-text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+
+        .custom-options li:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* 数字输入框样式 */
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            color: var(--ice-white);
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            height: 34px;
+            width: 80px;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .form-control:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+        }
+
+        /* 查看器区域 - 修复关键部分 */
         #viewerWrapper {
-            flex:1;
-            overflow:auto;
-            border-radius:12px;
-            background-color: rgba(255,255,255,0.3);
-            padding:16px;
-            width:100%;
-            display:flex;
-            justify-content:center;
-            align-items:center;
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 40px 50px 40px 50px; /* 保持固定padding */
         }
 
         #viewer {
-            width:auto;
-            height:auto;
-            max-width:100%;
-            max-height:100%;
+            display: inline-block; /* 改为inline-block，让表格自然大小 */
+            transform-origin: 0 0; /* 缩放时从左上角开始 */
+            transition: transform 0.2s ease;
+            min-width: 100%;
+            position: relative;
         }
 
-        /* Table */
+        /* 表格样式 */
         #viewer table {
             border-collapse: collapse;
-            background: rgba(255,255,255,0.7);
-            transform-origin: top left;
-            margin:0 auto;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            min-width: 100%;
         }
 
-        #viewer td, #viewer th {
-            border:1px solid rgba(0,0,0,0.15);
-            padding:4px 8px;
+        #viewer th {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            padding: 8px 12px;
             white-space: nowrap;
-            text-align:left;
+            text-align: left;
+            font-weight: 600;
+            color: #000;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
-        /* Scrollbar */
-        #viewerWrapper::-webkit-scrollbar { width:12px; height:12px; }
-        #viewerWrapper::-webkit-scrollbar-track { background: rgba(15,15,15,0.2); border-radius:6px; }
-        #viewerWrapper::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius:6px; }
-        #viewerWrapper::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.6); }
+        #viewer td {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 6px 12px;
+            white-space: nowrap;
+            text-align: left;
+            color: #000;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        #viewer tr:hover td {
+            background: rgba(0, 123, 255, 0.1);
+        }
+
+        /* 滚动条样式 */
+        #viewerWrapper::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        #viewerWrapper::-webkit-scrollbar-thumb {
+            background: var(--silver-mercury);
+            border-radius: 10px;
+        }
+
+        #viewerWrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
 
         /* 错误信息 */
         .error-msg {
-            color: #c0392b;
-            font-weight: bold;
+            color: #ff6b6b;
+            font-weight: 600;
             font-size: 1rem;
             text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 107, 107, 0.2);
+        }
+
+        /* Loading 动画 */
+        @font-face {
+            font-family: 'Segoe Boot Semilight';
+            src: url('/lib/fonts/segoe_slboot.ttf') format('truetype');
+        }
+
+        #bootOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--background-dark);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .boot-spinner {
+            font-family: 'Segoe Boot Semilight';
+            font-size: 42px;
+            color: var(--ice-white);
+            line-height: 1;
+        }
+
+        /* 缩放指示器 */
+        #zoomLevel {
+            min-width: 60px;
+            text-align: center;
+            color: var(--ice-white);
+            font-weight: 500;
+        }
+
+        /* 工作表指示器 */
+        #sheetIndicator {
+            color: var(--ice-white);
+            font-weight: 500;
         }
     </style>
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
     <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
 </head>
-<body style="background-color: #0a0a0a;">
+<body>
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
 <div class="excel-wrap">
     <div id="excelContainer">
-        <div id="controls">
-            <div class="control-item">
-                <label for="sheetSelect">Sheet:</label>
-                <select id="sheetSelect" class="form-select form-select-sm"></select>
-            </div>
-            <div class="control-item">
-                <label for="zoomInput">Zoom:</label>
-                <input type="number" class="form-control" id="zoomInput" value="100" min="10" max="500">
-            </div>
-            <button id="downloadBtn" style="margin-left:auto;">Download</button>
+        <!-- 加载动画 -->
+        <div id="bootOverlay">
+            <div class="boot-spinner" id="bootAnim"></div>
         </div>
+
+        <!-- 控制栏 -->
+        <div id="controls">
+            <div class="controls-left">
+                <div id="sheetIndicator" style="cursor:default">Sheet: </div>
+                <div class="shadow-select-container" id="sheetDropdown">
+                    <div class="custom-select-trigger">
+                        <span id="selectedSheet">Select Sheet</span>
+                        <i class="bi bi-chevron-down" style="font-size: 0.7rem; opacity: 0.5;"></i>
+                    </div>
+                    <ul class="custom-options" id="sheetOptions"></ul>
+                </div>
+            </div>
+            <div class="controls-center">
+                <button class="control-btn" id="zoomOutBtn" title="Zoom Out">
+                    <i class="bi bi-dash-lg"></i>
+                </button>
+                <div id="zoomLevel" class="control-text">100%</div>
+                <button class="control-btn" id="zoomInBtn" title="Zoom In">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <button class="control-btn" id="resetZoomBtn" title="Reset Zoom">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+            <div class="controls-right">
+                <button class="control-btn" id="downloadBtn" title="Download">
+                    <i class="bi bi-download"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 进度条 -->
+        <div class="progress-container">
+            <div id="loadingProgress"></div>
+        </div>
+
+        <!-- 查看器区域 -->
         <div id="viewerWrapper">
             <div id="viewer"></div>
         </div>
     </div>
 </div>
 
+<script src="/lib/jquery-3.7.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+
 <script>
     (async () => {
         const viewer = document.getElementById("viewer");
-        const sheetSelect = document.getElementById("sheetSelect");
-        const zoomInput = document.getElementById("zoomInput");
+        const sheetOptions = document.getElementById("sheetOptions");
+        const selectedSheet = document.getElementById("selectedSheet");
+        const sheetDropdown = document.getElementById("sheetDropdown");
+        const zoomLevel = document.getElementById("zoomLevel");
         const downloadBtn = document.getElementById("downloadBtn");
+        const zoomInBtn = document.getElementById("zoomInBtn");
+        const zoomOutBtn = document.getElementById("zoomOutBtn");
+        const resetZoomBtn = document.getElementById("resetZoomBtn");
+        const sheetIndicator = document.getElementById("sheetIndicator");
+        const progressBar = document.getElementById("loadingProgress");
+        const container = document.getElementById("excelContainer");
+        const bootOverlay = document.getElementById("bootOverlay");
+        const sheetTrigger = document.querySelector('.custom-select-trigger');
+        const viewerWrapper = document.getElementById("viewerWrapper");
+
         const workbook = new ExcelJS.Workbook();
         const FILE_PATH = "[[${file != null ? file.filePath : ''}]]";
+        const FILE_TYPE = "[[${file != null ? file.type : ''}]]".toLowerCase();
 
+        let currentZoom = 100;
+        let currentSheetIndex = 0;
+        let worksheetNames = [];
+
+        // 加载动画
+        function startAnim() {
+            const el = document.getElementById('bootAnim');
+            let curr = 0xE052;
+            return setInterval(() => {
+                el.innerText = String.fromCharCode(curr);
+                if (++curr > 0xE0CB) curr = 0xE052;
+            }, 40);
+        }
+
+        // ARGB转CSS颜色
         function argbToCss(argb) {
-            if(!argb) return null;
-            return "#" + (argb.length===8 ? argb.slice(2) : argb);
+            if (!argb) return null;
+            return "#" + (argb.length === 8 ? argb.slice(2) : argb);
         }
 
         async function loadExcel(url) {
+            const animId = startAnim();
+
             try {
                 const res = await fetch(url);
-                if(!res.ok) throw new Error("Excel file load failed");
+                if (!res.ok) throw new Error("Excel file load failed");
 
-                if ("[[${file != null ? file.type : ''}]]".toLowerCase() === "xls") {
-                    viewer.innerHTML = `<div class="error-msg">Format Incompatible: Legacy .xls format cannot be rendered. Please download.</div>`;
+                if (FILE_TYPE === "xls") {
+                    viewer.innerHTML = `<div class="error-msg">
+                        Format Incompatible: Legacy .xls format cannot be rendered. Please download.
+                    </div>`;
+
+                    clearInterval(animId);
+                    $("#bootOverlay").fadeOut(600, function() {
+                        $().remove();
+                    });
                     return;
                 }
+
                 const buf = await res.arrayBuffer();
                 await workbook.xlsx.load(buf);
+
                 populateSheetSelect();
                 renderSheet(0);
+
+                clearInterval(animId);
+                $("#bootOverlay").fadeOut(600, function () {
+                    $().remove();
+                });
+
             } catch(e) {
                 viewer.innerHTML = `<div class="error-msg">${e.message}</div>`;
+                clearInterval(animId);
+                $("#bootOverlay").fadeOut(600, function () {
+                    $().remove();
+                });
             }
         }
 
         function populateSheetSelect() {
-            sheetSelect.innerHTML = "";
+            sheetOptions.innerHTML = "";
+            worksheetNames = [];
+
             workbook.worksheets.forEach((ws, idx) => {
-                const opt = document.createElement("option");
-                opt.value = idx; opt.textContent = ws.name;
-                sheetSelect.appendChild(opt);
+                worksheetNames.push(ws.name);
+
+                const option = document.createElement("li");
+                option.setAttribute("data-value", idx);
+                option.textContent = ws.name;
+                sheetOptions.appendChild(option);
+            });
+
+            // 设置第一个工作表为选中状态
+            if (worksheetNames.length > 0) {
+                selectedSheet.textContent = worksheetNames[0];
+            }
+
+            // 添加下拉菜单点击事件
+            sheetTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sheetOptions.classList.toggle('active');
+            });
+
+            // 添加工作表选择事件
+            sheetOptions.querySelectorAll('li').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const idx = parseInt(e.target.getAttribute('data-value'));
+                    selectedSheet.textContent = worksheetNames[idx];
+                    sheetOptions.classList.remove('active');
+                    renderSheet(idx);
+                });
+            });
+
+            // 点击其他地方关闭下拉菜单
+            document.addEventListener('click', () => {
+                sheetOptions.classList.remove('active');
             });
         }
 
         function renderSheet(idx) {
             const ws = workbook.worksheets[idx];
+            currentSheetIndex = idx;
+
             viewer.innerHTML = "";
             const table = document.createElement("table");
 
+            // 创建列组
             const colgroup = document.createElement("colgroup");
-            ws.columns.forEach(col=>{
+            ws.columns.forEach(col => {
                 const c = document.createElement("col");
-                if(col?.width) c.style.width=(col.width*7)+"px";
+                if (col?.width) c.style.width = (col.width * 7) + "px";
                 colgroup.appendChild(c);
             });
             table.appendChild(colgroup);
 
-            ws.eachRow({ includeEmpty:true }, row=>{
-                const tr=document.createElement("tr");
-                if(row.height) tr.style.height=row.height+"px";
-                row.eachCell({ includeEmpty:true }, cell=>{
-                    const td=document.createElement("td");
+            // 处理每一行
+            ws.eachRow({ includeEmpty: true }, row => {
+                const tr = document.createElement("tr");
+                if (row.height) tr.style.height = row.height + "px";
+
+                row.eachCell({ includeEmpty: true }, cell => {
+                    const td = document.createElement(cell.row === 1 ? "th" : "td");
                     td.textContent = cell.value ?? "";
-                    td.style.backgroundColor = argbToCss(cell.style?.fill?.fgColor?.argb) || "rgba(255,255,255,0.7)";
-                    td.style.color = argbToCss(cell.style?.font?.color?.argb) || "#000";
+
+                    // 设置单元格样式
+                    if (cell.style) {
+                        td.style.backgroundColor = argbToCss(cell.style.fill?.fgColor?.argb) ||
+                            (cell.row === 1 ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.8)");
+                        td.style.color = argbToCss(cell.style.font?.color?.argb) || "#000";
+
+                        if (cell.style.font?.bold) {
+                            td.style.fontWeight = "bold";
+                        }
+                    }
+
+                    // 合并单元格
+                    if (cell._mergeCount) {
+                        td.colSpan = cell._mergeCount.colSpan || 1;
+                        td.rowSpan = cell._mergeCount.rowSpan || 1;
+                    }
+
                     tr.appendChild(td);
                 });
+
                 table.appendChild(tr);
             });
 
-            table.style.transform = `scale(${zoomInput.value/100})`;
             viewer.appendChild(table);
+
+            // 应用当前缩放
+            applyZoom();
+
+            // 更新工作表指示器
+            selectedSheet.textContent = ws.name;
         }
 
-        sheetSelect.addEventListener("change", e => renderSheet(parseInt(e.target.value)));
-        zoomInput.addEventListener("input", e => {
-            const table = viewer.querySelector("table");
-            if(table) table.style.transform = `scale(${parseInt(e.target.value)||100}/100)`;
-        });
+        function applyZoom() {
+            const scale = currentZoom / 100;
+            viewer.style.transform = `scale(${scale})`;
+            zoomLevel.textContent = `${currentZoom}%`;
+        }
 
-        downloadBtn.addEventListener("click", async ()=>{
-            try {
-                const res = await fetch(FILE_PATH);
-                if(!res.ok) throw new Error("Download failed");
-                const blob = await res.blob();
-                const a=document.createElement("a");
-                a.href=URL.createObjectURL(blob);
-                a.download=FILE_PATH.split("/").pop();
-                a.click();
-                URL.revokeObjectURL(a.href);
-            } catch(e){
-                viewer.innerHTML = `<div class="error-msg">${e.message}</div>`;
+        // 事件监听器
+        zoomInBtn.addEventListener("click", () => {
+            if (currentZoom < 200) {
+                currentZoom += 10;
+                applyZoom();
             }
         });
 
+        zoomOutBtn.addEventListener("click", () => {
+            if (currentZoom > 50) {
+                currentZoom -= 10;
+                applyZoom();
+            }
+        });
+
+        resetZoomBtn.addEventListener("click", () => {
+            currentZoom = 100;
+            applyZoom();
+        });
+
+        downloadBtn.addEventListener("click", async () => {
+            try {
+                const res = await fetch(FILE_PATH);
+                if (!res.ok) throw new Error("Download failed");
+                const blob = await res.blob();
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = FILE_PATH.split("/").pop();
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch(e) {
+                alert("Download failed: " + e.message);
+            }
+        });
+
+        // 滚动进度条和动态边框
+        viewerWrapper.addEventListener('scroll', () => {
+            const scrolled = viewerWrapper.scrollTop;
+            const total = viewerWrapper.scrollHeight - viewerWrapper.clientHeight;
+            const progress = total <= 0 ? 0 : scrolled / total;
+
+            progressBar.style.width = (progress * 100) + "%";
+
+            // 动态调整边框亮度
+            const glowIntensity = 0.08 + (progress * 0.12);
+            const shadowIntensity = 0.8 + (progress * 0.1);
+            container.style.borderColor = `rgba(255, 255, 255, ${glowIntensity})`;
+            container.style.boxShadow = `0 0 0 1px rgba(255, 255, 255, ${glowIntensity / 2}), 0 40px 100px rgba(0,0,0,${shadowIntensity})`;
+        });
+
+        // 鼠标滚轮缩放
+        viewerWrapper.addEventListener('wheel', (e) => {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                if (e.deltaY < 0 && currentZoom < 200) {
+                    currentZoom += 10;
+                    applyZoom();
+                } else if (e.deltaY > 0 && currentZoom > 50) {
+                    currentZoom -= 10;
+                    applyZoom();
+                }
+            }
+        }, { passive: false });
+
+        // 初始化加载
         loadExcel(FILE_PATH);
+
     })();
 </script>
 

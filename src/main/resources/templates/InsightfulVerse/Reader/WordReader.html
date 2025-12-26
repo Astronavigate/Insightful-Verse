@@ -1,17 +1,45 @@
+<!--
+  Copyright 2025 Astronavigate
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title th:text="'Insightful Verse Reader ' + ${file != null ? ' - ' + file.fileName : 'None'}">Word Reader</title>
+    <title th:text="'Insightful Word Reader ' + ${file != null ? ' - ' + file.fileName : 'None'}">Word Reader</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        :root { --header-h: 72px; }
+        :root {
+            --header-h: 72px;
+            --glass-bg: rgba(18, 18, 18, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary-text: #e6eef8;
+            --secondary-text: #adb5bd;
+            --background-dark: #050505;
+            --ice-white: #ffffff;
+            --silver-mercury: rgba(255, 255, 255, 0.35);
+            --radius-btn: 8px;
+        }
 
         html, body {
-            margin: 0; padding: 0; height: 100%;
-            background-color: #0a0a0a;
-            font-family: system-ui, sans-serif;
-            color: #fff;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: var(--background-dark) !important;
+            color: var(--primary-text);
+            font-family: system-ui, -apple-system, sans-serif;
             overflow: hidden;
         }
 
@@ -19,72 +47,161 @@
             height: calc(100vh - var(--header-h));
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: flex-start;
-            padding: 32px 24px;
+            padding: 24px;
             box-sizing: border-box;
+            align-items: center;
         }
 
         #wordContainer {
             width: 100%;
             max-width: 1400px;
             flex: 1;
+            border-radius: 12px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(50px) saturate(120%);
+            -webkit-backdrop-filter: blur(50px) saturate(120%);
+
+            /* 动态高光边框核心实现 */
+            border: 1px solid var(--glass-border);
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+            box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, 0.1),
+                    0 30px 80px rgba(0, 0, 0, 0.8);
+
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            border-radius: 16px;
-            background-color: rgba(255,255,255,0.6);
-            backdrop-filter: blur(12px);
-            overflow: hidden;
-            padding: 16px;
-            box-sizing: border-box;
+            position: relative;
         }
 
         /* Controls */
         #controls {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 6px 12px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            font-size: 14px;
-            background-color: rgba(255,255,255,0.6);
-            backdrop-filter: blur(8px);
-            color: #000;
+            height: 60px;
+            padding: 0 24px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 100;
         }
 
-        #pageIndicator {
+        .controls-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
             flex: 1;
-            text-align: center;
-            font-weight: bold;
+            color: var(--ice-white);
         }
 
-        #downloadBtn {
-            height: 28px;
-            padding: 0 12px;
-            border: none;
-            border-radius: 6px;
-            background-color: #007bff;
-            color: #fff;
-            cursor: pointer;
-            font-size: 0.875rem;
+        .controls-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            color: var(--ice-white);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
         }
-        #downloadBtn:hover { background-color: #0056b3; }
+
+        .controls-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex: 1;
+            justify-content: flex-end;
+            color: var(--ice-white);
+        }
+
+        /* 进度条位置：置于 Control 和 Viewer 之间 */
+        .progress-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            height: 2px;
+            z-index: 101;
+        }
+        #loadingProgress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, transparent, var(--ice-white));
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+            transition: width 0.15s ease-out;
+        }
+        /* 按钮与文本指标 */
+        .control-btn {
+            height: 34px;
+            padding: 0 14px;
+            border-radius: var(--radius-btn);
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--ice-white);
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
+        .control-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.4); }
+
+        .control-text { font-size: 0.85rem; color: var(--secondary-text); letter-spacing: 0.5px; }
+        #charCount { color: var(--ice-white); font-weight: 500; }
 
         #viewerWrapper {
             flex: 1;
-            overflow: auto;
-            border-radius: 12px;
-            background-color: rgba(255,255,255,0.3);
-            padding: 16px;
+            position: relative;
+            overflow: hidden;
+            background: rgba(0,0,0,0.1);
         }
 
         #viewer {
-            width: 100%;
+            height: 100%;
+            /*padding: 20px 60px 20px 60px !important;*/
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* 左上角对齐 */
+            justify-content: flex-start;
         }
 
-        /* docx-preview adjustments */
-        .docx-wrapper { padding: 0 !important; }
+        #viewer::-webkit-scrollbar { width: 8px; height: 8px; }
+        #viewer::-webkit-scrollbar-thumb {
+            background: var(--silver-mercury);
+            border-radius: 10px;
+        }
+        #viewer::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
+
+        /* 关键修改：将zoomContainer设为左对齐容器 */
+        #zoomContainer {
+            /*padding: 0;*/
+            padding: 0 60px 0 60px;
+            position: relative;
+            transform-origin: 0 0;
+            transition: transform 0.2s ease;
+            margin: 0; /* 左上角对齐 */
+            text-align: left; /* 强制左对齐 */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* 子元素左对齐 */
+        }
+
+        /* 关键：只修改容器对齐方式，不破坏docx-preview内部样式 */
+        #zoomContainer > .docx-wrapper {
+            text-align: left !important; /* 强制容器内内容左对齐 */
+        }
+
+        /* 让docx-wrapper内的内容左对齐，但不破坏其内部样式 */
+        #zoomContainer > .docx-wrapper > section {
+            /* 我们不再这里强制修改样式，而是在JS中调整位置 */
+        }
+
+        .docx-wrapper {
+            background: rgba(0,0,0,0) !important;
+        }
+
+        /* docx-preview的默认样式保持不变 */
         .docx table { border-collapse: collapse; }
         .docx table td, .docx table th {
             border: 1px solid rgba(0,0,0,0.15);
@@ -92,50 +209,102 @@
             color: #000;
         }
 
-        /* each page */
-        .docx-page {
-            margin-bottom: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border-radius: 12px;
-            background-color: rgba(255,255,255,0.8);
-            padding: 24px;
-            box-sizing: border-box;
-        }
-
-        /* Scrollbar */
-        #viewerWrapper::-webkit-scrollbar { width:12px; height:12px; }
-        #viewerWrapper::-webkit-scrollbar-track { background: rgba(15,15,15,0.2); border-radius:6px; }
-        #viewerWrapper::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius:6px; }
-        #viewerWrapper::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.6); }
-
         /* 错误信息 */
         .error-msg {
             color: #c0392b;
             font-weight: bold;
             font-size: 1rem;
             text-align: center;
+            padding: 40px;
+        }
+
+        /* Loading */
+        @font-face {
+            font-family: 'Segoe Boot Semilight';
+            src: url('/lib/fonts/segoe_slboot.ttf') format('truetype');
+        }
+
+        /* 加载动画覆盖层 */
+        #bootOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--background-dark);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .boot-spinner {
+            font-family: 'Segoe Boot Semilight';
+            font-size: 42px;
+            color: var(--ice-white);
+            line-height: 1;
+        }
+
+        /* 缩放指示器 */
+        #zoomLevel {
+            min-width: 60px;
+            text-align: center;
+            color: var(--ice-white);
+            font-weight: 500;
+        }
+
+        /* 页面间距 */
+        .docx-page {
+            margin: 24px 0 !important; /* 保持垂直间距 */
         }
     </style>
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
     <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
 </head>
-<body style="background-color: #0a0a0a;">
+<body>
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
 <div class="reader-wrap">
     <div id="wordContainer">
-        <div id="controls">
-            <div></div>
-            <div id="pageIndicator">Page 0 / 0</div>
-            <button id="downloadBtn">Download</button>
+        <div id="bootOverlay">
+            <div class="boot-spinner" id="bootAnim"></div>
         </div>
+        <div id="controls">
+            <div class="controls-center">
+                <button class="control-btn" id="zoomOutBtn" title="Zoom Out">
+                    <i class="bi bi-dash-lg"></i>
+                </button>
+                <div id="zoomLevel" class="control-text">150%</div>
+                <button class="control-btn" id="zoomInBtn" title="Zoom In">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <button class="control-btn" id="resetZoomBtn" title="Reset Zoom">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+            <div class="controls-right">
+                <div id="pageIndicator" class="control-text" style="cursor:default">Page 0 / 0</div>
+                <button class="control-btn" id="downloadBtn" title="Download Word">
+                    <i class="bi bi-download"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="progress-container">
+            <div id="loadingProgress"></div>
+        </div>
+
         <div id="viewerWrapper">
-            <div id="viewer">Loading document…</div>
+            <div id="viewer">
+                <div id="zoomContainer"></div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- docx-preview dependencies -->
+<script src="/lib/jquery-3.7.1/dist/jquery.min.js"></script>
 <script src="/lib/jszip-3.10.1/dist/jszip.min.js"></script>
 <script src="/lib/docxjs-0.3.6/dist/docx-preview.min.js"></script>
 
@@ -145,23 +314,57 @@
     const pageIndicator = document.getElementById("pageIndicator");
     const wrapper = document.getElementById("viewerWrapper");
     const downloadBtn = document.getElementById("downloadBtn");
+    const zoomContainer = document.getElementById("zoomContainer");
+    const zoomLevel = document.getElementById("zoomLevel");
+    const zoomInBtn = document.getElementById("zoomInBtn");
+    const zoomOutBtn = document.getElementById("zoomOutBtn");
+    const resetZoomBtn = document.getElementById("resetZoomBtn");
+    const container = document.getElementById("wordContainer");
+
+    // 缩放状态
+    let currentZoom = 150;
+    let sections = [];
+    let totalPages = 0;
+    let docxWrapper = null;
 
     function isDocx(path) { return path.toLowerCase().endsWith(".docx"); }
     function isDoc(path) { return path.toLowerCase().endsWith(".doc"); }
 
+    // --- 加载帧动画 (E052-E0CB) ---
+    const startAnim = () => {
+        const el = document.getElementById('bootAnim');
+
+        let curr = 0xE052;
+        return setInterval(() => {
+            el.innerText = String.fromCharCode(curr);
+            if (++curr > 0xE0CB) curr = 0xE052;
+        }, 40);
+    };
+
     async function loadWord(url) {
+        const animId = startAnim();
         if (isDoc(url)) {
-            viewer.innerHTML = `<div class="error-msg">
+            zoomContainer.innerHTML = `<div class="error-msg">
                 Format Incompatible: The legacy .doc format cannot be rendered. Download is required.
             </div>`;
             pageIndicator.textContent = '';
+
+            clearInterval(animId);
+            $("#bootOverlay").fadeOut(600, function () {
+                $(this).remove();
+            });
             return;
         }
         if (!isDocx(url)) {
-            viewer.innerHTML = `<div class="error-msg">
+            zoomContainer.innerHTML = `<div class="error-msg">
                 Unsupported file format
             </div>`;
             pageIndicator.textContent = '';
+
+            clearInterval(animId);
+            $("#bootOverlay").fadeOut(600, function () {
+                $(this).remove();
+            });
             return;
         }
 
@@ -169,28 +372,131 @@
             const res = await fetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const buf = await res.arrayBuffer();
-            viewer.innerHTML = "";
+
+            // 清空容器
+            zoomContainer.innerHTML = "";
+            const tempContainer = document.createElement("div");
 
             // breakPages: true ensures .docx-page elements
-            await docx.renderAsync(buf, viewer, null, {
+            await docx.renderAsync(buf, tempContainer, null, {
                 inWrapper: true,
                 breakPages: true,
                 ignoreWidth: false,
                 ignoreHeight: false,
-                experimental: false
+                experimental: true
             });
 
-            // 初始化页码统计与显示
-            initPageCounter(wrapper, viewer, pageIndicator);
+            // 将内容移动到zoomContainer
+            zoomContainer.appendChild(tempContainer);
+
+            // 获取docx-wrapper元素
+            docxWrapper = zoomContainer.querySelector('.docx-wrapper');
+
+            if (docxWrapper) {
+                // 关键：获取所有页面
+                sections = docxWrapper.querySelectorAll('section');
+                totalPages = sections.length || 1;
+
+                // 让docx-wrapper左对齐，但不破坏内部样式
+                docxWrapper.style.textAlign = "left";
+
+                // 遍历每个section，确保它们左对齐但不破坏内部样式
+                sections.forEach(section => {
+                    // 移除自动居中的margin，但不改变其他样式
+                    if (section.style.marginLeft === 'auto' ||
+                        section.style.marginRight === 'auto' ||
+                        getComputedStyle(section).marginLeft === 'auto') {
+                        section.style.marginLeft = "0";
+                        section.style.marginRight = "0";
+                    }
+
+                    // 保留垂直间距
+                    section.style.marginTop = "24px";
+                    section.style.marginBottom = "24px";
+
+                    // 保持docx-preview设置的宽度，不修改
+                });
+
+                // 确保docx-wrapper本身也是左对齐
+                docxWrapper.style.margin = "0";
+                docxWrapper.style.padding = "0";
+            }
+
+            // 初始化页码显示
+            updatePageIndicator();
+
+            // 应用初始缩放（150%）
+            applyZoom();
+
+            clearInterval(animId);
+            $("#bootOverlay").fadeOut(600, function () {
+                $(this).remove();
+            });
 
         } catch (e) {
-            viewer.innerHTML = `<div class="error-msg">
+            zoomContainer.innerHTML = `<div class="error-msg">
                 Failed to load document<br>${e.message}
             </div>`;
             pageIndicator.textContent = '';
+
+            clearInterval(animId);
+            $("#bootOverlay").fadeOut(600, function () {
+                $(this).remove();
+            });
         }
     }
 
+    // 更新页码指示器
+    function updatePageIndicator() {
+        const viewerTop = viewer.getBoundingClientRect().top;
+        let currentPage = 1;
+
+        sections.forEach((section, index) => {
+            const rect = section.getBoundingClientRect();
+            if (rect.top - viewerTop <= rect.height / 2) {
+                currentPage = index + 1;
+            }
+        });
+
+        pageIndicator.textContent = `Page ${currentPage} / ${totalPages}`;
+    }
+
+    // 应用缩放
+    function applyZoom() {
+        const scale = currentZoom / 100;
+
+        // 对整个zoomContainer进行缩放，以左上角为原点
+        zoomContainer.style.transform = `scale(${scale})`;
+        zoomContainer.style.transformOrigin = "0 0";
+
+        // 更新容器宽度以适应缩放
+        zoomLevel.textContent = `${currentZoom}%`;
+
+        // 更新页码
+        updatePageIndicator();
+    }
+
+    // 缩放功能
+    zoomInBtn.addEventListener("click", () => {
+        if (currentZoom < 200) {
+            currentZoom += 10;
+            applyZoom();
+        }
+    });
+
+    zoomOutBtn.addEventListener("click", () => {
+        if (currentZoom > 50) {
+            currentZoom -= 10;
+            applyZoom();
+        }
+    });
+
+    resetZoomBtn.addEventListener("click", () => {
+        currentZoom = 150;
+        applyZoom();
+    });
+
+    // 下载功能
     downloadBtn.addEventListener("click", async () => {
         try {
             const res = await fetch(FILE_PATH);
@@ -206,33 +512,55 @@
         }
     });
 
-    /**
-     * 初始化页码统计与显示
-     */
-    function initPageCounter(wrapper, viewer, pageIndicator) {
-        const sections = viewer.querySelectorAll('section');
-        const totalPages = sections.length || 1;
+    // 滚动事件监听
+    viewer.addEventListener('scroll', () => {
+        // 更新页码
+        updatePageIndicator();
 
-        // 初始化页码显示
-        pageIndicator.textContent = `Page 1 / ${totalPages}`;
+        // 更新进度条
+        const scrolled = viewer.scrollTop;
+        const total = viewer.scrollHeight - viewer.clientHeight;
+        const progress = total <= 0 ? 0 : scrolled / total;
 
-        // 监听滚动，实时更新当前页
-        wrapper.addEventListener('scroll', () => {
-            const wrapperTop = wrapper.getBoundingClientRect().top;
-            let currentPage = 1;
+        const progressBar = document.getElementById('loadingProgress');
+        progressBar.style.width = (progress * 100) + "%";
 
-            sections.forEach((section, index) => {
-                const rect = section.getBoundingClientRect();
-                if (rect.top - wrapperTop <= rect.height / 2) {
-                    currentPage = index + 1;
+        // 动态调整边框亮度
+        const glowIntensity = 0.08 + (progress * 0.12);
+        const shadowIntensity = 0.8 + (progress * 0.1);
+        container.style.borderColor = `rgba(255, 255, 255, ${glowIntensity})`;
+        container.style.boxShadow = `0 0 0 1px rgba(255, 255, 255, ${glowIntensity / 2}), 0 40px 100px rgba(0,0,0,${shadowIntensity})`;
+    });
+
+    // 鼠标滚轮缩放（按住Ctrl键）
+    viewer.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                // 向上滚动，放大
+                if (currentZoom < 200) {
+                    currentZoom += 10;
+                    applyZoom();
                 }
-            });
+            } else {
+                // 向下滚动，缩小
+                if (currentZoom > 50) {
+                    currentZoom -= 10;
+                    applyZoom();
+                }
+            }
+        }
+    }, { passive: false });
 
-            pageIndicator.textContent = `Page ${currentPage} / ${totalPages}`;
-        });
+    // 窗口大小变化时重新计算页码
+    window.addEventListener('resize', () => {
+        updatePageIndicator();
+    });
+
+    // 初始化加载
+    if (FILE_PATH) {
+        loadWord(FILE_PATH);
     }
-
-    loadWord(FILE_PATH);
 </script>
 
 </body>

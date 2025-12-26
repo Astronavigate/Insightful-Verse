@@ -140,21 +140,23 @@
         #charCount { color: var(--ice-white); font-weight: 500; }
 
         /* Viewer */
-        #viewerWrapper { flex: 1; position: relative; overflow: hidden; background: rgba(0,0,0,0.1); }
+        #viewerWrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: rgba(0,0,0,0.1);
+        }
 
         #pptxViewer {
             height: 100%;
-            padding: 40px 15px;
+            padding: 40px 50px 40px 50px;
             overflow-y: auto;
             display: flex;
             /*justify-content: center;*/
         }
 
-        .pptxjs { padding: 0 !important; }
-        .pptxjs-slide { margin: 0 auto; }
-
         /* 可选滚动条样式 */
-        #pptxViewer::-webkit-scrollbar { width: 6px; height: 6px; }
+        #pptxViewer::-webkit-scrollbar { width: 8px; height: 8px; }
         #pptxViewer::-webkit-scrollbar-thumb {
             background: var(--silver-mercury);
             border-radius: 10px;
@@ -192,7 +194,7 @@
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
     <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
 </head>
-<body style="background-color: #0a0a0a;">
+<body>
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
 <div class="ppt-wrap">
