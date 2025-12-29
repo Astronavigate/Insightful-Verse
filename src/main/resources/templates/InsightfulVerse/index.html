@@ -22,7 +22,7 @@
     <title>Insightful Verse</title>
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
 </head>
-<body>
+<body class="default">
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
 <!-- Main Content -->
@@ -59,11 +59,11 @@
     </div>
 
     <div class="rectangle-container">
-        <a class="rectangle" th:href="@{/InsightfulVerse/File(fileId=100000)}" style="text-decoration: none; color: black;">
+        <a class="rectangle liquid" th:href="@{/InsightfulVerse/File(fileId=100000)}" style="text-decoration: none; color: black;">
             <img th:src="@{/image/Ferryman.jpg}" alt="Ferryman-Cover">
         </a>
 
-        <a class="rectangle" th:href="@{/InsightfulVerse/AiBot}" style="text-decoration: none;">
+        <a class="rectangle liquid" th:href="@{/InsightfulVerse/AiBot}" style="text-decoration: none;">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-anthropic" viewBox="0 0 16 16" style="width: 5rem; height: 5rem; color: #0071c5">
                 <path fill-rule="evenodd" d="M9.218 2h2.402L16 12.987h-2.402zM4.379 2h2.512l4.38 10.987H8.82l-.895-2.308h-4.58l-.896 2.307H0L4.38 2.001zm2.755 6.64L5.635 4.777 4.137 8.64z"/>
             </svg>
@@ -78,7 +78,7 @@
             </div>
         </a>
 
-        <div class="rectangle">
+        <div class="rectangle liquid">
             <div style="background-color: #f0f0f0; border-radius: 1rem; padding: 1rem;">
                 <div class="cont" style="margin-top: 2rem;">
                     <h5 th:text="${session.user != null ? #messages.msg('insightful.code.title') : #messages.msg('insightful.login.title')}">Coding / Login</h5>

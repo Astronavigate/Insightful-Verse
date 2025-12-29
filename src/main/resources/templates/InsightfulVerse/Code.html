@@ -1,44 +1,632 @@
-<!--
-  Copyright 2025 Astronavigate
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Insightful Verse - Code Online Compiler</title>
-  <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
-  <th:block th:replace="~{common/sub/iviep/lib/run-java :: runjava}"></th:block>
+    <meta charset="utf-8"/>
+    <title>Insightful Verse - Code Online Compiler</title>
+
+    <style>
+        :root {
+            --header-h: 72px;
+            --glass-bg: rgba(18, 18, 18, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary-text: #e6eef8;
+            --secondary-text: #adb5bd;
+            --background-dark: #050505;
+            --ice-white: #ffffff;
+            --silver-mercury: rgba(255, 255, 255, 0.35);
+            --radius-btn: 8px;
+            --mono-font: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: var(--background-dark) !important;
+            color: var(--primary-text);
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+
+        .coder-wrap {
+            height: calc(100vh - var(--header-h));
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            box-sizing: border-box;
+            align-items: center;
+        }
+
+        #codeContainer {
+            width: 100%;
+            max-width: 1400px;
+            flex: 1;
+            border-radius: 12px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(50px) saturate(120%);
+            -webkit-backdrop-filter: blur(50px) saturate(120%);
+            border: 1px solid var(--glass-border);
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+            box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, 0.1),
+                    0 30px 80px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 控制栏 */
+        #controls {
+            display: flex;
+            align-items: center;
+            height: 60px;
+            padding: 0 24px;
+            background: rgba(255, 255, 255, 0.02);
+            z-index: 100;
+        }
+
+        .simplified-controls {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            position: relative;
+        }
+
+        .controls-left { display: flex; gap: 12px; align-items: center; flex: 1; }
+        .controls-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+        .controls-right { display: flex; gap: 12px; align-items: center; flex: 1; justify-content: flex-end; }
+
+        /* 进度条 */
+        .progress-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            height: 2px;
+            z-index: 101;
+        }
+        #loadingProgress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, transparent, var(--ice-white));
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+            transition: width 0.15s ease-out;
+        }
+
+        /* 下拉菜单 */
+        .shadow-select-container { position: relative; width: 170px; }
+        .custom-select-trigger {
+            height: 34px;
+            padding: 0 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            color: var(--ice-white);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .custom-options {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0; right: 0;
+            background: #111111;
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            display: none;
+            z-index: 1000;
+            padding: 6px 0;
+            list-style: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,1);
+        }
+        .custom-options.active { display: block; animation: fadeIn 0.2s ease; }
+        .custom-options li {
+            padding: 10px 16px;
+            color: var(--secondary-text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .custom-options li:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
+        /* 按钮与文本指标 */
+        .control-btn {
+            height: 34px;
+            padding: 0 14px;
+            border-radius: var(--radius-btn);
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--ice-white);
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
+        .control-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.4); }
+
+        .control-text { font-size: 0.85rem; color: var(--secondary-text); letter-spacing: 0.5px; }
+        #charCount { color: var(--ice-white); font-weight: 500; }
+
+        /* 修改后的阅读区域布局 - 上下分割 */
+        #viewerWrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: rgba(0,0,0,0.1);
+        }
+
+        /* 编辑器容器样式 - 修改为带行号的布局 */
+        .editor-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            min-height: 200px;
+            display: flex;
+            background: rgba(10, 10, 10, 0.7);
+        }
+
+        /* 行号容器 */
+        .line-numbers {
+            width: 60px;
+            padding: 20px 8px 20px 20px;
+            text-align: right;
+            background: rgba(15, 15, 15, 0.8);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            font-family: var(--mono-font);
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--secondary-text);
+            user-select: none;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+
+        .line-number {
+            padding-right: 10px;
+            height: 1.6em;
+            display: block;
+        }
+
+        /* 代码编辑区样式 */
+        .code-editor {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #codeArea {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            padding: 20px 20px 20px 10px;
+            color: var(--primary-text);
+            font-family: var(--mono-font);
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            box-sizing: border-box;
+            tab-size: 4;
+            -moz-tab-size: 4;
+            white-space: pre;
+            overflow: auto;
+        }
+
+        #codeArea::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .result-container {
+            /* 缩小输出区域，去掉背景色 */
+            height: auto;
+            min-height: 35%;
+            max-height: 50%; /* 限制最大高度为容器的30% */
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+            background: transparent; /* 移除背景色 */
+            border-top: 1px solid var(--glass-border); /* 用边框替代分割线 */
+        }
+
+        /* 结果展示区样式 - 简化 */
+        #resultArea {
+            width: 100%;
+            height: 100%;
+            padding: 15px 20px;
+            color: var(--primary-text);
+            font-family: var(--mono-font);
+            font-size: 13px;
+            line-height: 1.5;
+            box-sizing: border-box;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+            background: transparent; /* 移除背景色 */
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 0.8rem;
+            color: var(--secondary-text);
+            height: 36px;
+        }
+
+        .result-title {
+            font-weight: 500;
+            color: var(--ice-white);
+            font-size: 0.85rem;
+        }
+
+        /* 滚动条样式 */
+        .line-numbers::-webkit-scrollbar,
+        #codeArea::-webkit-scrollbar,
+        #resultArea::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .line-numbers::-webkit-scrollbar-thumb,
+        #codeArea::-webkit-scrollbar-thumb,
+        #resultArea::-webkit-scrollbar-thumb {
+            background: var(--silver-mercury);
+            border-radius: 10px;
+        }
+
+        .line-numbers::-webkit-scrollbar-thumb:hover,
+        #codeArea::-webkit-scrollbar-thumb:hover,
+        #resultArea::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .spinner {
+            width: 24px; height: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-top-color: var(--ice-white);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 当结果区域为空时的样式 */
+        .result-empty {
+            color: rgba(255, 255, 255, 0.3);
+            font-style: italic;
+            padding: 10px 20px;
+        }
+
+        /* 当前行高亮 */
+        .current-line {
+            background: rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .current-line::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            border-left: 2px solid rgba(100, 150, 255, 0.8);
+            pointer-events: none;
+        }
+    </style>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
 </head>
-<body style="background-color: #cce8cf;">
-  <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+<body>
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
-  <div class="content" style="flex-direction: column; align-items: center; justify-content: center; margin-top: 2rem;">
-      <div>
-          <div class="form-floating mb-3">
-              <textarea id="codeArea" class="form-control" th:text="${codeContent}"></textarea>
-              <label for="codeArea" th:text="#{insightful.code.inputLabel}">Java code</label>
-          </div>
-          <button id="runBtn" type="button" class="btn btn-secondary" th:text="#{insightful.code.runButton}" onclick="runjava()">Run</button>
-      </div>
-      <div>
-          <div class="form-floating mb-3">
-              <div id="resultArea" class="form-control"></div>
-              <label for="resultArea" th:text="#{insightful.code.resultLabel}">Result</label>
-          </div>
-      </div>
-  </div>
+<div class="coder-wrap">
+    <div id="codeContainer">
+        <div id="controls">
+            <div class="simplified-controls">
+                <div class="controls-left">
+                    <div class="shadow-select-container" id="encodingDropdown">
+                        <div class="custom-select-trigger">
+                            <span> <span id="langSelect">Python</span></span>
+                            <i class="bi bi-chevron-down" style="font-size: 0.7rem; opacity: 0.5;"></i>
+                        </div>
+                        <ul class="custom-options">
+                            <li data-value="c">C</li>
+                            <li data-value="c++">C++</li>
+                            <li data-value="java">Java</li>
+                            <li data-value="python">Python</li>
+                            <li data-value="rust">Rust</li>
+                        </ul>
+                    </div>
+                    <button class="control-btn" id="fontToggleBtn" title="Typeface"><i class="bi bi-fonts"></i></button>
+                </div>
 
+                <div class="controls-center">
+                    <span class="control-text"><span id="charCount">0</span> chars</span>
+                </div>
+
+                <div class="controls-right">
+                    <button class="control-btn" id="downloadBtn" onclick="runCode()">Run</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="progress-container">
+            <div id="loadingProgress"></div>
+        </div>
+
+        <div id="viewerWrapper">
+            <div class="editor-container">
+                <div class="line-numbers" id="lineNumbers">
+                    <div class="line-number">1</div>
+                </div>
+                <div class="code-editor">
+                    <textarea id="codeArea" placeholder="Write your code here..."></textarea>
+                </div>
+            </div>
+
+            <div class="result-container">
+                <div class="result-header">
+                    <span class="result-title">Output</span>
+                    <span class="control-text" id="resultStatus">Ready</span>
+                </div>
+
+                <div id="resultArea"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    const backendLang = /*[[${lang}]]*/ 'python';
+    const backendCode = /*[[${codeContent}]]*/ '';
+    let userEdited = false;
+    const backendHasCode = backendCode && backendCode.trim().length > 0;
+
+    const templates = {
+        java: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`,
+        c: `#include <stdio.h>\nint main() {\n    printf("Hello, World!");\n    return 0;\n}`,
+        'c++': `#include <iostream>\nint main() {\n    std::cout << "Hello, World!";\n    return 0;\n}`,
+        python: `print("Hello, World!")`,
+        rust: `fn main() {\n    println!("Hello, World!");\n}`
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const langSelect = document.getElementById('langSelect');
+        const codeArea = document.getElementById('codeArea');
+        const charCount = document.getElementById('charCount');
+        const resultStatus = document.getElementById('resultStatus');
+        const resultArea = document.getElementById('resultArea');
+        const lineNumbers = document.getElementById('lineNumbers');
+
+        // 更新行号的函数
+        function updateLineNumbers() {
+            const lines = codeArea.value.split('\n').length;
+            const currentLines = lineNumbers.children.length;
+
+            // 添加或移除行号
+            if (lines > currentLines) {
+                for (let i = currentLines + 1; i <= lines; i++) {
+                    const lineNumber = document.createElement('div');
+                    lineNumber.className = 'line-number';
+                    lineNumber.textContent = i;
+                    lineNumbers.appendChild(lineNumber);
+                }
+            } else if (lines < currentLines) {
+                while (lineNumbers.children.length > lines) {
+                    lineNumbers.removeChild(lineNumbers.lastChild);
+                }
+            }
+
+            // 更新当前行高亮
+            highlightCurrentLine();
+        }
+
+        // 高亮当前行的函数
+        function highlightCurrentLine() {
+            // 移除所有当前行高亮
+            const lineNumberElements = lineNumbers.querySelectorAll('.line-number');
+            lineNumberElements.forEach(line => line.classList.remove('current-line'));
+
+            // 计算当前行
+            const text = codeArea.value.substring(0, codeArea.selectionStart);
+            const currentLine = text.split('\n').length;
+
+            // 高亮当前行
+            if (lineNumberElements[currentLine - 1]) {
+                lineNumberElements[currentLine - 1].classList.add('current-line');
+            }
+        }
+
+        // 同步滚动函数
+        function syncScroll() {
+            lineNumbers.scrollTop = codeArea.scrollTop;
+        }
+
+        // 设置初始结果区域为空状态
+        if (!resultArea.textContent.trim()) {
+            resultArea.innerHTML = '<div class="result-empty">Output will appear here after running the code</div>';
+        }
+
+        // 设置下拉菜单功能
+        const dropdown = document.querySelector('.shadow-select-container');
+        const trigger = dropdown.querySelector('.custom-select-trigger');
+        const options = dropdown.querySelector('.custom-options');
+        const langDisplay = dropdown.querySelector('#langSelect');
+
+        trigger.addEventListener('click', () => {
+            options.classList.toggle('active');
+        });
+
+        options.querySelectorAll('li').forEach(option => {
+            option.addEventListener('click', () => {
+                const value = option.getAttribute('data-value');
+                langDisplay.textContent = value.charAt(0).toUpperCase() + value.slice(1);
+                options.classList.remove('active');
+
+                // 语言切换逻辑
+                if(!backendHasCode && !userEdited) {
+                    codeArea.value = templates[value] || '';
+                    updateLineNumbers();
+                }
+                updateCharCount();
+            });
+        });
+
+        // 点击外部关闭下拉菜单
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target)) {
+                options.classList.remove('active');
+            }
+        });
+
+        if (backendLang) {
+            langDisplay.textContent = backendLang.charAt(0).toUpperCase() + backendLang.slice(1);
+        }
+
+        if (backendHasCode) {
+            codeArea.value = backendCode;
+            userEdited = true;
+        } else if (!userEdited) {
+            codeArea.value = templates[langDisplay.textContent.toLowerCase()] || '';
+        }
+
+        const updateCharCount = () => {
+            charCount.textContent = codeArea.value.length;
+        };
+
+        // 监听代码区域变化
+        codeArea.addEventListener('input', () => {
+            userEdited = true;
+            updateCharCount();
+            updateLineNumbers();
+        });
+
+        // 监听光标位置变化
+        codeArea.addEventListener('click', highlightCurrentLine);
+        codeArea.addEventListener('keyup', highlightCurrentLine);
+
+        // 监听滚动事件
+        codeArea.addEventListener('scroll', syncScroll);
+
+        // 初始化行号和字符计数
+        updateLineNumbers();
+        updateCharCount();
+
+        // 字体切换功能
+        const fontToggleBtn = document.getElementById('fontToggleBtn');
+        let fontIndex = 0;
+        const fonts = ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'];
+
+        fontToggleBtn.addEventListener('click', () => {
+            fontIndex = (fontIndex + 1) % fonts.length;
+            codeArea.style.fontFamily = fonts[fontIndex];
+            resultArea.style.fontFamily = fonts[fontIndex];
+            lineNumbers.style.fontFamily = fonts[fontIndex];
+        });
+
+        // 自适应调整结果区域高度
+        function adjustResultHeight() {
+            const resultContainer = document.querySelector('.result-container');
+            const resultContent = resultArea.textContent;
+
+            if (resultContent.trim() === '' || resultContent.includes('Output will appear here')) {
+                // 结果为空时设置较小高度
+                resultContainer.style.maxHeight = '80px';
+            } else {
+                // 根据内容调整高度，但不超过最大限制
+                const lines = resultContent.split('\n').length;
+                const estimatedHeight = Math.min(Math.max(lines * 20, 80), 200);
+                resultContainer.style.maxHeight = `${estimatedHeight}px`;
+            }
+        }
+
+        // 初始调整
+        adjustResultHeight();
+
+        // 监听结果区域变化
+        const observer = new MutationObserver(adjustResultHeight);
+        observer.observe(resultArea, { childList: true, subtree: true, characterData: true });
+    });
+
+    function runCode() {
+        const codeArea = document.getElementById("codeArea");
+        const resultArea = document.getElementById("resultArea");
+        const resultStatus = document.getElementById("resultStatus");
+        const loadingProgress = document.getElementById("loadingProgress");
+        const lang = document.getElementById("langSelect").textContent.toLowerCase();
+
+        const code = codeArea.value.trim();
+        if (!code) {
+            resultArea.innerHTML = '<div class="result-empty">Error: Code cannot be empty.</div>';
+            resultStatus.textContent = "Error";
+            resultStatus.style.color = "#ff6b6b";
+            return;
+        }
+
+        // 清除之前的空状态提示
+        resultArea.innerHTML = '';
+
+        // 显示加载状态
+        resultStatus.textContent = "Running...";
+        resultStatus.style.color = "#4ecdc4";
+        loadingProgress.style.transition = "width 2s ease-out";
+        loadingProgress.style.width = "30%";
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/InsightfulVerse/Code.run", true);
+        xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded; charset=UTF-8");
+
+        xhr.onloadstart = function() {
+            loadingProgress.style.width = "95%";
+        };
+
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState === 4){
+                loadingProgress.style.transition = "width 0.5s ease-out";
+                loadingProgress.style.width = "100%";
+
+                setTimeout(() => {
+                    loadingProgress.style.transition = "width 0.15s ease-out";
+                    loadingProgress.style.width = "0%";
+                }, 1500);
+
+                if(xhr.status === 200) {
+                    resultArea.textContent = xhr.responseText;
+                    resultStatus.textContent = "Completed";
+                    resultStatus.style.color = "#51cf66";
+                } else {
+                    resultArea.textContent = `Error: ${xhr.status} - ${xhr.statusText}`;
+                    resultStatus.textContent = "Error";
+                    resultStatus.style.color = "#ff6b6b";
+                }
+            }
+        };
+
+        xhr.onerror = function() {
+            loadingProgress.style.transition = "width 0.15s ease-out";
+            loadingProgress.style.width = "0%";
+            resultArea.textContent = "Network error: Failed to execute code.";
+            resultStatus.textContent = "Error";
+            resultStatus.style.color = "#ff6b6b";
+        };
+
+        xhr.send("lang="+encodeURIComponent(lang)+"&code="+encodeURIComponent(code));
+    }
+</script>
 </body>
 </html>

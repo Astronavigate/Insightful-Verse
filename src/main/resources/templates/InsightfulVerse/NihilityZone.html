@@ -1,55 +1,835 @@
-<!--
-  Copyright 2025 Astronavigate
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8"/>
   <title>Insightful Verse - Nihility Zone</title>
+
+  <style>
+    :root {
+      --header-h: 72px;
+      --glass-bg: rgba(7, 7, 7, 0.95); /* 增加透明度 */
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --primary-text: #f0f6ff; /* 调整文字颜色，提高对比度 */
+      --secondary-text: #b8c2cc;
+      --background-dark: #050505;
+      --ice-white: #ffffff;
+      --silver-mercury: rgba(255, 255, 255, 0.35);
+      --radius-btn: 8px;
+      --mono-font: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    /* 确保body有默认背景色，避免header渲染问题 */
+    body {
+      background-color: var(--background-dark) !important;
+      height: 100%;
+      margin: 0;
+      color: var(--primary-text);
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+
+    .coder-wrap {
+      height: calc(100vh - var(--header-h));
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      box-sizing: border-box;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    #codeContainer {
+      width: 100%;
+      max-width: 1400px;
+      flex: 1;
+      border-radius: 12px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(50px) saturate(120%);
+      -webkit-backdrop-filter: blur(50px) saturate(120%);
+      border: 1px solid var(--glass-border);
+      transition: border-color 0.4s ease, box-shadow 0.4s ease;
+      box-shadow:
+              0 0 0 1px rgba(255, 255, 255, 0.1),
+              0 30px 80px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* 控制栏 */
+    #controls {
+      display: flex;
+      align-items: center;
+      height: 60px;
+      padding: 0 24px;
+      background: rgba(192, 192, 192, 0.02);
+      z-index: 100;
+    }
+
+    .simplified-controls {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      position: relative;
+    }
+
+    .controls-left {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex: 1;
+    }
+
+    .controls-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .controls-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    /* 进度条 */
+    .progress-container {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      height: 2px;
+      z-index: 101;
+    }
+    #loadingProgress {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, transparent, var(--ice-white));
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+      transition: width 0.15s ease-out;
+    }
+
+    /* 下拉菜单 */
+    .shadow-select-container { position: relative; width: 170px; }
+    .custom-select-trigger {
+      height: 34px;
+      padding: 0 12px;
+      background: rgba(192, 192, 192, 0.04);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-btn);
+      color: var(--ice-white);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: 0.3s;
+    }
+
+    .custom-options {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0; right: 0;
+      background: #111111;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-btn);
+      display: none;
+      z-index: 1000;
+      padding: 6px 0;
+      list-style: none;
+      box-shadow: 0 20px 60px rgba(0,0,0,1);
+    }
+    .custom-options.active { display: block; animation: fadeIn 0.2s ease; }
+    .custom-options li {
+      padding: 10px 16px;
+      color: var(--secondary-text);
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: 0.2s;
+    }
+    .custom-options li:hover { background: rgba(192, 192, 192, 0.05); color: #fff; }
+
+    /* 按钮与文本指标 */
+    .control-btn {
+      height: 34px;
+      padding: 0 14px;
+      border-radius: var(--radius-btn);
+      border: 1px solid var(--glass-border);
+      background: rgba(192, 192, 192, 0.02);
+      color: var(--ice-white);
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: 0.3s;
+    }
+    .control-btn:hover { background: rgba(192, 192, 192, 0.08); border-color: rgba(255, 255, 255, 0.4); }
+
+    .control-text {
+      font-size: 0.85rem;
+      color: var(--secondary-text);
+      letter-spacing: 0.5px;
+    }
+
+    #charCount {
+      color: var(--ice-white);
+      font-weight: 500;
+    }
+
+    /* 修改后的阅读区域布局 - 上下分割 */
+    #viewerWrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 编辑器容器样式 - 修改为带行号的布局 */
+    .editor-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      min-height: 200px;
+      display: flex;
+      background: rgba(15, 15, 15, 0.85); /* 增加背景透明度 */
+    }
+
+    /* 行号容器 */
+    .line-numbers {
+      width: 60px;
+      padding: 20px 8px 20px 20px;
+      text-align: right;
+      background: rgba(10, 10, 10, 0.5); /* 增加背景透明度 */
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      font-family: var(--mono-font);
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--secondary-text);
+      user-select: none;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+
+    .line-number {
+      padding-right: 10px;
+      height: 1.6em;
+      display: block;
+    }
+
+    /* 代码编辑区样式 */
+    .code-editor {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #codeArea {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: none;
+      padding: 20px 20px 20px 10px;
+      color: var(--primary-text);
+      font-family: var(--mono-font);
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      box-sizing: border-box;
+      tab-size: 4;
+      -moz-tab-size: 4;
+      white-space: pre;
+      overflow: auto;
+    }
+
+    #codeArea::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* 修复结果容器高度问题 */
+    .result-container {
+      height: 40%;
+      min-height: 150px;
+      max-height: 60%;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      background: rgba(15, 15, 15, 0.85); /* 增加背景透明度 */
+      border-top: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 结果展示区样式 - 修复最后一行显示问题 */
+    #resultArea {
+      flex: 1;
+      width: 100%;
+      padding: 15px 20px;
+      color: var(--primary-text);
+      font-family: var(--mono-font);
+      font-size: 13px;
+      line-height: 1.5;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 20px;
+      background: rgba(0, 0, 0, 0.3); /* 增加背景透明度 */
+      border-bottom: 1px solid var(--glass-border);
+      font-size: 0.8rem;
+      color: var(--secondary-text);
+      height: 36px;
+      flex-shrink: 0;
+    }
+
+    .result-title {
+      font-weight: 500;
+      color: var(--ice-white);
+      font-size: 0.85rem;
+    }
+
+    .result-stats {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .result-status {
+      font-weight: 500;
+    }
+
+    .row-count {
+      color: var(--secondary-text);
+      font-size: 0.8rem;
+    }
+
+    /* SQL结果表格样式 */
+    .sql-result-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 13px;
+      color: var(--primary-text);
+      margin-bottom: 10px;
+    }
+
+    .sql-result-table th {
+      background: rgba(192, 192, 192, 0.08); /* 增加表头背景透明度 */
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--glass-border);
+      font-weight: 600;
+      color: var(--ice-white);
+      position: sticky;
+      top: 0;
+    }
+
+    .sql-result-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .sql-result-table tr:hover td {
+      background: rgba(192, 192, 192, 0.05);
+    }
+
+    /* 确保表格最后一行可见 */
+    .sql-result-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* 滚动条样式 */
+    .line-numbers::-webkit-scrollbar,
+    #codeArea::-webkit-scrollbar,
+    #resultArea::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .line-numbers::-webkit-scrollbar-thumb,
+    #codeArea::-webkit-scrollbar-thumb,
+    #resultArea::-webkit-scrollbar-thumb {
+      background: var(--silver-mercury);
+      border-radius: 10px;
+    }
+
+    .line-numbers::-webkit-scrollbar-thumb:hover,
+    #codeArea::-webkit-scrollbar-thumb:hover,
+    #resultArea::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    /* 确保滚动条区域有足够空间 */
+    #resultArea::-webkit-scrollbar-track {
+      background: rgba(192, 192, 192, 0.02);
+      border-radius: 10px;
+      margin: 2px 0;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .spinner {
+      width: 24px; height: 24px;
+      border: 2px solid rgba(255, 255, 255, 0.05);
+      border-top-color: var(--ice-white);
+      border-radius: 50%;
+      animation: spin 1s infinite linear;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 当结果区域为空时的样式 */
+    .result-empty {
+      color: rgba(255, 255, 255, 0.4); /* 增加对比度 */
+      font-style: italic;
+      padding: 10px 20px;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    /* 当前行高亮 */
+    .current-line {
+      background: rgba(192, 192, 192, 0.08);
+      position: relative;
+    }
+
+    .current-line::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      border-left: 2px solid rgba(100, 150, 255, 0.8);
+      pointer-events: none;
+    }
+
+    /* 错误信息表格样式 */
+    .error-table {
+      background: rgba(255, 107, 107, 0.15); /* 增加错误表格背景透明度 */
+      border: 1px solid rgba(255, 107, 107, 0.4);
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+
+    .error-table td {
+      color: #ff6b6b !important;
+      font-family: var(--mono-font);
+      font-size: 13px;
+      padding: 12px 15px;
+    }
+  </style>
   <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
 </head>
-<body class="nz-bg" style="background-color: #0b0c10;">
+<body class="nz-bg">
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
-<div class="content" style="flex-direction: column; align-items: center; justify-content: center; margin-top: 2rem;">
-  <form action="/InsightfulVerse/Halo" method="post">
-    <div>
-      <div class="form-floating mb-3">
-        <textarea id="codeArea" class="form-control" style="background-color: #1a1d20; color: white; height: 15vh" name="code" th:text="${codeContent}"></textarea>
-        <label for="codeArea">SQL code</label>
-      </div>
-      <button type="submit" class="btn btn-secondary">Run</button>
-    </div>
-    <div>
-      <div class="form-floating mb-3">
-        <div id="resultArea" class="form-control" style="background-color: #1a1d20; color: white; height: 60vh">
-          <table class="table" style="border-collapse: separate; border-radius: 1rem; overflow: hidden;">
-            <tbody>
-            <tr th:each="resultLine : ${resultList}">
-              <th th:each="result : ${resultLine}" th:text="${result}"></th>
-            </tr>
-            </tbody>
-          </table>
+<div class="coder-wrap">
+  <div id="codeContainer">
+    <div id="controls">
+      <div class="simplified-controls">
+        <div class="controls-left">
+          <div class="shadow-select-container">
+            <div class="custom-select-trigger">
+              <span id="langSelect">SQL</span>
+              <i class="bi bi-chevron-down" style="font-size: 0.7rem; opacity: 0.5;"></i>
+            </div>
+            <ul class="custom-options">
+              <li data-value="sql">SQL</li>
+            </ul>
+          </div>
+          <button class="control-btn" id="fontToggleBtn" title="Typeface"><i class="bi bi-fonts"></i></button>
+          <button class="control-btn" id="clearBtn" title="Clear"><i class="bi bi-trash"></i></button>
         </div>
-        <label for="resultArea">Result</label>
+
+        <div class="controls-center">
+          <span class="control-text"><span id="charCount">0</span> chars</span>
+        </div>
+
+        <div class="controls-right">
+          <button class="control-btn" id="runBtn">
+            <i class="bi bi-play-fill"></i>
+            <span>Run</span>
+          </button>
+        </div>
       </div>
     </div>
-  </form>
+
+    <div class="progress-container">
+      <div id="loadingProgress"></div>
+    </div>
+
+    <div id="viewerWrapper">
+      <div class="editor-container">
+        <div class="line-numbers" id="lineNumbers">
+          <div class="line-number">1</div>
+        </div>
+        <div class="code-editor">
+          <textarea id="codeArea" placeholder="Write your SQL query here..."></textarea>
+        </div>
+      </div>
+
+      <div class="result-container">
+        <div class="result-header">
+          <span class="result-title">Query Results</span>
+          <div class="result-stats">
+            <span class="row-count" id="rowCount"></span>
+            <span class="result-status" id="resultStatus">Ready</span>
+          </div>
+        </div>
+
+        <div id="resultArea">
+          <div class="result-empty">Results will appear here after running the SQL query</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="blank"></div>
+<script th:inline="javascript">
+  document.addEventListener('DOMContentLoaded', () => {
+    // DOM元素引用
+    const codeArea = document.getElementById('codeArea');
+    const charCount = document.getElementById('charCount');
+    const resultStatus = document.getElementById('resultStatus');
+    const rowCountElement = document.getElementById('rowCount');
+    const resultArea = document.getElementById('resultArea');
+    const lineNumbers = document.getElementById('lineNumbers');
+    const runBtn = document.getElementById('runBtn');
+    const loadingProgress = document.getElementById('loadingProgress');
+    const clearBtn = document.getElementById('clearBtn');
+
+    // 初始化代码编辑器内容（如果有后端传递的代码）
+    const backendCode = /*[[${codeContent}]]*/ '';
+    if (backendCode && backendCode.trim().length > 0) {
+      codeArea.value = backendCode;
+    }
+
+    // 更新行号的函数
+    function updateLineNumbers() {
+      const lines = codeArea.value.split('\n').length;
+      const currentLines = lineNumbers.children.length;
+
+      // 添加或移除行号
+      if (lines > currentLines) {
+        for (let i = currentLines + 1; i <= lines; i++) {
+          const lineNumber = document.createElement('div');
+          lineNumber.className = 'line-number';
+          lineNumber.textContent = i;
+          lineNumbers.appendChild(lineNumber);
+        }
+      } else if (lines < currentLines) {
+        while (lineNumbers.children.length > lines) {
+          lineNumbers.removeChild(lineNumbers.lastChild);
+        }
+      }
+
+      // 更新当前行高亮
+      highlightCurrentLine();
+    }
+
+    // 高亮当前行的函数
+    function highlightCurrentLine() {
+      // 移除所有当前行高亮
+      const lineNumberElements = lineNumbers.querySelectorAll('.line-number');
+      lineNumberElements.forEach(line => line.classList.remove('current-line'));
+
+      // 计算当前行
+      const text = codeArea.value.substring(0, codeArea.selectionStart);
+      const currentLine = text.split('\n').length;
+
+      // 高亮当前行
+      if (lineNumberElements[currentLine - 1]) {
+        lineNumberElements[currentLine - 1].classList.add('current-line');
+      }
+    }
+
+    // 同步滚动函数
+    function syncScroll() {
+      lineNumbers.scrollTop = codeArea.scrollTop;
+    }
+
+    // 设置下拉菜单功能
+    const dropdown = document.querySelector('.shadow-select-container');
+    const trigger = dropdown.querySelector('.custom-select-trigger');
+    const options = dropdown.querySelector('.custom-options');
+
+    trigger.addEventListener('click', () => {
+      options.classList.toggle('active');
+    });
+
+    // 点击外部关闭下拉菜单
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target)) {
+        options.classList.remove('active');
+      }
+    });
+
+    // 字符计数更新
+    const updateCharCount = () => {
+      charCount.textContent = codeArea.value.length;
+    };
+
+    // 监听代码区域变化
+    codeArea.addEventListener('input', () => {
+      updateCharCount();
+      updateLineNumbers();
+    });
+
+    // 监听光标位置变化
+    codeArea.addEventListener('click', highlightCurrentLine);
+    codeArea.addEventListener('keyup', highlightCurrentLine);
+
+    // 监听滚动事件
+    codeArea.addEventListener('scroll', syncScroll);
+
+    // 初始化行号和字符计数
+    updateLineNumbers();
+    updateCharCount();
+
+    // 字体切换功能
+    const fontToggleBtn = document.getElementById('fontToggleBtn');
+    let fontIndex = 0;
+    const fonts = ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'];
+
+    fontToggleBtn.addEventListener('click', () => {
+      fontIndex = (fontIndex + 1) % fonts.length;
+      codeArea.style.fontFamily = fonts[fontIndex];
+      resultArea.style.fontFamily = fonts[fontIndex];
+      lineNumbers.style.fontFamily = fonts[fontIndex];
+    });
+
+    // 清空代码区域
+    clearBtn.addEventListener('click', () => {
+      codeArea.value = '';
+      updateCharCount();
+      updateLineNumbers();
+      codeArea.focus();
+    });
+
+    // 运行SQL查询
+    runBtn.addEventListener('click', () => {
+      const sqlCode = codeArea.value.trim();
+
+      if (!sqlCode) {
+        resultArea.innerHTML = '<div class="result-empty">Error: SQL query cannot be empty.</div>';
+        resultStatus.textContent = "Error";
+        resultStatus.style.color = "#ff6b6b";
+        rowCountElement.textContent = '';
+        return;
+      }
+
+      // 清除之前的空状态提示
+      resultArea.innerHTML = '';
+      rowCountElement.textContent = '';
+      resultStatus.textContent = "Running...";
+      resultStatus.style.color = "#4ecdc4";
+
+      // 显示加载状态
+      loadingProgress.style.transition = "width 2s ease-out";
+      loadingProgress.style.width = "30%";
+
+      // 使用FormData进行表单提交
+      const formData = new FormData();
+      formData.append('code', sqlCode);
+
+      fetch('/InsightfulVerse/Halo', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json'
+        }
+      })
+              .then(response => {
+                if (response.status === 401) {
+                  // 未授权，重定向到验证页面
+                  return response.json().then(data => {
+                    if (data.redirectUrl) {
+                      window.location.href = data.redirectUrl;
+                    }
+                    throw new Error(data.message || 'Unauthorized');
+                  });
+                }
+                if (response.status === 403) {
+                  // 权限不足
+                  return response.json().then(data => {
+                    if (data.redirectUrl) {
+                      window.location.href = data.redirectUrl;
+                    }
+                    throw new Error(data.message || 'Forbidden');
+                  });
+                }
+                if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+              })
+              .then(data => {
+                if (data.status === 'success' && data.data) {
+                  // 创建表格显示结果
+                  const resultList = data.data;
+
+                  if (resultList.length > 0) {
+                    // 检查是否为SQL错误信息
+                    const isSqlError = checkIfSqlError(resultList);
+
+                    // 创建表格
+                    const tableContainer = document.createElement('div');
+                    tableContainer.className = 'table-container';
+
+                    const newTable = document.createElement('table');
+
+                    if (isSqlError) {
+                      newTable.className = 'sql-result-table error-table';
+                      resultStatus.textContent = "Error";
+                      resultStatus.style.color = "#ff6b6b";
+                      rowCountElement.textContent = '';
+                    } else {
+                      newTable.className = 'sql-result-table';
+                      resultStatus.textContent = "Completed";
+                      resultStatus.style.color = "#51cf66";
+
+                      // 更新行数统计
+                      const rowCount = resultList.length > 1 ? resultList.length - 1 : resultList.length;
+                      const colCount = resultList[0] ? resultList[0].length : 0;
+                      rowCountElement.textContent = `${rowCount} rows, ${colCount} cols`;
+                    }
+
+                    // 创建表体
+                    const tbody = document.createElement('tbody');
+
+                    resultList.forEach(rowData => {
+                      const row = document.createElement('tr');
+
+                      rowData.forEach(cellData => {
+                        const td = document.createElement('td');
+                        td.textContent = cellData !== null ? String(cellData) : 'NULL';
+                        row.appendChild(td);
+                      });
+
+                      tbody.appendChild(row);
+                    });
+
+                    newTable.appendChild(tbody);
+                    tableContainer.appendChild(newTable);
+                    resultArea.appendChild(tableContainer);
+                  } else {
+                    resultArea.innerHTML = '<div class="result-empty">Query executed successfully, but no results returned.</div>';
+                    resultStatus.textContent = "Completed";
+                    resultStatus.style.color = "#51cf66";
+                    rowCountElement.textContent = '0 rows, 0 cols';
+                  }
+                } else {
+                  const errorMsg = data.message || 'Unknown error';
+                  resultArea.innerHTML = `<div class="result-empty">Error: ${errorMsg}</div>`;
+                  resultStatus.textContent = "Error";
+                  resultStatus.style.color = "#ff6b6b";
+                  rowCountElement.textContent = '';
+                }
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                // 只显示非重定向错误的详细消息
+                if (!error.message.includes('Unauthorized') && !error.message.includes('Forbidden')) {
+                  const errorMsg = error.message || 'Network error occurred';
+                  resultArea.innerHTML = `<div class="result-empty">Error: ${errorMsg}</div>`;
+                  resultStatus.textContent = "Error";
+                  resultStatus.style.color = "#ff6b6b";
+                  rowCountElement.textContent = '';
+                }
+              })
+              .finally(() => {
+                // 重置进度条
+                loadingProgress.style.transition = "width 0.5s ease-out";
+                loadingProgress.style.width = "100%";
+
+                setTimeout(() => {
+                  loadingProgress.style.transition = "width 0.15s ease-out";
+                  loadingProgress.style.width = "0%";
+                }, 500);
+              });
+    });
+
+    // 检查是否为SQL错误
+    function checkIfSqlError(resultList) {
+      if (!resultList || resultList.length === 0) return false;
+
+      // 检查第一行是否包含SQL错误关键字
+      const firstRow = resultList[0];
+      if (firstRow && firstRow.length > 0) {
+        const firstCell = firstRow[0] || '';
+        const errorKeywords = ['SQL Exception', 'SQL Error', 'ERROR', 'Exception', 'Error', 'syntax'];
+        return errorKeywords.some(keyword =>
+                firstCell.toLowerCase().includes(keyword.toLowerCase())
+        );
+      }
+      return false;
+    }
+
+    // 自适应调整结果区域高度
+    function adjustResultHeight() {
+      const resultContainer = document.querySelector('.result-container');
+      const contentHeight = resultArea.scrollHeight;
+
+      // 根据内容动态调整高度，但保持最小和最大限制
+      const minHeight = 150;
+      const maxHeight = 500;
+      const newHeight = Math.min(Math.max(contentHeight + 40, minHeight), maxHeight);
+
+      resultContainer.style.height = `${newHeight}px`;
+    }
+
+    // 初始调整
+    adjustResultHeight();
+
+    // 监听结果区域变化
+    const observer = new MutationObserver(() => {
+      setTimeout(adjustResultHeight, 50);
+    });
+    observer.observe(resultArea, { childList: true, subtree: true, characterData: true });
+
+    // 允许使用Tab键缩进
+    codeArea.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = codeArea.selectionStart;
+        const end = codeArea.selectionEnd;
+
+        // 插入4个空格
+        codeArea.value = codeArea.value.substring(0, start) + '    ' + codeArea.value.substring(end);
+
+        // 移动光标位置
+        codeArea.selectionStart = codeArea.selectionEnd = start + 4;
+
+        // 触发input事件更新字符计数
+        codeArea.dispatchEvent(new Event('input'));
+      }
+    });
+
+    // 快捷键支持：Ctrl+Enter 运行代码
+    codeArea.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        runBtn.click();
+      }
+    });
+
+    // 监听窗口大小变化，调整布局
+    window.addEventListener('resize', () => {
+      setTimeout(adjustResultHeight, 100);
+    });
+  });
+</script>
 </body>
 </html>

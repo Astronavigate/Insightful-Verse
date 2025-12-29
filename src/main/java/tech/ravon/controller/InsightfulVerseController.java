@@ -25,6 +25,7 @@ import org.jaudiotagger.tag.KeyNotFoundException;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.images.Artwork;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,9 +40,8 @@ import tech.ravon.service.iviep.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Base64;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
 
 @Controller
 public class InsightfulVerseController {
@@ -91,10 +91,19 @@ public class InsightfulVerseController {
         }
         if (file == null || file.getFilePath() == null || file.getFilePath().isEmpty()) {
             request.setAttribute("fileId", null);
-            request.setAttribute("codeContent", "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, world!\");\n    }\n}");
+            request.setAttribute("lang", null);
+            request.setAttribute("codeContent", null);
         } else {
             String classpath = System.getProperty("user.dir") + "/src/main/resources/static";
             String filePath = classpath + file.getFilePath();
+            String fileType = switch (file.getType().toLowerCase()) {
+                case "c" -> "c";
+                case "c++", "cpp" -> "cpp";
+                case "java" -> "java";
+                case "py" -> "python";
+                case "rs" -> "rust";
+                default -> file.getType();
+            };
 
             StringBuilder sb = new StringBuilder();
             try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
@@ -106,17 +115,18 @@ public class InsightfulVerseController {
                 e.printStackTrace();
             }
             request.setAttribute("fileId", file.getFileId());
+            request.setAttribute("lang", fileType);
             request.setAttribute("codeContent", sb.toString());
         }
         return "InsightfulVerse/Code";
     }
 
     @ResponseBody
-    @RequestMapping("/InsightfulVerse/Code.java")
+    @RequestMapping("/InsightfulVerse/Code.run")
     public String IVIEPXCode(HttpServletRequest request, HttpServletResponse response) {
         String result;
         try {
-            result = codeService.runJava(request, response);
+            result = codeService.runCode(request, response);
         } catch (Exception e) {
             e.printStackTrace();
             request.getSession().setAttribute("errorMessage", e.getMessage());
@@ -157,6 +167,7 @@ public class InsightfulVerseController {
     @RequestMapping("/InsightfulVerse/Error")
     public String error(HttpServletRequest request) {
         request.setAttribute("errorMessage", request.getSession().getAttribute("errorMessage"));
+        request.getSession().setAttribute("errorMessage", null);
         return "InsightfulVerse/Error";
     }
 
@@ -339,6 +350,10 @@ public class InsightfulVerseController {
     @RequestMapping("/InsightfulVerse/UpdateUser")
     public String IVIEPUpdateUser(HttpServletRequest request) {
         User user = userService.Userinfo(request);
+        if (user == null) {
+            request.getSession().setAttribute("errorMessage", "Please log in first.");
+            return "redirect:/InsightfulVerse/Error";
+        }
         request.setAttribute("user", user);
         return "InsightfulVerse/UpdateInfo";
     }
@@ -509,24 +524,52 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/Halo")
-    public String IVIEPHalo(HttpServletRequest request) {
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> IVIEPHalo(HttpServletRequest request) {
+        Map<String, Object> response = new HashMap<>();
         User user = (User) request.getSession().getAttribute("user");
+
         if (user != null && user.getUserId() != null) {
-            if (user.getAuthority().equals("infinite") && (request.getSession().getAttribute("authorize") != null && !(boolean) request.getSession().getAttribute("authorize"))) {
-                request.getSession().setAttribute("lastUrl", "/InsightfulVerse/NihilityZone");
-                return "redirect:/InsightfulVerse/VerifyPerm";
-            } else if (user.getAuthority().equals("infinite") && (boolean) request.getSession().getAttribute("authorize")) {
-                String code = request.getParameter("code");
-                List<List<String>> resultList = haloService.runSQL(code);
-                System.out.println(resultList);
-                request.getSession().setAttribute("resultList", resultList);
-                request.getSession().setAttribute("codeContent", code);
-                return "redirect:/InsightfulVerse/NihilityZone";
+            if (user.getAuthority().equals("infinite")) {
+                // 检查是否已授权
+                if (request.getSession().getAttribute("authorize") == null ||
+                        !(boolean) request.getSession().getAttribute("authorize")) {
+                    response.put("status", "unauthorized");
+                    response.put("redirectUrl", "/InsightfulVerse/VerifyPerm");
+                    return ResponseEntity.status(401).body(response);
+                } else {
+                    // 已授权，执行SQL
+                    String code = request.getParameter("code");
+                    if (code == null || code.trim().isEmpty()) {
+                        response.put("status", "error");
+                        response.put("message", "SQL code cannot be empty");
+                        return ResponseEntity.badRequest().body(response);
+                    }
+
+                    try {
+                        List<List<String>> resultList = haloService.runSQL(code);
+                        response.put("status", "success");
+                        response.put("data", resultList);
+                        return ResponseEntity.ok(response);
+                    } catch (Exception e) {
+                        response.put("status", "error");
+                        response.put("message", "SQL execution error: " + e.getMessage());
+                        return ResponseEntity.status(500).body(response);
+                    }
+                }
             } else {
-                return "redirect:/InsightfulVerse/Personal";
+                // 权限不足
+                response.put("status", "forbidden");
+                response.put("message", "Insufficient permissions");
+                response.put("redirectUrl", "/InsightfulVerse/Personal");
+                return ResponseEntity.status(403).body(response);
             }
         } else {
-            return "redirect:/InsightfulVerse/Personal";
+            // 未登录
+            response.put("status", "unauthenticated");
+            response.put("message", "User not logged in");
+            response.put("redirectUrl", "/InsightfulVerse/Personal");
+            return ResponseEntity.status(401).body(response);
         }
     }
 

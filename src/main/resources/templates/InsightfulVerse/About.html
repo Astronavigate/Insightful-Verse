@@ -21,12 +21,20 @@
     <title th:text="#{insightful.about.title}">About Insightful Verse</title>
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
 </head>
-<body>
+<body class="default">
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
-
-<div class="container my-4">
+<div
+        class="my-5 liquid d-flex flex-column justify-content-center align-items-center"
+        style="
+        width: 72vw;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 3rem;
+        border-radius: 20px;
+    "
+>
     <header>
-        <h1 th:text="#{insightful.about.header}">Insightful Verse Intelligence Educating Platform</h1>
+        <h1 th:text="#{insightful.about.header}">Insightful Verse</h1>
     </header>
     <br>
     <main>

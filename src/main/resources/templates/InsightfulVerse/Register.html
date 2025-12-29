@@ -25,7 +25,7 @@
 <body>
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
-<form class="form-group" th:action="@{/InsightfulVerse/Register.do}" method="post">
+<form class="form-group liquid" th:action="@{/InsightfulVerse/Register.do}" method="post">
     <h2 style="text-align: center;" th:text="#{insightful.register.title}">Register</h2>
 
     <label for="username" th:text="#{insightful.register.username}">Your name:</label>

@@ -14,7 +14,7 @@
   limitations under the License.
 -->
 
-<script th:fragment="viewhist" th:inline="javascript">
+<script th:fragment="viewhist" th:if="${file != null}" th:inline="javascript">
     document.addEventListener('DOMContentLoaded', function() {
         var fileId = /*[[${file.fileId}]]*/ 'null';
         console.log("fileId: "+fileId)

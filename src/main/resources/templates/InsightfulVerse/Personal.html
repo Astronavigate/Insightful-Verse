@@ -21,11 +21,11 @@
   <title>Insightful Verse Personal</title>
   <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
 </head>
-<body>
+<body class="default">
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
 <div class="contain">
-    <table class="table table-striped table-hover" id="userInfoPlace">
+    <table class="table table-striped table-hover liquid" id="userInfoPlace">
         <tr>
             <td th:text="#{insightful.user.systemVersion}">System Version</td>
             <td th:text="${ivVersion.version}"></td>
@@ -70,7 +70,7 @@
 </div>
 
 <div class="contain">
-    <table class="table table-striped table-hover" id="viewListPlace">
+    <table class="table table-striped table-hover liquid" id="viewListPlace">
         <tr>
             <td th:text="#{insightful.view.file}">File</td>
             <td th:text="#{insightful.view.count}">View Count</td>

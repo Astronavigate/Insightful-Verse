@@ -19,24 +19,36 @@
 <head>
     <meta charset="UTF-8">
     <title>Insightful Verse Courses - List</title>
+    <style>
+        .dropdown-item:hover,
+        .dropdown-item:active {
+            border-radius: 24px;
+            margin-left: 5px;
+            margin-right: 6px;
+            width: calc(100% - 11px);
+            transition: 0.15s;
+        }
+    </style>
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
 </head>
-<body>
+<body class="default">
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
-<div class="container" style="margin-top: 2rem; width: 70%">
-    <form class="input-group custom-dropdown" style="margin-bottom: 0" action="/InsightfulVerse/Search">
-        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <span th:text="#{insightful.search.type}">Search Type</span>
-        </button>
-        <ul class="dropdown-menu">
+<div class="container" style="margin-top: 2rem; width: 70%; z-index: 20 !important;">
+    <form class="input-group custom-dropdown liquid" style="margin-bottom: 0; z-index: 21 !important;" action="/InsightfulVerse/Search">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                style="border-top-left-radius: 24px; border-bottom-left-radius: 24px; border-width: 0; z-index: 22 !important;"
+                th:text="#{insightful.search.type}">Search Type</button>
+        <ul class="dropdown-menu liquid no-liquid-effect" style="z-index: 23 !important;">
             <li><a class="dropdown-item" id="searchAll" th:text="#{insightful.search.all}">All</a></li>
             <li><a class="dropdown-item" id="searchCourse" th:text="#{insightful.search.course}">Course</a></li>
             <li><a class="dropdown-item" id="searchFile" th:text="#{insightful.search.file}">File</a></li>
         </ul>
         <input id="searchType" name="type" th:value="${type}" hidden>
-        <input type="text" class="form-control" name="keyword" th:value="${keyword}" th:placeholder="#{insightful.search.placeholder}">
-        <button class="btn btn-outline-secondary" type="submit" id="button-addon2" th:text="#{insightful.search.button}">Search</button>
+        <input type="text" class="form-control" th:placeholder="#{insightful.search.keywordPlaceholder}" name="keyword" th:value="${keyword}">
+        <button class="btn btn-outline-secondary" type="submit" id="button-addon2"
+                style="border-top-right-radius: 24px; border-bottom-right-radius: 24px; border-width: 0"
+                th:text="#{insightful.search.button}">Search</button>
     </form>
 </div>
 
@@ -47,9 +59,10 @@
         <span th:text="#{insightful.course.searched}">Courses searched</span>
     </h5>
     <div class="content">
-        <div class="list-group" style="width: 80vw" id="CoursePlace">
+        <div class="list-group liquid" style="width: 80vw; border-radius: 16px !important;" id="CoursePlace">
+            <div style="height: 16px;"></div>
             <th:block th:each="course : ${courseList}">
-                <a class="list-group-item list-group-item-action" th:href="@{/InsightfulVerse/CourseInfo(courseId=${course.courseId})}">
+                <a class="list-group-item" style="border-radius: 6px !important; margin: 1px 3px 1px 3px;" th:href="@{/InsightfulVerse/CourseInfo(courseId=${course.courseId})}">
                     <div class="d-flex w-100 justify-content-between">
                         <h5 class="mb-1">
                             <th:block th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}">
@@ -70,7 +83,8 @@
                     <p class="mb-1" th:text="${course.courseInfo}"></p>
                 </a>
             </th:block>
-            <h5 th:if="${courseList == null or courseList.size() == 0}" th:text="#{insightful.course.empty}">Sorry, there are no courses right now.</h5>
+            <h5 th:if="${courseList == null or courseList.size() == 0}" th:class="centered-text" th:text="#{insightful.course.empty}">Sorry, there are no courses right now.</h5>
+            <div style="height: 16px;"></div>
         </div>
     </div>
 </div>
@@ -82,9 +96,10 @@
         <span th:text="#{insightful.file.searched}">Files searched</span>
     </h5>
     <div class="content">
-        <div class="list-group" id="FilePlace" style="width: 100%;">
+        <div class="list-group liquid" id="FilePlace" style="width: 100%; border-radius: 16px !important;">
+            <div style="height: 16px;"></div>
             <th:block th:each="source : ${fileList}">
-                <a class="list-group-item list-group-item-action" th:href="@{/InsightfulVerse/File(fileId=${source.fileId})}">
+                <a class="list-group-item" style="border-radius: 6px !important; margin: 1px 3px 1px 3px;" th:href="@{/InsightfulVerse/File(fileId=${source.fileId})}">
                     <div class="d-flex w-100 justify-content-between">
                         <h5 class="mb-1">
                             <button th:if="${session.user != null && (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
@@ -106,7 +121,8 @@
                     <p class="mb-1" th:text="${source.remarks}">File Remarks</p>
                 </a>
             </th:block>
-            <h5 th:if="${fileList == null or fileList.size() == 0}" th:text="#{insightful.file.empty}">Sorry, there are no files right now.</h5>
+            <h5 th:if="${fileList == null or fileList.size() == 0}" th:class="centered-text" th:text="#{insightful.file.empty}">Sorry, there are no files right now.</h5>
+            <div style="height: 16px;"></div>
         </div>
     </div>
 </div>

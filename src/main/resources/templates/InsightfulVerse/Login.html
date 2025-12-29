@@ -22,12 +22,12 @@
     <!-- 引入公共模块 -->
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
 </head>
-<body>
+<body class="default">
 <!-- 引入页头 -->
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
 <div class="container my-4">
-    <form class="form-group" th:action="@{/InsightfulVerse/Login.do}" method="post">
+    <form class="form-group liquid" th:action="@{/InsightfulVerse/Login.do}" method="post">
         <h2 style="text-align: center;" th:text="#{insightful.login.title}">Login</h2>
 
         <label for="identifier" th:text="#{insightful.login.identifier}">ID or email or phone:</label>

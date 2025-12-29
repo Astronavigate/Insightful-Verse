@@ -21,20 +21,21 @@
     <title>Insightful Verse Courses - Info</title>
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
 </head>
-<body>
+<body class="default">
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
 <div class="content">
-    <div class="list-group" id="FilePlace" style="width: 80vw">
+    <div class="list-group liquid" id="FilePlace" style="width: 80vw; border-radius: 16px !important;">
+        <div style="height: 16px;"></div>
         <div th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
              data-bs-toggle="modal" data-bs-target="#updFileForm"
-             class="list-group-item list-group-item-action"
-             style="display: inline-flex; align-items: center; justify-content: center; width: 80vw;" onclick="">
+             class="list-group-item centered-text"
+             style="border-radius: 6px !important; margin: 1px 3px 1px 3px;" onclick="">
             <i class="bi-plus" style="font-size: 3rem; color: gray;"></i>
             <h5 style="margin-top: 0.5rem" th:text="#{insightful.file.add}">Add a new file</h5>
         </div>
 
-        <div th:each="source : ${#lists.isEmpty(sourceList) ? null : sourceList}">
+        <div style="border-radius: 6px !important;  margin: 1px 3px 1px 3px;" th:each="source : ${#lists.isEmpty(sourceList) ? null : sourceList}">
             <a class="list-group-item list-group-item-action"
                th:href="@{/InsightfulVerse/File(fileId=${source.fileId})}">
                 <div class="d-flex w-100 justify-content-between">
@@ -66,6 +67,7 @@
             th:text="#{insightful.file.none}">
             Sorry, there are no files right now.
         </h5>
+        <div style="height: 16px;"></div>
     </div>
 </div>
 

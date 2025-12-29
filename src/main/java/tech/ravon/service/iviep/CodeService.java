@@ -22,5 +22,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public interface CodeService {
-    String runJava(HttpServletRequest request, HttpServletResponse response) throws IOException;
+    String runCode(HttpServletRequest request, HttpServletResponse response);
+    String runC(String code) throws Exception;
+    String runCpp(String code) throws Exception;
+    String runJava(String code) throws Exception;
+    String runPython(String code);
+    String runRust(String code) throws Exception;
 }

@@ -26,7 +26,7 @@ target/
 /nbdist/
 /.nb-gradle/
 src/main/python/AiBot/model/
-# src/main/resources/static/code/
+src/main/resources/static/code/temp
 src/main/resources/static/doc/*
 # src/main/resources/static/image/
 src/main/resources/static/media/*

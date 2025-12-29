@@ -105,14 +105,14 @@ public class MailServiceImpl implements MailService {
             MimeMessage message = new MimeMessage(session);
             message.setFrom(new InternetAddress(USERNAME, "Insightful Verse"));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(email));
-            message.setSubject("Your verification code");
+            message.setSubject("Your verification code is " + Captcha);
 
             // Construct email content
             String content = "<h2>Hello!</h2>"
                     + "<p>Your verification code is: <strong>" + Captcha + "</strong></p>"
                     + "<p>This code will expire in 5 minutes.</p>"
                     + "<p>Thank you for using our service.</p><br>"
-                    + "<p>From <a href=\"https://eagloxis.tech/InsightfulVerse.run\">Insightful Verse Integrated Educating Platform</a></p>";
+                    + "<p>From <a href=\"https://ravon.tech/InsightfulVerse/\">Insightful Verse</a></p>";
 
             message.setContent(content, "text/html");
 
