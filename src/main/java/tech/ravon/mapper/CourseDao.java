@@ -29,7 +29,7 @@ public interface CourseDao extends BaseMapper<Course> {
 
     void updateCourse(Course course);
 
-    void deleteCourse(String courseId);
+    void deleteCourse(Long courseId);
 
     List<Course> getCourseByName(String keyword);
 

@@ -24,7 +24,7 @@ import java.io.Serializable;
 import java.util.Date;
 import lombok.Data;
 
-@TableName(value ="file")
+@TableName(value ="files")
 @Data
 public class File implements Serializable {
 

@@ -38,46 +38,46 @@ public class ViewRecordServiceImpl implements ViewRecordService {
 
 
     @Override
-    public List<ViewRecord> recentViewedFile(String userId) {
+    public List<ViewRecord> recentViewedFile(Long userId) {
         List<ViewRecord> viewRecordList = viewRecordDao.getNewestViewRecords(userId);
         System.out.println("List size " + viewRecordList.size());
         for (ViewRecord viewRecord : viewRecordList) {
-            viewRecord.setFile(fileService.getFileById(String.valueOf(viewRecord.getFileId())));
+            viewRecord.setFile(fileService.getFileById(viewRecord.getFileId()));
         }
         return viewRecordList;
     }
 
     @Override
-    public List<ViewRecord> viewedFile(String userId) {
+    public List<ViewRecord> viewedFile(Long userId) {
         List<ViewRecord> viewRecordList = viewRecordDao.getViewRecords(userId);
         for (ViewRecord viewRecord : viewRecordList) {
-            viewRecord.setFile(fileService.getFileById(String.valueOf(viewRecord.getFileId())));
+            viewRecord.setFile(fileService.getFileById(viewRecord.getFileId()));
         }
         return viewRecordList;
     }
 
     @Override
     public void saveViewRecord(HttpServletRequest request) {
-        String fileId = request.getParameter("fileId");
+        Long fileId = Long.parseLong(request.getParameter("fileId"));
         User user = (User) request.getSession().getAttribute("user");
         if (user == null || user.getUserId() == null) {
             return;
         }
-        ViewRecord vr = viewRecordDao.getViewHistory(user.getUserId().toString(), fileId);
+        ViewRecord vr = viewRecordDao.getViewHistory(user.getUserId(), fileId);
         if (vr == null) {
-            viewRecordDao.setViewRecords(fileId, String.valueOf(user.getUserId()));
+            viewRecordDao.setViewRecords(fileId, user.getUserId());
         } else {
-            viewRecordDao.updateViewRecords(vr.getRecordId().toString());
+            viewRecordDao.updateViewRecords(vr.getRecordId());
         }
     }
 
     @Override
-    public void delRecordByFileId(String fileId) {
+    public void delRecordByFileId(Long fileId) {
         viewRecordDao.delRecordByFileId(fileId);
     }
 
     @Override
-    public int delRecordByUserId(String userId) {
+    public int delRecordByUserId(Long userId) {
         return viewRecordDao.delRecordByUserId(userId);
     }
 }

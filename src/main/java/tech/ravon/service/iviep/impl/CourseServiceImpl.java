@@ -46,20 +46,15 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public List<Course> allCourse() {
-
-        fileDao.getFilesByCourse("1000000");
-        List<Course> all = courseDao.getAllCourse();
-        System.out.println(all.size());
-        System.out.println(all.get(0));
         List<Course> courseList = courseDao.getAllCourse();
         return courseList;
     }
 
     @Override
-    public void deleteCourse(HttpServletRequest request, String courseId) {
+    public void deleteCourse(HttpServletRequest request, Long courseId) {
         List<File> files = fileService.getCourseFiles(courseId);
         for (File file : files) {
-            viewRecordService.delRecordByFileId(String.valueOf(file.getFileId()));
+            viewRecordService.delRecordByFileId(file.getFileId());
         }
         fileService.deleteCourseFiles(request, courseId);
         courseDao.deleteCourse(courseId);

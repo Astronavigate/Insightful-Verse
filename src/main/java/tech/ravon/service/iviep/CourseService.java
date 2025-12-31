@@ -27,7 +27,7 @@ public interface CourseService {
 
     List<Course> allCourse();
 
-    void deleteCourse(HttpServletRequest request, String courseId);
+    void deleteCourse(HttpServletRequest request, Long courseId);
 
     void updateCourse(Course course);
 

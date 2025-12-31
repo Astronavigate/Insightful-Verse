@@ -15,29 +15,29 @@
     </sql>
 
     <select id="getAllCourse" resultType="tech.ravon.model.iviep.Course" resultMap="BaseResultMap">
-        SELECT * FROM iviep.courses
+        SELECT * FROM courses
     </select>
 
     <insert id="updateCourse" parameterType="tech.ravon.model.iviep.Course">
         <choose>
             <when test="courseId == null or courseId == ''">
-                INSERT INTO iviep.courses (course_name, course_info)
+                INSERT INTO courses (course_name, course_info)
                 VALUES (#{courseName}, #{courseInfo})
             </when>
             <otherwise>
-                UPDATE iviep.courses
+                UPDATE courses
                 SET course_name = #{courseName}, course_info = #{courseInfo}
                 WHERE course_id = #{courseId}
             </otherwise>
         </choose>
     </insert>
 
-    <delete id="deleteCourse" parameterType="string">
-        DELETE FROM iviep.courses WHERE course_id = #{courseId};
+    <delete id="deleteCourse">
+        DELETE FROM courses WHERE course_id = #{courseId};
     </delete>
 
     <select id="getCourseByName" resultType="tech.ravon.model.iviep.Course" resultMap="BaseResultMap">
-        SELECT * FROM iviep.courses
+        SELECT * FROM courses
         WHERE course_name LIKE CONCAT('%', #{keyword}, '%')
            OR course_info LIKE CONCAT('%', #{keyword}, '%')
     </select>

@@ -55,7 +55,7 @@ public class InsightfulVerseController {
     @Autowired
     ViewRecordService viewRecordService;
     @Autowired
-    IVVersionService iVVersionService;
+    VersionService iVVersionService;
     @Autowired
     AiBotService aiBotService;
     @Autowired
@@ -151,7 +151,7 @@ public class InsightfulVerseController {
 
     @RequestMapping("/InsightfulVerse/CourseInfo")
     public String IVIEPCourseInfo(HttpServletRequest request) {
-        String courseId = request.getParameter("courseId");
+        Long courseId = Long.valueOf(request.getParameter("courseId"));
         User user = (User) request.getSession().getAttribute("user");
         if (user != null && user.getUserId() != null) {
             if (user.getAuthority() == "infinite" && (boolean) request.getSession().getAttribute("authorize")) {
@@ -201,7 +201,7 @@ public class InsightfulVerseController {
         if (user == null) {
             return "redirect:/InsightfulVerse/Login";
         }
-        List<ViewRecord> viewRecordList = viewRecordService.recentViewedFile(String.valueOf(user.getUserId()));
+        List<ViewRecord> viewRecordList = viewRecordService.recentViewedFile(user.getUserId());
         request.setAttribute("viewRecordList", viewRecordList);
         request.setAttribute("ivVersion", iVVersionService.getLatestVersion());
         return "InsightfulVerse/Personal";
@@ -400,7 +400,7 @@ public class InsightfulVerseController {
 
     @RequestMapping("/InsightfulVerse/File")
     public String IVIEPFile(HttpServletRequest request, HttpServletResponse response) {
-        String fileId = request.getParameter("fileId");
+        Long fileId = Long.valueOf(request.getParameter("fileId"));
         File file = fileService.getFileById(fileId);
         request.getSession().setAttribute("file", file);
         switch (file.getType().toLowerCase()) {
@@ -444,7 +444,7 @@ public class InsightfulVerseController {
 
     @RequestMapping("/InsightfulVerse/DelFile")
     public String IVIEPDelFile(HttpServletRequest request) {
-        String fileId = request.getParameter("fileId");
+        Long fileId = Long.valueOf(request.getParameter("fileId"));
         String courseId = request.getParameter("courseId");
         User user = (User) request.getSession().getAttribute("user");
         if (user == null || user.getUserId() == null || (!user.getAuthority().equals("infinite") && !user.getAuthority().equals("admin"))) {
@@ -478,7 +478,7 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/DelCourse")
-    public String IVIEPDelCourse(@RequestParam String courseId, HttpServletRequest request) {
+    public String IVIEPDelCourse(@RequestParam Long courseId, HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("user");
 
         // 权限验证
@@ -578,9 +578,9 @@ public class InsightfulVerseController {
         int max = request.getParameter("max") == null || request.getParameter("max").isEmpty() ? 15 : Integer.parseInt(request.getParameter("max"));
         int page = request.getParameter("page") == null || request.getParameter("page").isEmpty() ? 1 : Integer.parseInt(request.getParameter("page"));
         User user = (User) request.getSession().getAttribute("user");
-        String userId = null;
+        Long userId = null;
         if (user != null) {
-            userId = String.valueOf(user.getUserId());
+            userId = user.getUserId();
         }
         if (userId == null) {
             request.getSession().setAttribute("errorMessage", "Please check your login statement and try again.");

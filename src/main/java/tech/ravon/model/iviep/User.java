@@ -40,19 +40,7 @@ public class User implements Serializable {
 
 	private Long classId;
 
-	private Long eagloxisId;
-
-	private String way1Id;
-
-	private String way2Id;
-
-	private String way3Id;
-
-	private String way4Id;
-
-	private String way5Id;
-
-	private String way6Id;
+	private String avatarUrl;
 
 	private Object authority;
 
@@ -77,13 +65,7 @@ public class User implements Serializable {
 				&& (this.getPhone() == null ? other.getPhone() == null : this.getPhone().equals(other.getPhone()))
 				&& (this.getPassword() == null ? other.getPassword() == null : this.getPassword().equals(other.getPassword()))
 				&& (this.getClassId() == null ? other.getClassId() == null : this.getClassId().equals(other.getClassId()))
-				&& (this.getEagloxisId() == null ? other.getEagloxisId() == null : this.getEagloxisId().equals(other.getEagloxisId()))
-				&& (this.getWay1Id() == null ? other.getWay1Id() == null : this.getWay1Id().equals(other.getWay1Id()))
-				&& (this.getWay2Id() == null ? other.getWay2Id() == null : this.getWay2Id().equals(other.getWay2Id()))
-				&& (this.getWay3Id() == null ? other.getWay3Id() == null : this.getWay3Id().equals(other.getWay3Id()))
-				&& (this.getWay4Id() == null ? other.getWay4Id() == null : this.getWay4Id().equals(other.getWay4Id()))
-				&& (this.getWay5Id() == null ? other.getWay5Id() == null : this.getWay5Id().equals(other.getWay5Id()))
-				&& (this.getWay6Id() == null ? other.getWay6Id() == null : this.getWay6Id().equals(other.getWay6Id()))
+				&& (this.getAvatarUrl() == null ? other.getAvatarUrl() == null : this.getAvatarUrl().equals(other.getAvatarUrl()))
 				&& (this.getAuthority() == null ? other.getAuthority() == null : this.getAuthority().equals(other.getAuthority()));
 	}
 
@@ -97,13 +79,7 @@ public class User implements Serializable {
 		result = prime * result + ((getPhone() == null) ? 0 : getPhone().hashCode());
 		result = prime * result + ((getPassword() == null) ? 0 : getPassword().hashCode());
 		result = prime * result + ((getClassId() == null) ? 0 : getClassId().hashCode());
-		result = prime * result + ((getEagloxisId() == null) ? 0 : getEagloxisId().hashCode());
-		result = prime * result + ((getWay1Id() == null) ? 0 : getWay1Id().hashCode());
-		result = prime * result + ((getWay2Id() == null) ? 0 : getWay2Id().hashCode());
-		result = prime * result + ((getWay3Id() == null) ? 0 : getWay3Id().hashCode());
-		result = prime * result + ((getWay4Id() == null) ? 0 : getWay4Id().hashCode());
-		result = prime * result + ((getWay5Id() == null) ? 0 : getWay5Id().hashCode());
-		result = prime * result + ((getWay6Id() == null) ? 0 : getWay6Id().hashCode());
+		result = prime * result + ((getAvatarUrl() == null) ? 0 : getAvatarUrl().hashCode());
 		result = prime * result + ((getAuthority() == null) ? 0 : getAuthority().hashCode());
 		return result;
 	}
@@ -120,13 +96,7 @@ public class User implements Serializable {
 		sb.append(", phone=").append(phone);
 		sb.append(", password=").append(password);
 		sb.append(", classId=").append(classId);
-		sb.append(", eagloxisId=").append(eagloxisId);
-		sb.append(", way1Id=").append(way1Id);
-		sb.append(", way2Id=").append(way2Id);
-		sb.append(", way3Id=").append(way3Id);
-		sb.append(", way4Id=").append(way4Id);
-		sb.append(", way5Id=").append(way5Id);
-		sb.append(", way6Id=").append(way6Id);
+		sb.append(", eagloxisId=").append(avatarUrl);
 		sb.append(", authority=").append(authority);
 		sb.append(", serialVersionUID=").append(serialVersionUID);
 		sb.append("]");

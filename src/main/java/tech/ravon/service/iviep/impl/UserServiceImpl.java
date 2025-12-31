@@ -84,19 +84,13 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User>
             return errInfo;
         }
 
-        int result = 0;
-
         try {
-            result = userDao.doUserRegister(username, email, phone, Hash.calculate(password), null);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        if (result > 0) {
+            userDao.doUserRegister(username, email, phone, Hash.calculate(password), null);
             User user = userDao.getUserInfo(email);
             request.getSession().setAttribute("user", user);
-        } else {
-            return  "Register failed, please check if your email and phone number are unique.";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return  "Register failed, please check if your email and phone number are unique.\nError Detail: " + e;
         }
         return null;
     }
@@ -105,8 +99,8 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User>
     public String Unregister(HttpServletRequest request, HttpServletResponse response) {
         String password = request.getParameter("password");
         String captcha = request.getParameter("captcha");
-        String userId = null;
-        userId = String.valueOf(((User) request.getSession().getAttribute("user")).getUserId());
+        Long userId = null;
+        userId = ((User) request.getSession().getAttribute("user")).getUserId();
         String errInfo = mailService.check(request, captcha);
         if (errInfo != null) {
             return errInfo;
@@ -114,7 +108,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User>
         if (userId == null) {
             return "Login invalid, please login again.";
         }
-        User user = userDao.getUserInfo(userId);
+        User user = userDao.getUserInfo(userId.toString());
         if (Hash.verify(user.getPassword(), password)) {
             int result = 0;
             viewRecordService.delRecordByUserId(userId);
@@ -157,7 +151,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User>
         User user = Userinfo(request);
 
         User originUser = (User) request.getSession().getAttribute("user");
-        String userId = String.valueOf(originUser.getUserId());
+        Long userId = originUser.getUserId();
 
         String errInfo = mailService.check(request, captcha, user.getEmail());
 

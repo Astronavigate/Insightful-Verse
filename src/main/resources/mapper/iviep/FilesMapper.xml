@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.ravon.mapper.FileDao">
+
+    <resultMap id="BaseResultMap" type="tech.ravon.model.iviep.File">
+            <id property="fileId" column="file_id" jdbcType="INTEGER"/>
+            <result property="fileName" column="file_name" jdbcType="VARCHAR"/>
+            <result property="type" column="file_type" jdbcType="VARCHAR"/>
+            <result property="courseId" column="course_id" jdbcType="INTEGER"/>
+            <result property="remarks" column="file_remark" jdbcType="VARCHAR"/>
+            <result property="uploadUser" column="upload_user" jdbcType="INTEGER"/>
+            <result property="uploadDate" column="upload_date" jdbcType="DATE"/>
+            <result property="filePath" column="file_path" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        file_id,file_name,file_type,
+        course_id,file_remark,upload_user,
+        upload_date,file_path
+    </sql>
+
+    <select id="getFileById" resultType="tech.ravon.model.iviep.File" resultMap="BaseResultMap">
+        SELECT * FROM files WHERE file_id = #{fileId} LIMIT 1
+    </select>
+
+    <select id="getFilesByCourse" resultType="tech.ravon.model.iviep.File" resultMap="BaseResultMap">
+        SELECT *
+        FROM files
+        WHERE course_id = #{courseId}
+    </select>
+
+    <insert id="updFile" parameterType="map">
+        <choose>
+            <when test="file.fileId == null">
+                INSERT INTO files (file_name, file_type, course_id, file_remark, upload_user, upload_date, file_path)
+                VALUES (#{file.fileName}, #{file.type}, #{file.courseId}, #{file.remarks}, #{userId}, NOW(), #{file.filePath})
+            </when>
+            <otherwise>
+                <choose>
+                    <when test="file.filePath == null">
+                        UPDATE files
+                        SET file_name = #{file.fileName}, course_id = #{file.courseId}, file_remark = #{file.remarks},
+                        upload_user = #{userId}, upload_date = NOW()
+                        WHERE file_id = #{file.fileId}
+                    </when>
+                    <otherwise>
+                        UPDATE files
+                        SET file_name = #{file.fileName}, file_type = #{file.type}, course_id = #{file.courseId},
+                        file_remark = #{file.remarks}, upload_user = #{userId}, upload_date = NOW(), file_path = #{file.filePath}
+                        WHERE file_id = #{file.fileId}
+                    </otherwise>
+                </choose>
+            </otherwise>
+        </choose>
+    </insert>
+
+    <delete id="deleteFile">
+        DELETE FROM files WHERE file_id = #{fileId}
+    </delete>
+
+    <select id="getFileByName" resultType="tech.ravon.model.iviep.File" resultMap="BaseResultMap">
+        SELECT *
+        FROM files
+        WHERE file_name LIKE CONCAT('%', #{keyword}, '%')
+           OR file_remark LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
+</mapper>

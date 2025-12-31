@@ -24,7 +24,7 @@ import java.io.Serializable;
 import java.util.Date;
 import lombok.Data;
 
-@TableName(value ="fileviewrecords")
+@TableName(value ="view_records")
 @Data
 public class ViewRecord implements Serializable {
 

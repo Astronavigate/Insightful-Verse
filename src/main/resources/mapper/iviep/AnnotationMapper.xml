@@ -9,14 +9,14 @@
          ResultMap
     ========================== -->
     <resultMap id="BaseResultMap" type="tech.ravon.model.iviep.Annotation">
-        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="id" column="note_id" jdbcType="BIGINT"/>
 
         <result property="userId" column="user_id" jdbcType="BIGINT"/>
         <result property="bookId" column="book_id" jdbcType="VARCHAR"/>
-        <result property="type" column="type" jdbcType="VARCHAR"/>
-        <result property="cfi" column="cfi" jdbcType="VARCHAR"/>
-        <result property="content" column="content" jdbcType="LONGVARCHAR"/>
-        <result property="color" column="color" jdbcType="VARCHAR"/>
+        <result property="type" column="note_type" jdbcType="VARCHAR"/>
+        <result property="cfi" column="note_cfi" jdbcType="VARCHAR"/>
+        <result property="content" column="note_content" jdbcType="VARCHAR"/>
+        <result property="color" column="note_color" jdbcType="VARCHAR"/>
         <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
         <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
     </resultMap>
@@ -25,13 +25,13 @@
          Base Columns
     ========================== -->
     <sql id="Base_Column_List">
-        id,
+        note_id,
         user_id,
         book_id,
-        type,
-        cfi,
-        content,
-        color,
+        note_type,
+        note_cfi,
+        note_content,
+        note_color,
         created_at,
         updated_at
     </sql>
@@ -45,7 +45,7 @@
             resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
-        FROM iviep.annotations
+        FROM annotations
         WHERE user_id = #{userId}
         AND book_id = #{bookId}
         ORDER BY created_at ASC
@@ -56,10 +56,10 @@
             resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
-        FROM iviep.annotations
+        FROM annotations
         WHERE user_id = #{userId}
         AND book_id = #{bookId}
-        AND type = #{type}
+        AND note_type = #{type}
         ORDER BY created_at ASC
     </select>
 
@@ -72,21 +72,21 @@
             parameterType="tech.ravon.model.iviep.Annotation">
         <choose>
             <when test="id == null">
-                INSERT INTO iviep.annotations
-                (user_id, book_id, type, cfi, content, color, created_at, updated_at)
+                INSERT INTO annotations
+                (user_id, book_id, note_type, note_cfi, note_content, note_color, created_at, updated_at)
                 VALUES
                 (#{userId}, #{bookId}, #{type}, #{cfi},
                 #{content}, #{color}, NOW(), NOW())
             </when>
             <otherwise>
-                UPDATE iviep.annotations
+                UPDATE annotations
                 SET
-                type = #{type},
-                cfi = #{cfi},
-                content = #{content},
-                color = #{color},
+                note_type = #{type},
+                note_cfi = #{cfi},
+                note_content = #{content},
+                note_color = #{color},
                 updated_at = NOW()
-                WHERE id = #{id}
+                WHERE note_id = #{id}
                 AND user_id = #{userId}
             </otherwise>
         </choose>
@@ -98,25 +98,25 @@
 
     <!-- 删除单条标注 -->
     <delete id="deleteAnnotation">
-        DELETE FROM iviep.annotations
-        WHERE id = #{id}
+        DELETE FROM annotations
+        WHERE note_id = #{id}
           AND user_id = #{userId}
     </delete>
 
     <!-- 删除某本书下的所有标注 -->
     <delete id="deleteAnnotationsByUserAndBook">
-        DELETE FROM iviep.annotations
+        DELETE FROM annotations
         WHERE user_id = #{userId}
           AND book_id = #{bookId}
     </delete>
 
     <delete id="deleteAnnotationsByBook">
-        DELETE FROM iviep.annotations
+        DELETE FROM annotations
         WHERE book_id = #{bookId}
     </delete>
 
     <delete id="deleteAnnotationsByUser">
-        DELETE FROM iviep.annotations
+        DELETE FROM annotations
         WHERE user_id = #{userId}
     </delete>
 

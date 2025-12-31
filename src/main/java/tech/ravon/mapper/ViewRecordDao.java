@@ -26,21 +26,21 @@ import java.util.List;
 @Mapper
 public interface ViewRecordDao extends BaseMapper<ViewRecord> {
 
-    List<ViewRecord> getNewestViewRecords(String userId);
+    List<ViewRecord> getNewestViewRecords(Long userId);
 
-    List<ViewRecord> getViewRecords(String userId);
+    List<ViewRecord> getViewRecords(Long userId);
 
-    ViewRecord getViewHistory(String userId, String fileId);
+    ViewRecord getViewHistory(Long userId, Long fileId);
 
-    void setViewRecords(String fileId, String userId);
+    void setViewRecords(Long fileId, Long userId);
 
-    void setViewRecords(String fileId, String userId, Date duration);
+    void setViewRecords(Long fileId, Long userId, Date duration);
 
-    void updateViewRecords(String recordId);
+    void updateViewRecords(Long recordId);
 
-    void updateViewRecordsWithDuration(String recordId, String userId, Date duration);
+    void updateViewRecordsWithDuration(Long recordId, Long userId, Date duration);
 
-    void delRecordByFileId(String fileId);
+    void delRecordByFileId(Long fileId);
 
-    int delRecordByUserId(String userId);
+    int delRecordByUserId(Long userId);
 }

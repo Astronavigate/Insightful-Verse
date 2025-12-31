@@ -28,13 +28,13 @@ public interface FileService {
 
     String getFile(HttpServletRequest request, HttpServletResponse response);
 
-    File getFileById(String fileId);
+    File getFileById(Long fileId);
 
-    List<File> getCourseFiles(String courseId);
+    List<File> getCourseFiles(Long courseId);
 
-    void deleteFile(HttpServletRequest request, String fileId);
+    void deleteFile(HttpServletRequest request, Long fileId);
 
-    void deleteCourseFiles(HttpServletRequest request, String courseId);
+    void deleteCourseFiles(HttpServletRequest request, Long courseId);
 
     void updFile(HttpServletRequest request, HttpServletResponse response);
 

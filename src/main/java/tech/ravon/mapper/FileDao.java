@@ -25,13 +25,13 @@ import java.util.List;
 @Mapper
 public interface FileDao extends BaseMapper<File> {
 
-    File getFileById(String fileId);
+    File getFileById(Long fileId);
 
-    List<File> getFilesByCourse(String courseId);
+    List<File> getFilesByCourse(Long courseId);
 
-    void addFile(File file, String userId);
+    void updFile(File file, Long userId);
 
-    void deleteFile(String fileId);
+    void deleteFile(Long fileId);
 
     List<File> getFileByName(String keyword);
 

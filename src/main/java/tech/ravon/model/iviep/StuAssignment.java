@@ -24,7 +24,7 @@ import java.io.Serializable;
 import java.util.Date;
 import lombok.Data;
 
-@TableName(value ="stuassignments")
+@TableName(value ="stu_assignments")
 @Data
 public class StuAssignment implements Serializable {
 

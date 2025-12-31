@@ -98,12 +98,12 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public File getFileById(String fileId) {
+    public File getFileById(Long fileId) {
         return fileDao.getFileById(fileId);
     }
 
     @Override
-    public List<File> getCourseFiles(String courseId) {
+    public List<File> getCourseFiles(Long courseId) {
         return fileDao.getFilesByCourse(courseId);
     }
 
@@ -113,7 +113,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void deleteFile(HttpServletRequest request, String fileId) {
+    public void deleteFile(HttpServletRequest request, Long fileId) {
         Long userId = ((User) request.getSession().getAttribute("user")).getUserId();
         File file = fileDao.getFileById(fileId);
         if (file == null) {
@@ -129,16 +129,16 @@ public class FileServiceImpl implements FileService {
             );
             Files.deleteIfExists(filePath);
         } catch (Exception ignored) {}
-        annotationService.deleteAnnotationsByUserAndBook(userId, Long.parseLong(fileId));
+        annotationService.deleteAnnotationsByUserAndBook(userId, fileId);
         viewRecordService.delRecordByFileId(fileId);
         fileDao.deleteFile(fileId);
     }
 
     @Override
-    public void deleteCourseFiles(HttpServletRequest request, String courseId) {
+    public void deleteCourseFiles(HttpServletRequest request, Long courseId) {
         List<File> files = fileDao.getFilesByCourse(courseId);
         for (File file : files) {
-            deleteFile(request, String.valueOf(file.getFileId()));
+            deleteFile(request, file.getFileId());
         }
     }
 
@@ -148,7 +148,7 @@ public class FileServiceImpl implements FileService {
             User user = (User) request.getSession().getAttribute("user");
             if (user == null) return;
 
-            String userId   = String.valueOf(user.getUserId());
+            Long userId     = user.getUserId();
             String fileId   = request.getParameter("fileId");
             String name     = request.getParameter("fileName");
             String remark   = request.getParameter("fileRemark");
@@ -168,7 +168,7 @@ public class FileServiceImpl implements FileService {
                             !subtitlePart.getSubmittedFileName().isEmpty();
 
             File oldFile = (fileId != null && !fileId.isEmpty())
-                    ? fileDao.getFileById(fileId)
+                    ? fileDao.getFileById(Long.valueOf(fileId))
                     : null;
 
             String baseName;
@@ -249,7 +249,7 @@ public class FileServiceImpl implements FileService {
                 }
             }
 
-            fileDao.addFile(file, userId);
+            fileDao.updFile(file, userId);
 
         } catch (Exception e) {
             throw new RuntimeException("File upload failed", e);
