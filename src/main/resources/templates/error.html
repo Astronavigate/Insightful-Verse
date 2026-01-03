@@ -1,37 +1,201 @@
-<!--
-  Copyright 2025 Astronavigate
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
-
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Eagloxis - ERROR</title>
-    <th:block></th:block>
-    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM EXCEPTION | Ravon Dynamics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --ravon-black: #050505;
+            --ravon-steel: #71717a;
+            --ravon-blue: #0ea5e9;
+            --ravon-alert: #ef4444;
+            --ravon-warn: #eab308;
+            --font-tech: 'Orbitron', sans-serif;
+            --font-code: 'Fira Code', monospace;
+        }
+
+        body {
+            background-color: var(--ravon-black);
+            color: var(--ravon-steel);
+            font-family: var(--font-code);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            /* 动态扫描线背景 */
+            background: linear-gradient(
+                    to bottom,
+                    rgba(0,0,0,1) 0%,
+                    rgba(20,20,20,1) 50%,
+                    rgba(0,0,0,1) 100%
+            );
+            background-size: 100% 3px;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(5, 5, 5, 0.95);
+            /* 科技感边角 */
+            clip-path: polygon(
+                    20px 0, 100% 0,
+                    100% calc(100% - 20px), calc(100% - 20px) 100%,
+                    0 100%, 0 20px
+            );
+        }
+
+        /* 状态码大字 */
+        .status-code {
+            font-family: var(--font-tech);
+            font-size: 120px;
+            font-weight: 900;
+            line-height: 1;
+            margin: 0;
+            color: transparent;
+            /* 描边效果，更冷峻 */
+            -webkit-text-stroke: 2px var(--ravon-alert);
+            position: relative;
+            display: inline-block;
+        }
+
+        /* 状态码如果是500系，改用警告黄/红混合，如果是400系用红 */
+        .status-code.critical { -webkit-text-stroke: 2px var(--ravon-alert); }
+        .status-code.warn { -webkit-text-stroke: 2px var(--ravon-warn); }
+
+        .status-text {
+            font-family: var(--font-tech);
+            font-size: 1.5rem;
+            color: var(--ravon-ice);
+            margin-top: -10px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        .terminal-box {
+            font-family: var(--font-code);
+            background: #000;
+            padding: 20px;
+            text-align: left;
+            border-left: 2px solid var(--ravon-blue);
+            color: var(--ravon-steel);
+            font-size: 0.9rem;
+            margin-bottom: 40px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .cmd-line { display: block; margin-bottom: 8px; }
+        .cmd-line::before { content: ">> "; color: var(--ravon-blue); }
+
+        .var-highlight { color: var(--ravon-ice); }
+
+        /* 按钮组 */
+        .action-area {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .btn-traceback {
+            background: transparent;
+            color: var(--ravon-blue);
+            border: 1px solid var(--ravon-blue);
+            padding: 15px 30px;
+            font-family: var(--font-tech);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .btn-traceback:hover {
+            background: rgba(14, 165, 233, 0.1);
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
+            text-shadow: 0 0 5px var(--ravon-blue);
+        }
+
+        /* 装饰用的扫描线动画 */
+        .scan-line {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: rgba(14, 165, 233, 0.3);
+            animation: scan 3s linear infinite;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        @keyframes scan {
+            0% { top: -10%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 110%; opacity: 0; }
+        }
+
+    </style>
 </head>
 <body>
 
-<div class="container my-4">
-    <header>
-        <h1>Eagloxis Error Page</h1>
-    </header>
+<div class="scan-line"></div>
 
-    <!-- 显示错误信息 -->
-    <p th:text="${error}"></p>
+<div class="container">
+    <h1 class="status-code"
+        th:classappend="${status} == 500 ? 'critical' : 'warn'"
+        th:text="${status} ?: 'ERR'">
+        404
+    </h1>
 
+    <div class="status-text" th:switch="${status}">
+        <span th:case="404">TARGET_NOT_FOUND</span>
+        <span th:case="403">ACCESS_DENIED_PROTOCOL</span>
+        <span th:case="500">CORE_SYSTEM_FAILURE</span>
+        <span th:case="*">ANOMALY_DETECTED</span>
+    </div>
+
+    <div class="terminal-box">
+        <span class="cmd-line">TIMESTAMP: <span class="var-highlight" th:text="${timestamp} ?: 'UNKNOWN'"></span></span>
+        <span class="cmd-line">PATH: <span class="var-highlight" th:text="${path} ?: 'VOID'"></span></span>
+        <span class="cmd-line">EXCEPTION:
+                <span style="color:var(--ravon-alert)"
+                      th:text="${message} != null and ${message} != '' ? ${message} : 'SIGNAL_LOSS'">
+                </span>
+            </span>
+        <span class="cmd-line" style="margin-top:10px; color:var(--ravon-blue)">_AWAITING MANUAL OVERRIDE...</span>
+    </div>
+
+    <div class="action-area">
+        <button class="btn-traceback" onclick="executeTraceback()">
+            &lt;&lt; TRACEBACK_SEQUENCE
+        </button>
+
+        <a href="/" class="btn-traceback" style="border-color: #333; color: #555;">
+            // HOME
+        </a>
+    </div>
 </div>
+
+<script>
+    function executeTraceback() {
+        // 模拟终端输入效果
+        console.log("INITIATING TRACEBACK PROTOCOL...");
+        // 如果有历史记录，则返回；否则回首页（防止死胡同）
+        if (document.referrer) {
+            window.history.back();
+        } else {
+            window.location.href = "/";
+        }
+    }
+</script>
 </body>
 </html>

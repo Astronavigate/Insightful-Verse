@@ -18,7 +18,8 @@ package tech.ravon.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
-import tech.ravon.model.iviep.Course;
+import tech.ravon.model.inver.Course;
+import tech.ravon.vo.inver.CourseVO;
 
 import java.util.List;
 
@@ -26,6 +27,8 @@ import java.util.List;
 public interface CourseDao extends BaseMapper<Course> {
 
     List<Course> getAllCourse();
+
+    List<CourseVO> getAllCourseVO(Long userId);
 
     void updateCourse(Course course);
 

@@ -19,7 +19,7 @@ package tech.ravon.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import tech.ravon.model.iviep.Annotation;
+import tech.ravon.model.inver.Annotation;
 
 import java.util.List;
 

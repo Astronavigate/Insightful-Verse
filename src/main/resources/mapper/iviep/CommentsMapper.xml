@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.ravon.mapper.CommentDao">
+
+    <resultMap id="BaseResultMap" type="tech.ravon.model.inver.Comment">
+        <id property="commentId" column="comment_id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="commentContent" column="comment_content" jdbcType="VARCHAR"/>
+        <result property="relatedType" column="related_type" jdbcType="VARCHAR"/>
+        <result property="relatedId" column="related_id" jdbcType="BIGINT"/>
+        <result property="createAt" column="create_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        comment_id,user_id,comment_content,related_type,related_id,create_at
+    </sql>
+
+    <select id="getCommentById" resultType="tech.ravon.model.inver.Comment" resultMap="BaseResultMap">
+        SELECT * FROM comments WHERE comment_id = #{commentId}
+    </select>
+
+    <select id="getAllComments" resultType="tech.ravon.model.inver.Comment" resultMap="BaseResultMap">
+        SELECT * FROM comments
+    </select>
+
+    <select id="getCommentsByUser" resultType="tech.ravon.model.inver.Comment" resultMap="BaseResultMap">
+        SELECT * FROM comments WHERE user_id = #{userId}
+        <if test="relatedType == null or relatedType == ''">
+            AND related_type = #{relatedType}
+        </if>
+    </select>
+
+    <insert id="updateComment" parameterType="tech.ravon.model.inver.Comment">
+        <choose>
+            <when test="commentId == null or commentId == ''">
+                INSERT INTO comments (user_id, comment_content, related_type, related_id)
+                VALUES (#{userId}, #{commentContent}, #{relatedType}, #{relatedId})
+            </when>
+            <otherwise>
+                UPDATE comments
+                SET comment_content = #{commentContent}
+                WHERE comment_id = #{commentId}
+            </otherwise>
+        </choose>
+    </insert>
+
+    <delete id="deleteComment">
+        DELETE FROM comments WHERE comment_id = #{CommentId};
+    </delete>
+</mapper>

@@ -18,7 +18,7 @@ package tech.ravon.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
-import tech.ravon.model.iviep.ViewRecord;
+import tech.ravon.model.inver.ViewRecord;
 
 import java.util.Date;
 import java.util.List;

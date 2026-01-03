@@ -8,7 +8,7 @@
     <!-- =========================
          ResultMap
     ========================== -->
-    <resultMap id="BaseResultMap" type="tech.ravon.model.iviep.Annotation">
+    <resultMap id="BaseResultMap" type="tech.ravon.model.inver.Annotation">
         <id property="id" column="id" jdbcType="BIGINT"/>
 
         <result property="userId" column="user_id" jdbcType="BIGINT"/>
@@ -69,7 +69,7 @@
 
     <!-- 新增 or 更新标注 -->
     <insert id="insertAnnotation"
-            parameterType="tech.ravon.model.iviep.Annotation">
+            parameterType="tech.ravon.model.inver.Annotation">
         <choose>
             <when test="id == null">
                 INSERT INTO iviep.annotations

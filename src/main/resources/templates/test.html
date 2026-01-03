@@ -15,487 +15,313 @@
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title th:text="'Insightful Verse Reader ' + ${file != null ? ' - ' + file.fileName : 'None'}">Word Reader</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ravon Dynamics | Systems Online</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+
     <style>
+        /* --- 核心变量定义 --- */
         :root {
-            --header-h: 72px;
-            --glass-bg: rgba(18, 18, 18, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --primary-text: #e6eef8;
-            --secondary-text: #adb5bd;
-            --background-dark: #050505;
-            --ice-white: #ffffff;
-            --silver-mercury: rgba(255, 255, 255, 0.35);
-            --radius-btn: 8px;
+            --ravon-black: #050505;
+            --ravon-dark-gray: #1a1a1e;
+            --ravon-steel: #71717a;
+            --ravon-ice: #e0f2fe;
+            --ravon-blue: #0ea5e9; /* 冰蓝色，冷静的锋芒 */
+            --ravon-glitch: #ef4444; /* 极少量红色用于故障效果，像警报 */
+
+            --font-tech: 'Orbitron', sans-serif;
+            --font-code: 'Fira Code', monospace;
         }
 
-        html, body {
-            height: 100%;
-            margin: 0;
-            background: var(--background-dark) !important;
-            color: var(--primary-text);
-            font-family: system-ui, -apple-system, sans-serif;
-            overflow: hidden;
+        /* --- 基础重置 --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--ravon-black);
+            color: var(--ravon-ice);
+            font-family: var(--font-code);
+            overflow-x: hidden;
+            /* 背景网格纹理 */
+            background-image:
+                    linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
         }
 
-        .reader-wrap {
-            height: calc(100vh - var(--header-h));
+        /* --- 导航栏：装甲风格 --- */
+        header {
             display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            padding: 24px;
-            box-sizing: border-box;
+            justify-content: space-between;
             align-items: center;
-        }
-
-        #wordContainer {
+            padding: 20px 50px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            position: fixed;
             width: 100%;
-            max-width: 1400px;
-            flex: 1;
-            border-radius: 12px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(50px) saturate(120%);
-            -webkit-backdrop-filter: blur(50px) saturate(120%);
-
-            /* 动态高光边框核心实现 */
-            border: 1px solid var(--glass-border);
-            transition: border-color 0.4s ease, box-shadow 0.4s ease;
-            box-shadow:
-                    0 0 0 1px rgba(255, 255, 255, 0.1),
-                    0 30px 80px rgba(0, 0, 0, 0.8);
-
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        /* Controls */
-        #controls {
-            display: flex;
-            align-items: center;
-            height: 60px;
-            padding: 0 24px;
-            background: rgba(255, 255, 255, 0.02);
             z-index: 100;
-        }
-
-        .simplified-controls {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            position: relative;
-        }
-        .controls-left { display: flex; gap: 12px; align-items: center; flex: 1; color: var(--ice-white); }
-        .controls-center {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            white-space: nowrap;
-            color: var(--ice-white);
-        }
-        .controls-right { display: flex; gap: 12px; align-items: center; flex: 1; justify-content: flex-end; color: var(--ice-white); }
-
-        /* 进度条位置：置于 Control 和 Viewer 之间 */
-        .progress-container {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            height: 2px;
-            z-index: 101;
-        }
-        #loadingProgress {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, transparent, var(--ice-white));
-            box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
-            transition: width 0.15s ease-out;
-        }
-        /* 按钮与文本指标 */
-        .control-btn {
-            height: 34px;
-            padding: 0 14px;
-            border-radius: var(--radius-btn);
-            border: 1px solid var(--glass-border);
-            background: rgba(255, 255, 255, 0.02);
-            color: var(--ice-white);
-            cursor: pointer;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: 0.3s;
-        }
-        .control-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.4); }
-
-        .control-text { font-size: 0.85rem; color: var(--secondary-text); letter-spacing: 0.5px; }
-        #charCount { color: var(--ice-white); font-weight: 500; }
-
-        #viewerWrapper {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            background: rgba(0,0,0,0.1);
-        }
-
-        #viewer {
-            height: 100%;
-            padding: 40px 50px 40px 50px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-        }
-
-        /* 缩放容器 */
-        #zoomContainer {
-            position: relative;
-            transform-origin: center top;
-            transition: transform 0.2s ease;
-            margin: 0 auto;
-            width: fit-content;
-        }
-
-        /* docx-preview adjustments - 居中样式 */
-        .docx-wrapper {
-            background: rgba(0,0,0,0) !important;
-        }
-
-        .docx table { border-collapse: collapse; }
-        .docx table td, .docx table th {
-            border: 1px solid rgba(0,0,0,0.15);
-            padding: 4px 8px;
-            color: #000;
-        }
-
-        /* each page */
-        .docx-page {
-            margin: 24px auto !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border-radius: 12px;
-            background-color: rgba(255,255,255,0.8);
-            padding: 24px;
-            box-sizing: border-box;
-            display: block !important;
-        }
-
-        /* 错误信息 */
-        .error-msg {
-            color: #c0392b;
-            font-weight: bold;
-            font-size: 1rem;
-            text-align: center;
-        }
-
-        /* Loading */
-        @font-face {
-            font-family: 'Segoe Boot Semilight';
-            src: url('/lib/fonts/segoe_slboot.ttf') format('truetype');
-        }
-
-        /* 加载动画覆盖层 */
-        #bootOverlay {
-            position: absolute;
             top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--background-dark);
-            z-index: 1000;
+        }
+
+        .logo {
+            font-family: var(--font-tech);
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--ravon-ice);
+            text-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+        }
+
+        .nav-links a {
+            color: var(--ravon-steel);
+            text-decoration: none;
+            margin-left: 30px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--ravon-blue);
+            text-shadow: 0 0 8px var(--ravon-blue);
+        }
+
+        .nav-links a::before {
+            content: '>';
+            opacity: 0;
+            margin-right: 5px;
+            transition: opacity 0.3s;
+        }
+        .nav-links a:hover::before { opacity: 1; }
+
+        /* --- Hero Section：核心视觉 --- */
+        .hero {
+            height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
+            padding: 0 10%;
+            position: relative;
         }
 
-        .boot-spinner {
-            font-family: 'Segoe Boot Semilight';
-            font-size: 42px;
-            color: var(--ice-white);
-            line-height: 1;
+        /* 装饰性的高维线条 */
+        .hero::after {
+            content: '';
+            position: absolute;
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 300px;
+            height: 300px;
+            border: 2px solid var(--ravon-dark-gray);
+            border-left: 2px solid var(--ravon-blue);
+            opacity: 0.5;
+            /* 异形切割，营造机甲感 */
+            clip-path: polygon(20% 0%, 100% 0, 100% 80%, 80% 100%, 0 100%, 0% 20%);
         }
 
-        /* 缩放指示器 */
-        #zoomLevel {
-            min-width: 60px;
+        .hero h1 {
+            font-family: var(--font-tech);
+            font-size: 4rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        /* 故障文字效果 (Glitch Effect) */
+        .glitch {
+            position: relative;
+            color: var(--ravon-ice);
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--ravon-black);
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--ravon-glitch);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--ravon-blue);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--ravon-steel);
+            margin-bottom: 40px;
+            max-width: 600px;
+            border-left: 3px solid var(--ravon-blue);
+            padding-left: 20px;
+        }
+
+        /* --- 按钮：硬核风格 --- */
+        .cyber-btn {
+            background: transparent;
+            color: var(--ravon-blue);
+            border: 1px solid var(--ravon-blue);
+            padding: 15px 40px;
+            font-family: var(--font-tech);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            position: relative;
+            transition: 0.4s;
+            overflow: hidden;
+            /* 切角设计 */
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .cyber-btn:hover {
+            background: var(--ravon-blue);
+            color: var(--ravon-black);
+            box-shadow: 0 0 20px var(--ravon-blue);
+        }
+
+        /* --- 功能模块：矩阵布局 --- */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 100px 10%;
+            background: var(--ravon-dark-gray);
+        }
+
+        .card {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid #333;
+            padding: 30px;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            border-color: var(--ravon-blue);
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            font-family: var(--font-tech);
+            color: var(--ravon-ice);
+            margin-bottom: 15px;
+        }
+
+        .card p {
+            color: var(--ravon-steel);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* 卡片角落的装饰性标记 */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border-top: 2px solid var(--ravon-blue);
+            border-left: 2px solid var(--ravon-blue);
+        }
+
+        footer {
             text-align: center;
-            color: var(--ice-white);
-            font-weight: 500;
+            padding: 40px;
+            color: var(--ravon-steel);
+            font-size: 0.8rem;
+            border-top: 1px solid #333;
+        }
+
+        /* --- 动画关键帧 --- */
+        @keyframes glitch-anim {
+            0% { clip: rect(10px, 9999px, 30px, 0); transform: skew(0.5deg); }
+            20% { clip: rect(80px, 9999px, 100px, 0); transform: skew(-0.5deg); }
+            40% { clip: rect(30px, 9999px, 60px, 0); transform: skew(0.2deg); }
+            100% { clip: rect(50px, 9999px, 90px, 0); transform: skew(0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(60px, 9999px, 80px, 0); transform: skew(0.2deg); }
+            50% { clip: rect(10px, 9999px, 40px, 0); transform: skew(-0.2deg); }
+            100% { clip: rect(90px, 9999px, 100px, 0); transform: skew(0); }
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            header { padding: 20px; }
+            .nav-links { display: none; } /* 简化处理，实际项目需添加汉堡菜单 */
         }
     </style>
-    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
-    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
 </head>
 <body>
-<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
-<div class="reader-wrap">
-    <div id="wordContainer">
-        <div id="bootOverlay">
-            <div class="boot-spinner" id="bootAnim"></div>
-        </div>
-        <div id="controls">
-            <div class="controls-left">
-                <button class="control-btn" id="zoomOutBtn" title="Zoom Out">
-                    <i class="bi bi-dash-lg"></i>
-                </button>
-                <div id="zoomLevel" class="control-text">100%</div>
-                <button class="control-btn" id="zoomInBtn" title="Zoom In">
-                    <i class="bi bi-plus-lg"></i>
-                </button>
-                <button class="control-btn" id="resetZoomBtn" title="Reset Zoom">
-                    <i class="bi bi-zoom-out"></i>
-                </button>
-            </div>
-            <div class="controls-center">
-                <div id="pageIndicator" style="cursor:default">Page 0 / 0</div>
-            </div>
-            <div class="controls-right">
-                <button class="control-btn" id="downloadBtn" title="Download PDF">
-                    <i class="bi bi-download"></i>
-                </button>
-            </div>
+<header>
+    <div class="logo">RAVON<span style="color:var(--ravon-blue)">.</span>TECH</div>
+    <nav class="nav-links">
+        <a href="#" th:href="@{/architecture}">SYSTEM_ARCH</a>
+        <a href="#" th:href="@{/philosophy}">CREED</a>
+        <a href="#" th:href="@{/nexus}">NEXUS</a>
+    </nav>
+</header>
+
+<main>
+    <section class="hero">
+        <div style="font-size: 0.8rem; color: var(--ravon-blue); margin-bottom: 10px; letter-spacing: 3px;">
+            // SYSTEM STATUS: OPTIMAL
         </div>
 
-        <div class="progress-container">
-            <div id="loadingProgress"></div>
+        <h1 class="glitch" data-text="WALK ALONE.">
+            WALK ALONE. <br>
+            <span style="color: var(--ravon-steel); font-size: 0.8em;">SEE BEYOND.</span>
+        </h1>
+
+        <div class="subtitle">
+            <p>Order is my Shield, Will my Blade.</p>
+            <p>Night is my Armor, Silence is my Creed.</p>
         </div>
 
-        <div id="viewerWrapper">
-            <div id="viewer">
-                <div id="zoomContainer"></div>
-            </div>
+        <button class="cyber-btn" onclick="alert('INITIALIZING RAVON PROTOCOL...')">
+            INITIALIZE_SEQUENCE >
+        </button>
+    </section>
+
+    <section class="features">
+        <div class="card">
+            <h3>01 // ORDER</h3>
+            <p>Constructing the operating system of the world. Structure first, logic follows.</p>
         </div>
-    </div>
-</div>
 
-<!-- docx-preview dependencies -->
-<script src="/lib/jquery-3.7.1/dist/jquery.min.js"></script>
-<script src="/lib/jszip-3.10.1/dist/jszip.min.js"></script>
-<script src="/lib/docxjs-0.3.6/dist/docx-preview.min.js"></script>
+        <div class="card">
+            <h3>02 // INSIGHT</h3>
+            <p>The Eagle's perspective. High-dimensional observation, detached from the noise.</p>
+        </div>
 
-<script>
-    const FILE_PATH = "[[${file != null ? file.filePath : ''}]]";
-    const viewer = document.getElementById("viewer");
-    const pageIndicator = document.getElementById("pageIndicator");
-    const wrapper = document.getElementById("viewerWrapper");
-    const downloadBtn = document.getElementById("downloadBtn");
-    const zoomContainer = document.getElementById("zoomContainer");
-    const zoomLevel = document.getElementById("zoomLevel");
-    const zoomInBtn = document.getElementById("zoomInBtn");
-    const zoomOutBtn = document.getElementById("zoomOutBtn");
-    const resetZoomBtn = document.getElementById("resetZoomBtn");
-    const container = document.getElementById("wordContainer");
+        <div class="card">
+            <h3>03 // WILL</h3>
+            <p>Unbroken Will — A Pack of One. The resilience of the Wolf in the deep night.</p>
+        </div>
+    </section>
+</main>
 
-    // 缩放状态
-    let currentZoom = 100;
-    let sections = [];
-    let totalPages = 0;
-
-    function isDocx(path) { return path.toLowerCase().endsWith(".docx"); }
-    function isDoc(path) { return path.toLowerCase().endsWith(".doc"); }
-
-    // --- 加载帧动画 (E052-E0CB) ---
-    const startAnim = () => {
-        const el = document.getElementById('bootAnim');
-
-        let curr = 0xE052;
-        return setInterval(() => {
-            el.innerText = String.fromCharCode(curr);
-            if (++curr > 0xE0CB) curr = 0xE052;
-        }, 40);
-    };
-
-    async function loadWord(url) {
-        const animId = startAnim();
-        if (isDoc(url)) {
-            viewer.innerHTML = `<div class="error-msg">
-                Format Incompatible: The legacy .doc format cannot be rendered. Download is required.
-            </div>`;
-            pageIndicator.textContent = '';
-
-            clearInterval(animId);
-            $("#bootOverlay").fadeOut(600, function () {
-                $(this).remove();
-            });
-            return;
-        }
-        if (!isDocx(url)) {
-            viewer.innerHTML = `<div class="error-msg">
-                Unsupported file format
-            </div>`;
-            pageIndicator.textContent = '';
-
-            clearInterval(animId);
-            $("#bootOverlay").fadeOut(600, function () {
-                $(this).remove();
-            });
-            return;
-        }
-
-        try {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const buf = await res.arrayBuffer();
-
-            // 清空容器
-            zoomContainer.innerHTML = "";
-            const tempContainer = document.createElement("div");
-
-            // breakPages: true ensures .docx-page elements
-            await docx.renderAsync(buf, tempContainer, null, {
-                inWrapper: true,
-                breakPages: true,
-                ignoreWidth: false,
-                ignoreHeight: false,
-                experimental: false
-            });
-
-            // 将内容移动到zoomContainer
-            zoomContainer.appendChild(tempContainer);
-
-            // 获取所有页面
-            sections = zoomContainer.querySelectorAll('section');
-            totalPages = sections.length || 1;
-
-            // 初始化页码显示
-            updatePageIndicator();
-
-            // 应用初始缩放
-            applyZoom();
-
-            clearInterval(animId);
-            $("#bootOverlay").fadeOut(600, function () {
-                $(this).remove();
-            });
-
-        } catch (e) {
-            zoomContainer.innerHTML = `<div class="error-msg">
-                Failed to load document<br>${e.message}
-            </div>`;
-            pageIndicator.textContent = '';
-
-            clearInterval(animId);
-            $("#bootOverlay").fadeOut(600, function () {
-                $(this).remove();
-            });
-        }
-    }
-
-    // 更新页码指示器
-    function updatePageIndicator() {
-        const viewerTop = viewer.getBoundingClientRect().top;
-        let currentPage = 1;
-
-        sections.forEach((section, index) => {
-            const rect = section.getBoundingClientRect();
-            if (rect.top - viewerTop <= rect.height / 2) {
-                currentPage = index + 1;
-            }
-        });
-
-        pageIndicator.textContent = `Page ${currentPage} / ${totalPages}`;
-    }
-
-    // 应用缩放
-    function applyZoom() {
-        const scale = currentZoom / 100;
-        zoomContainer.style.transform = `scale(${scale})`;
-        zoomContainer.style.width = `${100 / scale}%`;
-        zoomLevel.textContent = `${currentZoom}%`;
-
-        // 更新页码（缩放可能改变布局）
-        updatePageIndicator();
-    }
-
-    // 缩放功能
-    zoomInBtn.addEventListener("click", () => {
-        if (currentZoom < 200) {
-            currentZoom += 10;
-            applyZoom();
-        }
-    });
-
-    zoomOutBtn.addEventListener("click", () => {
-        if (currentZoom > 50) {
-            currentZoom -= 10;
-            applyZoom();
-        }
-    });
-
-    resetZoomBtn.addEventListener("click", () => {
-        currentZoom = 100;
-        applyZoom();
-    });
-
-    // 下载功能
-    downloadBtn.addEventListener("click", async () => {
-        try {
-            const res = await fetch(FILE_PATH);
-            if(!res.ok) throw new Error("Download failed");
-            const blob = await res.blob();
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = FILE_PATH.split("/").pop();
-            a.click();
-            URL.revokeObjectURL(a.href);
-        } catch(e) {
-            alert("Download failed: " + e.message);
-        }
-    });
-
-    // 滚动事件监听
-    viewer.addEventListener('scroll', () => {
-        // 更新页码
-        updatePageIndicator();
-
-        // 更新进度条
-        const scrolled = viewer.scrollTop;
-        const total = viewer.scrollHeight - viewer.clientHeight;
-        const progress = total <= 0 ? 0 : scrolled / total;
-
-        const progressBar = document.getElementById('loadingProgress');
-        progressBar.style.width = (progress * 100) + "%";
-
-        // 动态调整边框亮度
-        const glowIntensity = 0.08 + (progress * 0.12);
-        const shadowIntensity = 0.8 + (progress * 0.1);
-        container.style.borderColor = `rgba(255, 255, 255, ${glowIntensity})`;
-        container.style.boxShadow = `0 0 0 1px rgba(255, 255, 255, ${glowIntensity / 2}), 0 40px 100px rgba(0,0,0,${shadowIntensity})`;
-    });
-
-    // 鼠标滚轮缩放（按住Ctrl键）
-    viewer.addEventListener('wheel', (e) => {
-        if (e.ctrlKey) {
-            e.preventDefault();
-            if (e.deltaY < 0) {
-                // 向上滚动，放大
-                if (currentZoom < 200) {
-                    currentZoom += 10;
-                    applyZoom();
-                }
-            } else {
-                // 向下滚动，缩小
-                if (currentZoom > 50) {
-                    currentZoom -= 10;
-                    applyZoom();
-                }
-            }
-        }
-    }, { passive: false });
-
-    // 初始化加载
-    loadWord(FILE_PATH);
-
-    // 窗口大小变化时重新计算页码
-    window.addEventListener('resize', () => {
-        updatePageIndicator();
-    });
-</script>
+<footer>
+    <p>&copy; 2025 RAVON DYNAMICS. ALL SYSTEMS OPERATIONAL.</p>
+    <p style="margin-top:10px; opacity: 0.5;">DESIGNED FOR SILENCE & STRENGTH.</p>
+</footer>
 
 </body>
 </html>

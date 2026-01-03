@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.ravon.mapper.CollectionItemDao">
+
+    <resultMap id="BaseResultMap" type="tech.ravon.model.inver.CollectionItem">
+        <id property="collectionItemId" column="collection_item_id" jdbcType="BIGINT"/>
+        <result property="itemId" column="item_id" jdbcType="BIGINT"/>
+        <result property="itemType" column="item_type" jdbcType="VARCHAR"/>
+        <result property="collectionId" column="collection_id" jdbcType="BIGINT"/>
+        <result property="createAt" column="create_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        collection_item_id,item_id,item_type,collection_id,create_at
+    </sql>
+
+    <select id="getCollectionItemById" resultType="tech.ravon.model.inver.CollectionItem" resultMap="BaseResultMap">
+        SELECT * FROM collection_items WHERE collection_item_id = #{collectionItemId}
+    </select>
+
+    <select id="getAllCollectionItems" resultType="tech.ravon.model.inver.CollectionItem" resultMap="BaseResultMap">
+        SELECT * FROM collection_items
+    </select>
+
+    <select id="getCollectionItemsByCollection" resultType="tech.ravon.model.inver.CollectionItem" resultMap="BaseResultMap">
+        SELECT * FROM collection_items WHERE collection_id = #{collectionId}
+    </select>
+
+    <select id="getCollectionItemByItem" parameterType="tech.ravon.model.inver.CollectionItem" resultMap="BaseResultMap">
+        SELECT * FROM collection_items
+        WHERE item_id = #{itemId} AND item_type = #{itemType}::item_type_enum AND collection_id = #{collectionId};
+    </select>
+
+    <insert id="updateCollectionItem" parameterType="tech.ravon.model.inver.CollectionItem">
+        <choose>
+            <when test="collectionItemId == null or collectionItemId == ''">
+                INSERT INTO collection_items (item_id, item_type, collection_id)
+                VALUES (#{itemId}, #{itemType}::item_type_enum, #{collectionId})
+            </when>
+            <otherwise>
+                UPDATE collection_items
+                SET collection_id = #{collectionId}
+                WHERE collection_item_id = #{collectionItemId}
+            </otherwise>
+        </choose>
+    </insert>
+
+    <delete id="deleteCollectionItem">
+        DELETE FROM collection_items WHERE collection_item_id = #{collectionItemId};
+    </delete>
+
+    <delete id="deleteCollectionItemByItem" parameterType="tech.ravon.model.inver.CollectionItem">
+        DELETE FROM collection_items
+        WHERE item_id = #{itemId} AND item_type = #{itemType}::item_type_enum AND collection_id = #{collectionId};
+    </delete>
+</mapper>

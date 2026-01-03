@@ -7,8 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import tech.ravon.model.iviep.Annotation;
-import tech.ravon.service.iviep.AnnotationService;
+import tech.ravon.model.inver.Annotation;
+import tech.ravon.service.inver.AnnotationService;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +33,7 @@ public class InsightfulVerseRestController {
         }
 
         // Replace this cast with your actual User class
-        tech.ravon.model.iviep.User user = (tech.ravon.model.iviep.User) userObj;
+        tech.ravon.model.inver.User user = (tech.ravon.model.inver.User) userObj;
         Long userId = user.getUserId();
 
         List<Annotation> list = annotationService.getAnnotations(userId, bookId);
@@ -51,7 +51,7 @@ public class InsightfulVerseRestController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "not_logged_in"));
         }
 
-        tech.ravon.model.iviep.User user = (tech.ravon.model.iviep.User) userObj;
+        tech.ravon.model.inver.User user = (tech.ravon.model.inver.User) userObj;
         Long userId = user.getUserId();
 
         // ensure userId set on incoming annotation
@@ -75,7 +75,7 @@ public class InsightfulVerseRestController {
     public ResponseEntity<?> delete(@RequestParam("id") Long id, HttpSession session) {
         Object userObj = session.getAttribute("user");
         if (userObj == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","not_logged_in"));
-        tech.ravon.model.iviep.User user = (tech.ravon.model.iviep.User) userObj;
+        tech.ravon.model.inver.User user = (tech.ravon.model.inver.User) userObj;
         Long userId = user.getUserId();
         try {
             annotationService.deleteAnnotation(id, userId);

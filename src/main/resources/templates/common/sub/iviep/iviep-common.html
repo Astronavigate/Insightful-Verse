@@ -440,9 +440,9 @@
         const RETRY_DELAY = 90;
         const SCROLL_THROTTLE = 120;
         const RESIZE_THROTTLE = 200;
-        const BRIGHT_THRESHOLD = 0.64; // 亮度分界点
-        const BRIGHT_THRESHOLD_HIGH = 0.72; // 变亮阈值
-        const BRIGHT_THRESHOLD_LOW = 0.56;  // 变暗阈值
+        const BRIGHT_THRESHOLD = 0.8; // 亮度分界点
+        const BRIGHT_THRESHOLD_HIGH = 0.88; // 变亮阈值
+        const BRIGHT_THRESHOLD_LOW = 0.72;  // 变暗阈值
         const NEAR_BLACK = 12;
         const NEAR_WHITE = 243;
 
@@ -598,7 +598,7 @@
                 // 水平采样点：25%, 50%, 75%
                 const horizontalPositions = [0.25, 0.5, 0.75];
                 // 垂直采样点：正下方+2px, +6px, +10px
-                const verticalOffsets = [2, 6, 10];
+                const verticalOffsets = [-10, -5, 0];
 
                 const samples = [];
                 const maxSamples = 9; // 3x3网格

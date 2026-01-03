@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.ravon.mapper.ReactionDao">
+
+    <resultMap id="BaseResultMap" type="tech.ravon.model.inver.Reaction">
+        <id property="reactionId" column="reaction_id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="relatedType" column="related_type" jdbcType="VARCHAR"/>
+        <result property="relatedId" column="related_id" jdbcType="BIGINT"/>
+        <result property="action" column="action" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        reaction_id,user_id,related_type,related_id,action
+    </sql>
+
+    <select id="getReactionById" resultType="tech.ravon.model.inver.Reaction" resultMap="BaseResultMap">
+        SELECT * FROM reactions WHERE reaction_id = #{reactionId}
+    </select>
+
+    <select id="getAllReactions" resultType="tech.ravon.model.inver.Reaction" resultMap="BaseResultMap">
+        SELECT * FROM reactions
+    </select>
+
+    <select id="getReactionsByUser" resultType="tech.ravon.model.inver.Reaction" resultMap="BaseResultMap">
+        SELECT * FROM reactions WHERE user_id = #{userId}
+    </select>
+
+    <insert id="updateReaction" parameterType="tech.ravon.model.inver.Reaction">
+        <choose>
+            <when test="reactionId == null or reactionId == ''">
+                INSERT INTO reactions (user_id, related_type, related_id, action)
+                VALUES (#{userId}, #{relatedType}, #{relatedId}, #{action})
+            </when>
+            <otherwise>
+                UPDATE reactions
+                SET action = #{action}
+                WHERE reaction_id = #{reactionId}
+            </otherwise>
+        </choose>
+    </insert>
+
+    <delete id="deleteReaction">
+        DELETE FROM reactions WHERE reaction_id = #{reactionId};
+    </delete>
+</mapper>

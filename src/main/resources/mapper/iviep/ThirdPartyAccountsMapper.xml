@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.ravon.mapper.ThirdPartyAccountDao">
+
+    <resultMap id="BaseResultMap" type="tech.ravon.model.inver.ThirdPartyAccount">
+        <id property="thirdId" column="third_id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="thirdPartyId" column="third_party_id" jdbcType="VARCHAR"/>
+        <result property="providerType" column="provider_type" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        third_id,user_id,third_party_id,provider_type
+    </sql>
+
+    <select id="getThirdPartyAccountById" resultType="tech.ravon.model.inver.ThirdPartyAccount" resultMap="BaseResultMap">
+        SELECT * FROM third_party_accounts WHERE third_id = #{thirdId}
+    </select>
+
+    <select id="getAllThirdPartyAccounts" resultType="tech.ravon.model.inver.ThirdPartyAccount" resultMap="BaseResultMap">
+        SELECT * FROM third_party_accounts
+    </select>
+
+    <select id="getThirdPartyAccountByUser" resultType="tech.ravon.model.inver.ThirdPartyAccount" resultMap="BaseResultMap">
+        SELECT * FROM third_party_accounts WHERE user_id = #{userId}
+        <if test="providerType != null or providerType != ''">
+            AND provider_type = #{providerType}
+        </if>
+    </select>
+
+    <insert id="updateReaction" parameterType="tech.ravon.model.inver.ThirdPartyAccount">
+        <choose>
+            <when test="thirdId == null or thirdId == ''">
+                INSERT INTO third_party_accounts (user_id, thirdParty_id, provider_type)
+                VALUES (#{userId}, #{thirdPartyId}, #{providerType})
+            </when>
+            <otherwise>
+                UPDATE third_party_accounts
+                SET thirdParty_id = #{thirdParty_id}
+                WHERE third_id = #{thirdId}
+            </otherwise>
+        </choose>
+    </insert>
+
+    <delete id="deleteReaction">
+        DELETE FROM third_party_accounts WHERE third_id = #{thirdId};
+    </delete>
+</mapper>

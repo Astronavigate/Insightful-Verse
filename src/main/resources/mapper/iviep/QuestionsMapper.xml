@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tech.ravon.mapper.QuestionDao">
+
+    <resultMap id="BaseResultMap" type="tech.ravon.model.inver.Question">
+        <id property="questionId" column="question_id" jdbcType="BIGINT"/>
+        <result property="testId" column="test_id" jdbcType="BIGINT"/>
+        <result property="submitterId" column="submitter_id" jdbcType="BIGINT"/>
+        <result property="questionScore" column="question_score" jdbcType="FLOAT"/>
+        <result property="submissionDate" column="submission_date" jdbcType="TIMESTAMP"/>
+        <result property="questionContent" column="question_content" jdbcType="VARCHAR"/>
+        <result property="questionAnswer" column="question_answer" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        question_id,test_id,submitter_id,question_score,submission_date,question_content,question_answer
+    </sql>
+
+    <select id="getQuestionById" resultType="tech.ravon.model.inver.Question" resultMap="BaseResultMap">
+        SELECT * FROM questions WHERE question_id = #{questionId}
+    </select>
+
+    <select id="getAllQuestions" resultType="tech.ravon.model.inver.Question" resultMap="BaseResultMap">
+        SELECT * FROM questions
+    </select>
+
+    <select id="getQuestionsByTest" resultType="tech.ravon.model.inver.Question" resultMap="BaseResultMap">
+        SELECT * FROM questions WHERE test_id = #{testId}
+    </select>
+
+    <insert id="updateQuestion" parameterType="tech.ravon.model.inver.Question">
+        <choose>
+            <when test="questionId == null or questionId == ''">
+                INSERT INTO questions (test_id, submitter_id, question_score, submission_date, question_content)
+                VALUES (#{testId}, #{submitterId}, #{questionScore}, #{submissionDate}, #{questionContent})
+            </when>
+            <otherwise>
+                UPDATE questions
+                SET test_id = #{testId}, submitter_id = #{submitterId}, question_score = #{questionScore},
+                    submission_date = #{submissionDate}, question_content = #{questionContent}
+                WHERE question_id = #{questionId}
+            </otherwise>
+        </choose>
+    </insert>
+
+    <delete id="deleteQuestion">
+        DELETE FROM questions WHERE question_id = #{questionId};
+    </delete>
+</mapper>

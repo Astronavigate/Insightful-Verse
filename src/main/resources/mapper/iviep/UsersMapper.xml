@@ -4,13 +4,13 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="tech.ravon.mapper.UserDao">
 
-    <resultMap id="BaseResultMap" type="tech.ravon.model.iviep.User">
+    <resultMap id="BaseResultMap" type="tech.ravon.model.inver.User">
         <id property="userId" column="user_id" jdbcType="BIGINT"/>
         <result property="username" column="username" jdbcType="VARCHAR"/>
         <result property="email" column="email" jdbcType="VARCHAR"/>
         <result property="phone" column="phone" jdbcType="VARCHAR"/>
         <result property="password" column="password" jdbcType="VARCHAR"/>
-        <result property="classId" column="class_id" jdbcType="INTEGER"/>
+        <result property="classId" column="class_id" jdbcType="BIGINT"/>
         <result property="avatarUrl" column="avatar_url" jdbcType="VARCHAR"/>
         <result property="authority" column="authority" jdbcType="OTHER"/>
     </resultMap>

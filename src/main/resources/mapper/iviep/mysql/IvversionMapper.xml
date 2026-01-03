@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="tech.ravon.mapper.VersionDao">
 
-    <resultMap id="BaseResultMap" type="tech.ravon.model.iviep.Version">
+    <resultMap id="BaseResultMap" type="tech.ravon.model.inver.Version">
             <id property="commitId" column="commit_id" jdbcType="CHAR"/>
             <result property="version" column="version" jdbcType="VARCHAR"/>
             <result property="updateInfo" column="update_info" jdbcType="VARCHAR"/>

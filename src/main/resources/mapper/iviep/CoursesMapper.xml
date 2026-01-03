@@ -4,21 +4,47 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="tech.ravon.mapper.CourseDao">
 
-    <resultMap id="BaseResultMap" type="tech.ravon.model.iviep.Course">
-        <id property="courseId" column="course_id" jdbcType="INTEGER"/>
+    <resultMap id="BaseResultMap" type="tech.ravon.model.inver.Course">
+        <id property="courseId" column="course_id" jdbcType="BIGINT"/>
         <result property="courseName" column="course_name" jdbcType="VARCHAR"/>
         <result property="courseInfo" column="course_info" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <resultMap id="CourseVOResultMap" type="tech.ravon.vo.inver.CourseVO" extends="BaseResultMap">
+        <result property="isFavorite" column="is_favorite" jdbcType="INTEGER"/>
+        <result property="favoriteTime" column="favorite_time" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         course_id,course_name,course_info
     </sql>
 
-    <select id="getAllCourse" resultType="tech.ravon.model.iviep.Course" resultMap="BaseResultMap">
+    <select id="getAllCourse" resultMap="BaseResultMap">
         SELECT * FROM courses
     </select>
 
-    <insert id="updateCourse" parameterType="tech.ravon.model.iviep.Course">
+    <select id="getAllCourseVO" resultMap="CourseVOResultMap">
+        SELECT
+            c.course_id,
+            c.course_name,
+            c.course_info,
+            MAX(CASE WHEN col.user_id = #{userId} THEN 1 ELSE 0 END) AS is_favorite,
+            MAX(CASE WHEN col.user_id = #{userId} THEN ci.create_at ELSE NULL END) AS favorite_time
+        FROM
+            inver.courses c
+                LEFT JOIN
+            inver.collection_items ci ON c.course_id = ci.item_id AND ci.item_type = 'course'
+                LEFT JOIN
+            inver.collections col ON ci.collection_id = col.collection_id
+        GROUP BY
+            c.course_id, c.course_name, c.course_info
+        ORDER BY
+            is_favorite DESC,
+            favorite_time DESC,
+            c.course_id ASC;
+    </select>
+
+    <insert id="updateCourse" parameterType="tech.ravon.model.inver.Course">
         <choose>
             <when test="courseId == null or courseId == ''">
                 INSERT INTO courses (course_name, course_info)
@@ -36,7 +62,7 @@
         DELETE FROM courses WHERE course_id = #{courseId};
     </delete>
 
-    <select id="getCourseByName" resultType="tech.ravon.model.iviep.Course" resultMap="BaseResultMap">
+    <select id="getCourseByName" resultMap="BaseResultMap">
         SELECT * FROM courses
         WHERE course_name LIKE CONCAT('%', #{keyword}, '%')
            OR course_info LIKE CONCAT('%', #{keyword}, '%')

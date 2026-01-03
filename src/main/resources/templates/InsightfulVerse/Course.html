@@ -29,6 +29,24 @@
             width: calc(100% - 11px);
             transition: 0.15s;
         }
+
+        /* 收藏按钮基础样式 */
+        .favorite-btn {
+            transition: transform 0.2s ease, color 0.2s ease;
+            outline: none;
+        }
+        .favorite-btn i{
+            font-size: 1.2rem !important;
+        }
+        .favorite-btn:hover {
+            transform: scale(1.1);
+        }
+        .text-warning {
+            color: #ffc107 !important; /* 收藏后的明黄 */
+        }
+        .text-secondary {
+            color: #6c757d !important; /* 未收藏时的冷灰 */
+        }
     </style>
     <!-- 通用布局部分 -->
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
@@ -68,15 +86,26 @@
         </th:block>
 
         <th:block th:each="course : ${courseList}">
-            <a class="rectangle liquid" th:href="@{/InsightfulVerse/CourseInfo(courseId=${course.courseId})}" style="text-decoration: none; color: black">
+            <a class="rectangle liquid" th:id="|cs${course.courseId}|" th:href="@{/InsightfulVerse/CourseInfo(courseId=${course.courseId})}" style="text-decoration: none; color: black">
                 <div class="cont">
-                    <th:block th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}">
-                        <button type="button" class="btn btn-warning edit-course-btn" data-bs-toggle="modal" data-bs-target="#updCourseForm"
-                                th:data-course-id="${course.courseId}" th:data-course-name="${course.courseName}" th:data-course-info="${course.courseInfo}"
-                                th:text="#{insightful.course.edit}">Edit</button>
-                        <button type="button" class="btn btn-danger del-course-btn" data-bs-toggle="modal" data-bs-target="#delCourseForm"
-                                th:data-course-id="${course.courseId}" th:data-course-name="${course.courseName}"
-                                th:text="#{insightful.course.delete}">Delete</button>
+                    <th:block th:if="${session.user != null}">
+                        <button type="button"
+                                class="favorite-btn"
+                                th:data-id="${course.courseId}"
+                                th:data-type="course"
+                                th:data-favorited="${course.isFavorite}"
+                                style="position: absolute; top: 10px; right: 10px; background: none; border: none; z-index: 30;">
+                            <i th:class="${course.isFavorite} ? 'bi-star-fill text-warning' : 'bi-star text-secondary'"
+                               style="font-size: 1.5rem;"></i>
+                        </button>
+                        <th:block th:if="${session.user.authority == 'admin' or session.user.authority == 'infinite'}">
+                            <button type="button" class="btn btn-warning edit-course-btn" data-bs-toggle="modal" data-bs-target="#updCourseForm"
+                                    th:data-course-id="${course.courseId}" th:data-course-name="${course.courseName}" th:data-course-info="${course.courseInfo}"
+                                    th:text="#{insightful.course.edit}">Edit</button>
+                            <button type="button" class="btn btn-danger del-course-btn" data-bs-toggle="modal" data-bs-target="#delCourseForm"
+                                    th:data-course-id="${course.courseId}" th:data-course-name="${course.courseName}"
+                                    th:text="#{insightful.course.delete}">Delete</button>
+                        </th:block>
                     </th:block>
                     <h5 th:text="${course.courseName}">Name</h5>
                     <p th:text="${course.courseInfo}">Information</p>
@@ -173,6 +202,24 @@
         buttonAll.addEventListener('click', () => handleButtonClick(buttonAll, 'all'));
         buttonCourse.addEventListener('click', () => handleButtonClick(buttonCourse, 'course'));
         buttonFile.addEventListener('click', () => handleButtonClick(buttonFile, 'file'));
+
+        // -------------------- 收藏功能 --------------------
+        document.querySelectorAll('.favorite-btn').forEach(btn => {
+            btn.addEventListener('click', function(event) {
+                event.preventDefault(); // 阻止 a 标签跳转
+                event.stopPropagation(); // 阻止事件冒泡
+
+                const id = this.getAttribute('data-id');
+                const type = this.getAttribute('data-type');
+
+                // 构造跳转链接
+                // 参数1: id, 参数2: type
+                const targetUrl = `/InsightfulVerse/Favorite.do?id=${id}&type=${type}`;
+
+                // 执行跳转
+                window.location.href = targetUrl;
+            });
+        });
 
         // -------------------- 阻止 <a> 内按钮跳转 --------------------
         document.querySelectorAll('a.rectangle').forEach(link => {
