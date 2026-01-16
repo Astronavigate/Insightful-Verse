@@ -167,39 +167,39 @@
         }
 
         /* 统一背景 */
-        .lyrics-module{
-            flex:1;overflow-y:auto;padding:10px 0;
+        .lyrics-module {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 10px 20px;
             background: transparent;
-            scroll-behavior:smooth;position:relative;
+            position: relative;
+            will-change: scroll-position;
         }
         .lyrics-module::-webkit-scrollbar{width:6px}
         .lyrics-module::-webkit-scrollbar-thumb{background:rgba(255,255,255,.04);border-radius:3px;border:1px solid rgba(255,255,255,.02)}
 
         /* 歌词行样式和大小调整 */
-        .lyric-line{
-            text-align:center;margin:8px 12px;
-            padding:6px 12px;
-            border-radius:6px;cursor:pointer;
-            color:var(--muted);
-            font-size:20px;
-            line-height:1.4;
-            /* 纯文字流，只保留文字发光过渡 */
-            transition:color .22s,transform .22s, text-shadow .3s ease-out;
-            word-break:break-word;
-            position: relative;
-            background: transparent; /* 确保无背景 */
+        .lyric-line {
+            text-align: center;
+            margin: 8px 12px;
+            padding: 6px 12px;
+            color: var(--muted);
+            font-size: 22px; /* 固定基础字号 */
+            line-height: 1.4;
+            transition:
+                    color 0.4s ease,
+                    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+                    text-shadow 0.4s ease;
+            will-change: transform;
         }
 
-        /* 歌词发光效果（纯文字流）*/
-        .lyric-line.active{
-            color:#fff;
-            font-weight:700;
-            font-size:24px;
-            transform:scale(1.02);
-            /* 纯文字发光效果，符合冷峻、克制的视觉要求 */
-            text-shadow: 0 0 1px var(--accent), 0 0 5px var(--glow-color);
-            box-shadow: none; /* 移除外框阴影 */
-            background: transparent; /* 确保无背景色 */
+        .lyric-line.active {
+            color: #fff;
+            font-weight: 700;
+            /* 使用 scale 替代 font-size 变化 */
+            transform: scale(1.18);
+            text-shadow: 0 0 2px var(--accent), 0 0 8px var(--glow-color);
         }
     </style>
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
@@ -564,14 +564,36 @@
     }
     function setActiveIndex(index){
         const nodes = document.querySelectorAll('.lyric-line');
-        nodes.forEach(n=>{ n.classList.remove('active'); });
-        if (index === -1) return;
-        const node = nodes[index]; if (!node) return;
+        if (index === -1 || !nodes[index]) return;
+
+        // 1. 瞬间切换类名
+        nodes.forEach(n => n.classList.remove('active'));
+        const node = nodes[index];
         node.classList.add('active');
-        const containerHeight = lyricsContainer.clientHeight; const top = node.offsetTop; const h = node.clientHeight; const target = top - (containerHeight/2) + (h/2);
-        smoothScrollTo(lyricsContainer, target, 300);
+
+        // 2. 精准计算（此时 scale 不会干扰 offsetTop）
+        const container = document.querySelector('.lyrics-module');
+        const target = node.offsetTop - (container.clientHeight / 2) + (node.offsetHeight / 2);
+
+        // 3. 执行快速滚动 (200ms 是理性的极限)
+        fastSmoothScrollTo(container, target, 450);
     }
-    function smoothScrollTo(el,to,duration){ const start = el.scrollTop; const change = to - start; const startTime = performance.now(); function animate(now){ const t = Math.min(1,(now-startTime)/duration); const eased = t<0.5 ? 2*t*t : -1 + (4-2*t)*t; el.scrollTop = start + change*eased; if (t<1) requestAnimationFrame(animate); } requestAnimationFrame(animate); }
+
+    function fastSmoothScrollTo(el, to, duration) {
+        const start = el.scrollTop;
+        const change = to - start;
+        const startTime = performance.now();
+
+        // 更强劲的减速曲线 (Quart)
+        function easeOutQuart(t) { return 1 - (--t) * t * t * t; }
+
+        function animate(now) {
+            const t = Math.min(1, (now - startTime) / duration);
+            el.scrollTop = start + change * easeOutQuart(t);
+            if (t < 1) requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+    }
 
     /* Metadata rendering */
     function formatTagName(tagKey) {

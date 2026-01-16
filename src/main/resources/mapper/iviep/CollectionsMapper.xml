@@ -24,6 +24,11 @@
         SELECT * FROM collections
     </select>
 
+    <select id="getCollectionsByColl" resultType="tech.ravon.model.inver.Collections" resultMap="BaseResultMap">
+        SELECT * FROM collections
+        WHERE user_id = #{userId} AND collection_name = #{collectionName} AND collection_description = #{collectionDescription}
+    </select>
+
     <select id="getCollectionsByUser" resultType="tech.ravon.model.inver.Collections" resultMap="BaseResultMap">
         SELECT * FROM collections WHERE user_id = #{userId}
         <if test="collectionName != null or collectionName != ''">

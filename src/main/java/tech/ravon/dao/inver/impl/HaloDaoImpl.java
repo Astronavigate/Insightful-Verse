@@ -39,6 +39,8 @@ public class HaloDaoImpl implements HaloDao {
         Statement stmt = null;
         ResultSet rs = null;
 
+        System.out.println("\n\n\nDo SQL: " + sql + "\n\n\n");
+
         try {
             // 加载配置文件
             Properties props = new Properties();
@@ -54,6 +56,8 @@ public class HaloDaoImpl implements HaloDao {
             String password = props.getProperty("password");
 
             conn = DriverManager.getConnection(url, user, password);
+
+            System.out.println("\n\n\nconn: " + conn + "\n\n\n");
 
             // 分割多条 SQL
             ArrayList<String> sqlStatements = parseSQL(sql);

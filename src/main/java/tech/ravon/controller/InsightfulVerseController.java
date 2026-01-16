@@ -66,7 +66,7 @@ public class InsightfulVerseController {
     @Autowired
     PageService pageService;
     @Autowired
-    FavoriteService favoriteService;
+    CollectionService collectionService;
     @Autowired
     HaloService haloService;
 
@@ -631,7 +631,7 @@ public class InsightfulVerseController {
 
         User user = (User) session.getAttribute("user");
         if (user != null) {
-            favoriteService.toggleFavorite(user.getUserId(), id, type);
+            collectionService.updateCollItem(user.getUserId(), id, type);
         }
 
         if ("file".equalsIgnoreCase(type)) {

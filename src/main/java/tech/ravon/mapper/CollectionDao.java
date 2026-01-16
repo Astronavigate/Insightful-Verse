@@ -27,6 +27,8 @@ public interface CollectionDao extends BaseMapper<Collections> {
 
     Collections getCollectionById(Long collectionId);
 
+    Collections getCollectionsByColl(Collections collection);
+
     List<Collections> getAllCollections();
 
     List<Collections> getCollectionsByUser(Long userId, String collectionName);

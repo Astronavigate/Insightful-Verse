@@ -32,9 +32,13 @@ import java.util.Map;
 @Controller
 public class RavonController {
     @RequestMapping("/index")
-    public ModelAndView Index() {
-        ModelAndView mv = new ModelAndView("index");
-        return mv;
+    public String Index() {
+        return "index";
+    }
+
+    @RequestMapping("/old")
+    public String oldIndex() {
+        return "oldIndex";
     }
 
     @RequestMapping("/test")

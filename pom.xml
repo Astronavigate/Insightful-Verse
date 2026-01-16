@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>tech.ravon</groupId>
 	<artifactId>Ravon</artifactId>
-	<version>1.4.111.1000.alpha.1.aic</version>
+	<version>1.4.132.1200.alpha.3.aic</version>
 	<name>Ravon</name>
 	<description>Ravon is the official project of Ravon Technology.</description>
 	<packaging>jar</packaging>

@@ -15,202 +15,313 @@
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ravon Technology</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
+    <title>Ravon Dynamics | Systems Online</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+
     <style>
-        /* Reset some basic styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* --- 核心变量定义 --- */
+        :root {
+            --ravon-black: #050505;
+            --ravon-dark-gray: #1a1a1e;
+            --ravon-steel: #71717a;
+            --ravon-ice: #e0f2fe;
+            --ravon-blue: #0ea5e9; /* 冰蓝色，冷静的锋芒 */
+            --ravon-glitch: #ef4444; /* 极少量红色用于故障效果，像警报 */
+
+            --font-tech: 'Orbitron', sans-serif;
+            --font-code: 'Fira Code', monospace;
         }
+
+        /* --- 基础重置 --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #000;
-            color: white;
+            background-color: var(--ravon-black);
+            color: var(--ravon-ice);
+            font-family: var(--font-code);
+            overflow-x: hidden;
+            /* 背景网格纹理 */
+            background-image:
+                    linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
         }
 
-        .navbar {
-            background-color: #111;
-            border-bottom: 1px solid #333;
-        }
-
-        .navbar-brand {
-            font-weight: bold;
-            font-size: 1.5rem;
-        }
-
-        .hero-section {
-            height: 100vh;
-            background: url('https://example.com/tech-bg.jpg') no-repeat center center/cover;
-            position: relative;
+        /* --- 导航栏：装甲风格 --- */
+        header {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
+            padding: 20px 50px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            width: 100%;
+            z-index: 100;
+            top: 0;
         }
 
-        .hero-section .overlay {
+        .logo {
+            font-family: var(--font-tech);
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--ravon-ice);
+            text-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+        }
+
+        .nav-links a {
+            color: var(--ravon-steel);
+            text-decoration: none;
+            margin-left: 30px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--ravon-blue);
+            text-shadow: 0 0 8px var(--ravon-blue);
+        }
+
+        .nav-links a::before {
+            content: '>';
+            opacity: 0;
+            margin-right: 5px;
+            transition: opacity 0.3s;
+        }
+        .nav-links a:hover::before { opacity: 1; }
+
+        /* --- Hero Section：核心视觉 --- */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 0 10%;
+            position: relative;
+        }
+
+        /* 装饰性的高维线条 */
+        .hero::after {
+            content: '';
+            position: absolute;
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 300px;
+            height: 300px;
+            border: 2px solid var(--ravon-dark-gray);
+            border-left: 2px solid var(--ravon-blue);
+            opacity: 0.5;
+            /* 异形切割，营造机甲感 */
+            clip-path: polygon(20% 0%, 100% 0, 100% 80%, 80% 100%, 0 100%, 0% 20%);
+        }
+
+        .hero h1 {
+            font-family: var(--font-tech);
+            font-size: 4rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        /* 故障文字效果 (Glitch Effect) */
+        .glitch {
+            position: relative;
+            color: var(--ravon-ice);
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: var(--ravon-black);
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--ravon-glitch);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--ravon-blue);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
         }
 
-        .hero-section h1, .hero-section p {
-            z-index: 1;
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--ravon-steel);
+            margin-bottom: 40px;
+            max-width: 600px;
+            border-left: 3px solid var(--ravon-blue);
+            padding-left: 20px;
         }
 
-        section {
-            padding: 60px 0;
+        /* --- 按钮：硬核风格 --- */
+        .cyber-btn {
+            background: transparent;
+            color: var(--ravon-blue);
+            border: 1px solid var(--ravon-blue);
+            padding: 15px 40px;
+            font-family: var(--font-tech);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            position: relative;
+            transition: 0.4s;
+            overflow: hidden;
+            /* 切角设计 */
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
         }
 
-        .bg-dark {
-            background-color: #111 !important;
+        .cyber-btn:hover {
+            background: var(--ravon-blue);
+            color: var(--ravon-black);
+            box-shadow: 0 0 20px var(--ravon-blue);
+        }
+
+        /* --- 功能模块：矩阵布局 --- */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 100px 10%;
+            background: var(--ravon-dark-gray);
         }
 
         .card {
-            background-color: #222;
-            border: none;
-            transition: transform 0.3s ease;
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid #333;
+            padding: 30px;
+            position: relative;
+            transition: 0.3s;
         }
 
         .card:hover {
-            transform: translateY(-10px);
+            border-color: var(--ravon-blue);
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            font-family: var(--font-tech);
+            color: var(--ravon-ice);
+            margin-bottom: 15px;
+        }
+
+        .card p {
+            color: var(--ravon-steel);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* 卡片角落的装饰性标记 */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border-top: 2px solid var(--ravon-blue);
+            border-left: 2px solid var(--ravon-blue);
         }
 
         footer {
-            background-color: #111;
+            text-align: center;
+            padding: 40px;
+            color: var(--ravon-steel);
+            font-size: 0.8rem;
+            border-top: 1px solid #333;
+        }
+
+        /* --- 动画关键帧 --- */
+        @keyframes glitch-anim {
+            0% { clip: rect(10px, 9999px, 30px, 0); transform: skew(0.5deg); }
+            20% { clip: rect(80px, 9999px, 100px, 0); transform: skew(-0.5deg); }
+            40% { clip: rect(30px, 9999px, 60px, 0); transform: skew(0.2deg); }
+            100% { clip: rect(50px, 9999px, 90px, 0); transform: skew(0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(60px, 9999px, 80px, 0); transform: skew(0.2deg); }
+            50% { clip: rect(10px, 9999px, 40px, 0); transform: skew(-0.2deg); }
+            100% { clip: rect(90px, 9999px, 100px, 0); transform: skew(0); }
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            header { padding: 20px; }
+            .nav-links { display: none; } /* 简化处理，实际项目需添加汉堡菜单 */
         }
     </style>
-    <script>
-        // Add smooth scrolling for navigation links
-        document.querySelectorAll('a.nav-link').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-    </script>
 </head>
 <body>
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-    <div class="container">
-        <a class="navbar-brand" href="#">Ravon Technology</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
-                <li class="nav-item"><a class="nav-link" href="#products">Products</a></li>
-                <li class="nav-item"><a class="nav-link" href="#about">About Us</a></li>
-                <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
-            </ul>
-        </div>
-    </div>
-    <div>
-        <ul>
-            <li class=""><a class="" href="#">Application</a></li>
-            <li class=""><a class="" href="#">Driver</a></li>
-            <li class=""><a class="" href="#">Contact</a></li>
-        </ul>
-    </div>
-    <div>
-        <ul>
-            <li class=""><a class="" href="#">Software</a></li>
-            <li class=""><a class="" href="#">Hardware</a></li>
-        </ul>
-    </div>
-</nav>
-
-<!-- Hero Section -->
-<header class="hero-section">
-    <div class="overlay"></div>
-    <div class="container text-center text-white d-flex flex-column justify-content-center align-items-center">
-        <h1 class="display-3">Ravon Technology</h1>
-        <p class="lead">Innovating the Future with Cutting-Edge Technology</p>
-        <a href="#about" class="btn btn-primary btn-lg mt-4">Discover More</a>
-    </div>
+<header>
+    <div class="logo">RAVON<span style="color:var(--ravon-blue)">.</span>TECH</div>
+    <nav class="nav-links">
+        <a href="#" th:href="@{/architecture}">SYSTEM_ARCH</a>
+        <a href="#" th:href="@{/philosophy}">CREED</a>
+        <a href="#" th:href="@{/nexus}">NEXUS</a>
+    </nav>
 </header>
 
-<!-- Services Section -->
-<section id="services" class="text-center py-5 bg-dark text-white">
-    <div class="container">
-        <h2 class="mb-5">Our Services</h2>
-        <div class="row">
-            <div class="col-md-4">
-                <i class="fas fa-microchip fa-3x mb-3"></i>
-                <h4>High Performance</h4>
-                <p>Top-notch computing power for advanced tasks.</p>
-            </div>
-            <div class="col-md-4">
-                <i class="fas fa-lock fa-3x mb-3"></i>
-                <h4>Secure Solutions</h4>
-                <p>Leading security protocols for safe data handling.</p>
-            </div>
-            <div class="col-md-4">
-                <i class="fas fa-robot fa-3x mb-3"></i>
-                <h4>AI-Driven Innovation</h4>
-                <p>We leverage AI to create smarter, faster solutions.</p>
-            </div>
+<main>
+    <section class="hero">
+        <div style="font-size: 0.8rem; color: var(--ravon-blue); margin-bottom: 10px; letter-spacing: 3px;">
+            // SYSTEM STATUS: OPTIMAL
         </div>
-    </div>
-</section>
 
-<!-- Products Section -->
-<section id="products" class="py-5">
-    <div class="container">
-        <h2 class="text-center mb-5">Our Products</h2>
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <img src="https://example.com/product1.jpg" class="card-img-top" alt="Product 1">
-                    <div class="card-body">
-                        <h5 class="card-title">Product 1</h5>
-                        <p class="card-text">Revolutionary tech to transform industries.</p>
-                        <a href="#" class="btn btn-primary">Learn More</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <img src="https://example.com/product2.jpg" class="card-img-top" alt="Product 2">
-                    <div class="card-body">
-                        <h5 class="card-title">Product 2</h5>
-                        <p class="card-text">Next-gen solutions for modern challenges.</p>
-                        <a href="#" class="btn btn-primary">Learn More</a>
-                    </div>
-                </div>
-            </div>
+        <h1 class="glitch" data-text="WALK ALONE.">
+            WALK ALONE. <br>
+            <span style="color: var(--ravon-steel); font-size: 0.8em;">SEE BEYOND.</span>
+        </h1>
+
+        <div class="subtitle">
+            <p>Order is my Shield, Will my Blade.</p>
+            <p>Night is my Armor, Silence is my Creed.</p>
         </div>
-    </div>
-</section>
 
-<a href="/InsightfulVerse/index.run" type="button">IVIEP</a>
+        <button class="cyber-btn" onclick="alert('INITIALIZING RAVON PROTOCOL...')">
+            INITIALIZE_SEQUENCE >
+        </button>
+    </section>
 
-<!-- Footer -->
-<footer class="bg-black text-center text-white py-3">
-    <p>&copy; 2024 Ravon Technology. All Rights Reserved.</p>
+    <section class="features">
+        <div class="card">
+            <h3>01 // ORDER</h3>
+            <p>Constructing the operating system of the world. Structure first, logic follows.</p>
+        </div>
+
+        <div class="card">
+            <h3>02 // INSIGHT</h3>
+            <p>The Eagle's perspective. High-dimensional observation, detached from the noise.</p>
+        </div>
+
+        <div class="card">
+            <h3>03 // WILL</h3>
+            <p>Unbroken Will — A Pack of One. The resilience of the Wolf in the deep night.</p>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>&copy; 2025 RAVON DYNAMICS. ALL SYSTEMS OPERATIONAL.</p>
+    <p style="margin-top:10px; opacity: 0.5;">DESIGNED FOR SILENCE & STRENGTH.</p>
 </footer>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Custom JS -->
-<script src="script.js"></script>
 </body>
 </html>
