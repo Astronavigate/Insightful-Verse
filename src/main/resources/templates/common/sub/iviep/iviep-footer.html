@@ -45,15 +45,10 @@
                     <a href="#" class="me-4 link-icon"><i class="bi-instagram" style="font-size: 2rem; color: gray;"></i></a>
                     <a href="#" class="me-4 link-icon"><i class="bi-linkedin" style="font-size: 2rem; color: gray;"></i></a>
                     <a href="https://github.com/Astronavigate" class="me-4 link-icon"><i class="bi-github" style="font-size: 2rem; color: gray;"></i></a>
-                    <br><br>
-                    <a href="/ChangeLang" class="me-4 link-icon" style="text-decoration: none; text-align: center;">
-                        <i class="bi-globe-americas" style="font-size: 1.24rem; color: gray;"></i>
-                        <p style="display: inline; font-size: 1.17rem; color: gray; margin: 0;" th:text="#{insightful.footer.language}">Language</p>
-                    </a>
                 </div>
 
                 <!-- 第四列 -->
-                <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mb-md-0 mb-4">
+                <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mb-md-0 mb-4">
                     <h6 class="text-uppercase fw-bold mb-4" th:text="#{insightful.footer.contact}">Contact</h6>
                     <p><i class="bi bi-building-fill me-2" style="font-size: 1rem; color: gray;"></i><span th:text="#{insightful.footer.address}">DaLian, Software Park Road, China</span></p>
                     <p><i class="bi bi-envelope-open-fill me-2" style="font-size: 1rem; color: gray;"></i>
@@ -70,7 +65,22 @@
         </div>
     </section>
 
-    <div class="text-center p-4" style="background-color: rgba(0, 0, 0, 0.05);" th:text="#{insightful.footer.copyright}">
-        &copy; 2025 Ravon tech. All rights reserved.
+    <div class="p-4" style="display: flex; align-items: center; background-color: rgba(0, 0, 0, 0.05); position: relative;">
+
+        <div style="flex: 1;"></div>
+
+        <p style="margin: 0; font-size: 0.9rem; opacity: 0.6; letter-spacing: 1px;"
+           th:text="#{insightful.footer.copyright}">
+            &copy; 2026 Ravon tech. All rights reserved.
+        </p>
+
+        <div style="flex: 1; display: flex; justify-content: flex-end;">
+            <a href="/ChangeLang" class="link-icon" title="Switch website language"
+               style="text-decoration: none; display: flex; align-items: center; gap: 8px; opacity: 0.5; transition: opacity 0.3s;">
+                <i class="bi-globe-americas" style="font-size: 0.9rem; color: gray;"></i>
+                <span style="font-size: 0.8rem; color: gray;" th:text="#{insightful.footer.language}">Language</span>
+            </a>
+        </div>
+
     </div>
 </footer>

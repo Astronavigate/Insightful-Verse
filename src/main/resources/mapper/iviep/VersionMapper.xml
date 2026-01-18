@@ -8,6 +8,7 @@
             <id property="commitId" column="commit_id" jdbcType="CHAR"/>
             <result property="version" column="version" jdbcType="VARCHAR"/>
             <result property="updateInfo" column="update_info" jdbcType="VARCHAR"/>
+            <result property="releaseDate" column="release_date" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">

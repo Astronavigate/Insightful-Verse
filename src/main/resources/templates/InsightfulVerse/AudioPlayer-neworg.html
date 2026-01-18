@@ -64,7 +64,7 @@
 
             /* 保持内容区的内边距 */
             padding-top:4vh;
-            padding-bottom:6vh;
+            padding-bottom:4vh;
             padding-left:6vw;
             padding-right:6vw;
             box-sizing:border-box;
@@ -201,6 +201,34 @@
             transform: scale(1.18);
             text-shadow: 0 0 2px var(--accent), 0 0 8px var(--glow-color);
         }
+
+        /* 激活行单词的基础样式 */
+        .lyric-line.active .word {
+            display: inline;
+            position: relative;
+            /* 基础底色：暗淡冷灰 */
+            color: rgba(255, 255, 255, 0.2);
+
+            /* 染色层：纯白 */
+            background: linear-gradient(to right, #ffffff 100%, #ffffff 100%) no-repeat;
+            /* 核心变量：控制从左到右的宽度 */
+            background-size: var(--progress, 0%) 100%;
+
+            /* 将背景色裁剪至文字，并使原文字透明 */
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+
+            /* 线性平滑：补偿 timeUpdate 的频率空隙，确保肉眼看去是持续流动的 */
+            transition: background-size 0.2s linear;
+        }
+
+        /* 非激活行：保持冷静与间距，不显示染色效果 */
+        .lyric-line:not(.active) .word {
+            -webkit-text-fill-color: initial;
+            color: inherit;
+            opacity: 0.6;
+        }
     </style>
     <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
     <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
@@ -332,6 +360,8 @@
     let lyricsData = [];
     let isSynchronized = false;
     let currentIndex = -1;
+    let isUserScrolling = false; // 用户手动滚动锁
+    let scrollResumeTimer = null; // 自动复位定时器
     const DEFAULT_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Crect width='600' height='600' fill='%230b0c10'/%3E%3Cpath d='M300 200 L400 360 L200 360 Z' fill='none' stroke='%23333' stroke-width='3'/%3E%3C/svg%3E";
     coverImg.src = DEFAULT_COVER; setBackgroundCover(DEFAULT_COVER, true); deriveAccentFromImage(DEFAULT_COVER);
 
@@ -400,6 +430,95 @@
     }
 
     /* Parsers & Lyrics pipeline */
+    function parseTTML(xmlText) {
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const pElements = xmlDoc.getElementsByTagName("p");
+            const results = [];
+
+            for (const p of pElements) {
+                const pBegin = p.getAttribute("begin");
+                const pEnd = p.getAttribute("end");
+                const pTime = pBegin ? parseTimeToSeconds(pBegin) : 0;
+                const pEndTime = pEnd ? parseTimeToSeconds(pEnd) : pTime + 1;
+
+                const spans = p.getElementsByTagName("span");
+                let words = [];
+
+                if (spans.length > 0) {
+                    for (const span of spans) {
+                        const rawText = span.textContent;
+                        const wordText = rawText.trim();
+
+                        if (wordText) {
+                            const spanBegin = span.getAttribute("begin");
+                            const spanEnd = span.getAttribute("end");
+                            const spanDur = span.getAttribute("dur");
+
+                            // 【核心修正】直接解析绝对时间，不与 pTime 相加
+                            let sTime = spanBegin ? parseTimeToSeconds(spanBegin) : pTime;
+                            let eTime;
+
+                            if (spanEnd) {
+                                eTime = parseTimeToSeconds(spanEnd);
+                            } else if (spanDur) {
+                                eTime = sTime + parseTimeToSeconds(spanDur);
+                            } else {
+                                // 如果都没有，至少保证它在 p 的范围内
+                                eTime = pEndTime;
+                            }
+
+                            words.push({
+                                startTime: sTime,
+                                endTime: eTime,
+                                word: wordText,
+                                hasTrailingSpace: /\s$/.test(rawText) || rawText.includes(' ')
+                            });
+                        }
+                    }
+                }
+
+                results.push({
+                    time: pTime,
+                    text: p.textContent.trim().replace(/\s+/g, ' '),
+                    words: words.length > 0 ? words : null
+                });
+            }
+            return results;
+        } catch (e) {
+            console.error("TTML Parsing Error:", e);
+            return [];
+        }
+    }
+
+    function parseTimeToSeconds(timeStr) {
+        if (!timeStr) return 0;
+
+        // 1. 处理度量单位格式: "1.5s", "100ms", "2t" (ticks), "3f" (frames)
+        const match = timeStr.match(/^([\d.]+)(s|ms|t|f)$/);
+        if (match) {
+            const value = parseFloat(match[1]);
+            const unit = match[2];
+            switch (unit) {
+                case 's': return value;
+                case 'ms': return value / 1000;
+                case 't': return value / 100; // 假设每秒 100 ticks，视规范而定
+                case 'f': return value / 24;  // 假设 24 fps
+            }
+        }
+
+        // 2. 处理时钟格式: "00:00:01.500" 或 "00:01.5"
+        const parts = timeStr.split(':').map(parseFloat);
+        if (parts.length === 3) {
+            return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        } else if (parts.length === 2) {
+            return parts[0] * 60 + parts[1];
+        }
+
+        return parseFloat(timeStr) || 0;
+    }
+
     function parseLRC(lrc){
         const lines = String(lrc).split(/\r?\n/);
         const results = [];
@@ -473,118 +592,200 @@
         return results;
     }
 
+    /**
+     * 1. 处理歌词文本并初始化
+     */
+    async function processLyricsFromText(embeddedText) {
+        lyricsData = []; isSynchronized = false; currentIndex = -1;
 
-    async function processLyricsFromText(embeddedText){
-        lyricsData=[]; isSynchronized=false; currentIndex=-1;
-
-        // 1. 尝试解析 LRC 或其他格式
-        if (embeddedText && typeof embeddedText === 'string'){
+        if (embeddedText && typeof embeddedText === 'string') {
             const looksLikeLrc = /\[\d{1,2}:\d{2}/.test(embeddedText) || /<\d{1,2}:\d{2}/.test(embeddedText);
-            if (looksLikeLrc){
-                const parsed=parseLRC(embeddedText);
-                if (parsed.length){
-                    lyricsData=parsed;
-                    isSynchronized=parsed.some(p=>p.time!=null);
+            if (looksLikeLrc) {
+                const parsed = parseLRC(embeddedText);
+                if (parsed.length) {
+                    lyricsData = parsed;
+                    isSynchronized = parsed.some(p => p.time != null);
                     renderLyrics();
                     return;
                 }
             }
-            // 2. Fallback for unsynchronized or plain text lyrics
-            const lines = embeddedText.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
-            if (lines.length){
-                lyricsData = lines.map((t,i)=>({time:null,text:t,words:null,raw:t}));
-                isSynchronized=false;
+            const lines = embeddedText.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+            if (lines.length) {
+                lyricsData = lines.map((t, i) => ({ time: null, text: t, words: null, raw: t }));
+                isSynchronized = false;
                 renderLyrics();
                 return;
             }
         }
 
-        // --- 【修正】如果 lyricsData 依然为空，植入占位歌词 ---
+        // 占位逻辑
         if (!lyricsData || lyricsData.length === 0) {
-            lyricsData = [{
-                time: null,
-                text: "No Lyrics Available", // 植入的英文歌词
-                words: null,
-                raw: "No Lyrics Available"
-            }];
+            lyricsData = [{ time: null, text: "No Lyrics Available", words: null, raw: "No Lyrics Available" }];
             isSynchronized = false;
         }
-
         renderLyrics();
     }
 
-    function renderLyrics(){
-        lyricsContainer.innerHTML=''; currentIndex=-1;
-
-        if (!lyricsData || !lyricsData.length){
-            // 理论上不会执行，因为 processLyricsFromText 已经植入了一行
-            lyricsContainer.innerHTML = "<div style='text-align:center;opacity:0.22;margin-top:6px'>No Lyrics Available</div>";
-            return;
-        }
+    /**
+     * 2. 渲染歌词 DOM
+     */
+    function renderLyrics() {
+        lyricsContainer.innerHTML = '';
+        currentIndex = -1;
 
         lyricsData.forEach((line, idx) => {
             const div = document.createElement('div');
             div.className = 'lyric-line visible' + (isSynchronized ? '' : ' un-sync');
             div.dataset.index = idx;
-            const timeInSeconds = line.time!=null ? line.time : -1;
+            const timeInSeconds = line.time != null ? line.time : -1;
             div.dataset.time = timeInSeconds;
 
-            // 调整占位歌词的样式，使其更黯淡
+            // 占位符样式处理
             if (line.text === "No Lyrics Available") {
                 div.style.opacity = '0.4';
                 div.style.fontSize = '18px';
                 div.style.pointerEvents = 'none';
             }
 
-            div.innerHTML = escapeHtml(line.text || '');
+            // --- 逐字渲染逻辑 ---
+            if (line.words && line.words.length > 0) {
+                div.innerHTML = '';
+                line.words.forEach((w, i) => {
+                    const span = document.createElement('span');
+                    span.className = 'word';
 
-            div.addEventListener('click', ()=> {
+                    // 修复分词空格：如果标记有空格或者是本行最后一个词，加空格；否则不加
+                    const needsSpace = w.hasTrailingSpace || (i === line.words.length - 1);
+                    span.textContent = w.word + (needsSpace ? ' ' : '');
+
+                    span.dataset.start = w.startTime;
+                    // 为驱动逻辑预留结束时间
+                    span.dataset.end = w.endTime;
+                    div.appendChild(span);
+                });
+            } else {
+                // 普通 LRC 或无逐字数据的 fallback
+                div.innerHTML = escapeHtml(line.text || '');
+            }
+
+            div.addEventListener('click', () => {
                 if (timeInSeconds >= 0) audio.currentTime = timeInSeconds;
             });
             lyricsContainer.appendChild(div);
         });
     }
 
-    /* sync */
-    function timeUpdateHandler(){
-        if (!isSynchronized) return;
-        if (!lyricsData || lyricsData.length === 0) return;
+    /**
+     * 3. 核心：时间更新回调 (含重新播放重置)
+     */
+    function timeUpdateHandler() {
+        if (!isSynchronized || !lyricsData.length) return;
         const cur = audio.currentTime;
+
+        if (cur < 0.1 && currentIndex !== -1) {
+            setActiveIndex(-1);
+            currentIndex = -1;
+            fastSmoothScrollTo(lyricsContainer, 0, 450);
+            return;
+        }
+
         const rightBound = lyricsData.findIndex(x => x.time == null);
         const endIndex = rightBound === -1 ? lyricsData.length - 1 : rightBound - 1;
         if (endIndex < 0) return;
-        let lo=0, hi=endIndex, found=-1;
-        while (lo<=hi){
-            const mid = Math.floor((lo+hi)/2);
+
+        let lo = 0, hi = endIndex, found = -1;
+        while (lo <= hi) {
+            const mid = Math.floor((lo + hi) / 2);
             const t = lyricsData[mid].time;
-            if (t != null && t <= cur){ found = mid; lo = mid + 1; } else hi = mid - 1;
+            if (t != null && t <= cur) { found = mid; lo = mid + 1; }
+            else hi = mid - 1;
         }
-        if (found === -1){ if (currentIndex !== -1){ setActiveIndex(-1); currentIndex = -1; } return; }
-        if (found !== currentIndex){ setActiveIndex(found); currentIndex = found; }
+
+        if (found !== currentIndex) {
+            setActiveIndex(found);
+            currentIndex = found;
+        }
+
+        updateWordsInline(cur);
     }
-    function setActiveIndex(index){
+
+    /**
+     * 4. 设置激活行 (含手动滚动锁判断)
+     */
+    function setActiveIndex(index) {
         const nodes = document.querySelectorAll('.lyric-line');
+        if (!nodes.length) return;
+
+        // 1. 状态清理：移除旧行的 active 状态，并重置所有单词的进度变量
+        nodes.forEach(n => {
+            n.classList.remove('active');
+            // 关键：彻底清除所有单词的 CSS 变量进度，防止回退或跳转时出现视觉残留
+            const words = n.querySelectorAll('.word');
+            words.forEach(w => w.style.setProperty('--progress', '0%'));
+        });
+
+        // 2. 边界检查
         if (index === -1 || !nodes[index]) return;
 
-        // 1. 瞬间切换类名
-        nodes.forEach(n => n.classList.remove('active'));
+        // 3. 激活新行：为新行 node 注入 active 类，开启 CSS 渐变渲染开关
         const node = nodes[index];
         node.classList.add('active');
 
-        // 2. 精准计算（此时 scale 不会干扰 offsetTop）
-        const container = document.querySelector('.lyrics-module');
-        const target = node.offsetTop - (container.clientHeight / 2) + (node.offsetHeight / 2);
+        // 4. 滚动逻辑：仅在用户未手动干预时自动对齐
+        if (!isUserScrolling) {
+            // 计算目标滚动位置：将当前行置于容器中心
+            const target = node.offsetTop - (lyricsContainer.clientHeight / 2) + (node.offsetHeight / 2);
 
-        // 3. 执行快速滚动 (200ms 是理性的极限)
-        fastSmoothScrollTo(container, target, 450);
+            // 调用你现有的平滑滚动函数
+            fastSmoothScrollTo(lyricsContainer, target, 450);
+        }
     }
 
+    /**
+     * 5. 交互控制：监听用户滚动
+     */
+    lyricsContainer.addEventListener('scroll', () => {
+        // 仅在同步播放且未暂停时启动锁定机制
+        if (!isSynchronized || audio.paused || currentIndex === -1) return;
+
+        isUserScrolling = true; // 开启锁，阻止 setActiveIndex 触发滚动
+        if (scrollResumeTimer) clearTimeout(scrollResumeTimer);
+
+        scrollResumeTimer = setTimeout(() => {
+            isUserScrolling = false; // 3秒后解锁
+
+            // 自动回归当前高亮行
+            if (currentIndex !== -1) {
+                const nodes = document.querySelectorAll('.lyric-line');
+                const node = nodes[currentIndex];
+                if (node) {
+                    const target = node.offsetTop - (lyricsContainer.clientHeight / 2) + (node.offsetHeight / 2);
+                    fastSmoothScrollTo(lyricsContainer, target, 450);
+                }
+            }
+        }, 3000);
+    });
+
+    /**
+     * 6. 播放结束：清除激活状态并复位
+     */
+    audio.addEventListener('ended', () => {
+        currentIndex = -1;
+        isUserScrolling = false;
+        if (scrollResumeTimer) clearTimeout(scrollResumeTimer);
+
+        const nodes = document.querySelectorAll('.lyric-line');
+        nodes.forEach(n => n.classList.remove('active'));
+        fastSmoothScrollTo(lyricsContainer, 0, 450);
+    });
+
+    /**
+     * 7. 工具：平滑滚动函数
+     */
     function fastSmoothScrollTo(el, to, duration) {
         const start = el.scrollTop;
         const change = to - start;
         const startTime = performance.now();
-
-        // 更强劲的减速曲线 (Quart)
         function easeOutQuart(t) { return 1 - (--t) * t * t * t; }
 
         function animate(now) {
@@ -593,6 +794,63 @@
             if (t < 1) requestAnimationFrame(animate);
         }
         requestAnimationFrame(animate);
+    }
+
+    /**
+     * 8. 逐字进度驱动引擎
+     */
+    /**
+     * 实时更新逐字进度：现场计算 start 到 end 的百分比
+     */
+    function updateWordsInline(currentTime) {
+        const activeNode = document.querySelector('.lyric-line.active');
+
+        // 哨兵 1: 检查活跃行是否存在
+        if (!activeNode) {
+            console.warn("[Engine] Skip: No .active line found at " + currentTime);
+            return;
+        }
+
+        const words = activeNode.querySelectorAll('.word');
+
+        // 哨兵 2: 检查是否有单词元素
+        if (words.length === 0) {
+            console.warn("[Engine] Skip: No .word elements in active line " + activeNode.dataset.index);
+            return;
+        }
+
+        words.forEach((span, i) => {
+            const start = parseFloat(span.dataset.start);
+            const end = parseFloat(span.dataset.end);
+
+            // 哨兵 3: 检查数据有效性
+            if (isNaN(start) || isNaN(end)) {
+                if (i === 0) console.error("[Engine] Data Error: Dataset is missing or NaN", span.dataset);
+                return;
+            }
+
+            const duration = end - start;
+            let finalPct = "0%";
+
+            if (currentTime < start) {
+                finalPct = "0%";
+            } else if (currentTime >= end) {
+                finalPct = "100%";
+            } else {
+                if (duration > 0) {
+                    const pct = ((currentTime - start) / duration) * 100;
+                    finalPct = Math.min(100, Math.max(0, pct)).toFixed(2) + '%';
+                }
+            }
+
+            // 哨兵 4: 采样日志 (仅输出当前行第一个词的状态，避免刷屏)
+            if (i === 0) {
+                console.log(`[Engine] Logic Check: Time=${currentTime.toFixed(3)} | Start=${start} | End=${end} | Result=${finalPct}`);
+            }
+
+            // 执行注入
+            span.style.setProperty('--progress', finalPct);
+        });
     }
 
     /* Metadata rendering */
@@ -848,17 +1106,43 @@
         renderMetadata(SERVER_TAGS, SERVER_FILE_NAME || currentFilePath.split('/').pop());
 
         // 3. LYRICS
-        if (SERVER_LYRICS) {
+
+        const base = stripExt(SERVER_FILE_PATH);
+        const ttmlUrl = base + '.ttml';
+        const lrcUrl = base + '.lrc';
+        const srtUrl = base + '.srt';
+        let lyricsText = null;
+        if (await urlExists(ttmlUrl)){
+            lyricsText = await tryFetchText(ttmlUrl);
+            if (lyricsText) {
+                const parsed = parseTTML(lyricsText);
+                if (parsed && parsed.length){
+                    lyricsData = parsed;
+                    isSynchronized = parsed.some(p => p.time != null);
+                    renderLyrics();
+                    return;
+                }
+            }
+        } else if (await urlExists(lrcUrl)){
+            lyricsText = await tryFetchText(lrcUrl);
+            if (lyricsText) {
+                await processLyricsFromText(lyricsText);
+                return;
+            }
+        } else if (await urlExists(srtUrl)){
+            lyricsText = await tryFetchText(srtUrl);
+            if (lyricsText) {
+                const parsed = parseSRT(lyricsText);
+                if (parsed && parsed.length){
+                    lyricsData = parsed;
+                    isSynchronized = parsed.some(p=>p.time!=null);
+                    renderLyrics();
+                    return;
+                }
+            }
+        } else if (SERVER_LYRICS) {
             await processLyricsFromText(SERVER_LYRICS);
         } else {
-            const base = stripExt(SERVER_FILE_PATH);
-            const lrcUrl = base + '.lrc';
-            const srtUrl = base + '.srt';
-            let lyricsText = null;
-
-            if (await urlExists(lrcUrl)){ lyricsText = await tryFetchText(lrcUrl); if (lyricsText) { await processLyricsFromText(lyricsText); return; } }
-            if (await urlExists(srtUrl)){ lyricsText = await tryFetchText(srtUrl); if (lyricsText) { const parsed = parseSRT(lyricsText); if (parsed && parsed.length){ lyricsData = parsed; isSynchronized = parsed.some(p=>p.time!=null); renderLyrics(); return; } } }
-
             // 外部文件也找不到，执行最终的清空和渲染（会触发 processLyricsFromText 的占位逻辑）
             await processLyricsFromText(null);
         }

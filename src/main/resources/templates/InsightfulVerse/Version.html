@@ -1,0 +1,159 @@
+<!--
+  Copyright 2025 Astronavigate
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  You may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insightful Verse - Version History</title>
+  <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+  <style>
+    /* 版本卡片基础：继承 liquid 的边框与圆角 */
+    .version-card {
+      margin: 16px 0;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative; /* 允许绝对定位的标签 */
+    }
+
+    /* 当前版本：半透明背景 + 文字标签 */
+    .version-card.current {
+      background: rgba(0, 163, 255, 0.06) !important;
+    }
+
+    /* 当前版本标签：移到左上，避免与 releaseDate 冲突 */
+    .current-tag {
+      font-size: 10px;
+      font-weight: 800;
+      color: #00A3FF;
+      letter-spacing: 2px;
+      border: 1px solid rgba(0, 163, 255, 0.3);
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.01);
+      width: fit-content;
+      display: inline-block; /* 独占一行 */
+    }
+
+    /* 发布日期：右上角小标签 */
+    .release-date {
+      position: absolute;
+      right: 24px;
+      top: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0.75;
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.04);
+      font-family: "JetBrains Mono", monospace;
+      white-space: nowrap;
+    }
+
+    /* 版本号：醒目、深邃 */
+    .v-header {
+      font-size: 24px; /* 增大字号 */
+      font-weight: 700;
+      font-family: "JetBrains Mono", monospace;
+      letter-spacing: -0.5px;
+    }
+
+    /* 元数据：UUID v7 / Commit ID */
+    .v-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .v-label {
+      font-size: 11px;
+      opacity: 0.4;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .v-id {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      opacity: 0.7;
+      word-break: break-all; /* 确保 UUID 不会撑破容器 */
+    }
+
+    /* 更新日志：逻辑秩序 */
+    .update-content {
+      line-height: 1.8;
+      opacity: 0.9;
+      font-size: 15px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body class="default">
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="content" style="display: flex; justify-content: center; padding: 40px 0;">
+  <div id="VersionLog" style="width: 80vw;">
+
+    <th:block th:each="version, stat : ${versionList}">
+      <div th:class="'liquid version-card ' + (${stat.first} ? 'current' : '')">
+
+        <!-- CURRENT 标签（若是 first） -->
+        <span th:if="${stat.first}" class="current-tag">CURRENT VERSION</span>
+
+        <!-- releaseDate（右上角），只在有值时显示；title 显示完整时间戳 -->
+        <time th:if="${version.releaseDate}"
+              class="release-date"
+              th:title="${#dates.format(version.releaseDate, 'yyyy-MM-dd HH:mm:ss')}"
+              th:text="${#dates.format(version.releaseDate, 'yyyy-MM-dd')}">
+          2025-01-01
+        </time>
+
+        <div class="v-header" th:text="${version.version}">1.0.0</div>
+
+        <div class="v-meta-row">
+          <span class="v-label">Commit ID:</span>
+          <span class="v-id" th:text="${version.commitId}">018d0f7a-xxxx-7xxx-xxxx-xxxxxxxxxxxx</span>
+        </div>
+
+        <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 4px 0;"></div>
+
+        <div class="update-content">
+          <div class="update-info"
+               th:utext="${version.updateInfo.replaceAll('; ', ';<br/>')}">
+          </div>
+        </div>
+
+      </div>
+    </th:block>
+
+    <div th:if="${#lists.isEmpty(versionList)}" class="liquid centered-text" style="padding: 40px; opacity: 0.4;">
+      <i class="bi-info-circle" style="font-size: 2rem;"></i>
+      <h5 style="margin-top: 1rem;">NO_RECORDS_FOUND</h5>
+    </div>
+
+  </div>
+</div>
+
+<div class="blank"></div>
+
+<!-- 脚部导航 -->
+<th:block th:replace="~{common/sub/iviep/iviep-footer :: footer}"></th:block>
+</body>
+</html>

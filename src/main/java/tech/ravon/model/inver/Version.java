@@ -20,6 +20,8 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
+import java.util.Date;
+
 import lombok.Data;
 
 @TableName(value ="version")
@@ -32,6 +34,8 @@ public class Version implements Serializable {
     private String version;
 
     private String updateInfo;
+
+    private Date releaseDate;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
@@ -50,7 +54,8 @@ public class Version implements Serializable {
         Version other = (Version) that;
         return (this.getCommitId() == null ? other.getCommitId() == null : this.getCommitId().equals(other.getCommitId()))
             && (this.getVersion() == null ? other.getVersion() == null : this.getVersion().equals(other.getVersion()))
-            && (this.getUpdateInfo() == null ? other.getUpdateInfo() == null : this.getUpdateInfo().equals(other.getUpdateInfo()));
+                && (this.getUpdateInfo() == null ? other.getUpdateInfo() == null : this.getUpdateInfo().equals(other.getUpdateInfo()))
+                && (this.getReleaseDate() == null ? other.getReleaseDate() == null : this.getReleaseDate().equals(other.getReleaseDate()));
     }
 
     @Override
@@ -60,6 +65,7 @@ public class Version implements Serializable {
         result = prime * result + ((getCommitId() == null) ? 0 : getCommitId().hashCode());
         result = prime * result + ((getVersion() == null) ? 0 : getVersion().hashCode());
         result = prime * result + ((getUpdateInfo() == null) ? 0 : getUpdateInfo().hashCode());
+        result = prime * result + ((getReleaseDate() == null) ? 0 : getReleaseDate().hashCode());
         return result;
     }
 
@@ -72,6 +78,7 @@ public class Version implements Serializable {
         sb.append(", commitId=").append(commitId);
         sb.append(", version=").append(version);
         sb.append(", updateInfo=").append(updateInfo);
+        sb.append(", releaseDate=").append(releaseDate);
         sb.append(", serialVersionUID=").append(serialVersionUID);
         sb.append("]");
         return sb.toString();

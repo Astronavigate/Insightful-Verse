@@ -28,6 +28,7 @@ import tech.ravon.service.inver.AnnotationService;
 import tech.ravon.service.inver.FileService;
 import tech.ravon.service.inver.ViewRecordService;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
 import java.util.List;
@@ -226,7 +227,27 @@ public class FileServiceImpl implements FileService {
                         "static",
                         oldFile.getFilePath()
                 );
-                Files.deleteIfExists(oldPath);
+
+                Path parentDir = oldPath.getParent();
+                String fileName = oldPath.getFileName().toString();
+                // 提取纯文件名并拼接点号，例如 "uuid."
+                int dotIndex = fileName.lastIndexOf('.');
+                String prefix = ((dotIndex == -1) ? fileName : fileName.substring(0, dotIndex)) + ".";
+
+                if (parentDir != null && Files.exists(parentDir)) {
+                    try (var stream = Files.list(parentDir)) {
+                        stream.filter(path -> path.getFileName().toString().startsWith(prefix))
+                                .forEach(path -> {
+                                    try {
+                                        Files.deleteIfExists(path);
+                                    } catch (IOException e) {
+                                        // 静默处理或记录日志
+                                    }
+                                });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
             /* ---------- database ---------- */

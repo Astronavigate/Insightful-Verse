@@ -1,0 +1,1203 @@
+<!--
+  Copyright 2025 Astronavigate
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title th:text="'Insightful Verse Player ' + ${file != null ? ' - ' + file.fileName : 'None'}">Insightful Verse Player</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <style>
+        /* -------------------------
+           1. 审美与基础设置 (冷峻, 极简, 玻璃效果)
+           ------------------------- */
+        :root{
+            /* 冷色调优先: 黑、深蓝、冰白 */
+            --bg:#030405;
+            --text:#fff;
+            --muted:#d0d6d8;
+            /* 强调色：冷色系青色，象征意志与掌控 */
+            --accent-r:102;--accent-g:252;--accent-b:241;
+            --accent:rgb(var(--accent-r),var(--accent-g),var(--accent-b));
+            --overlay-alpha:.3;
+            /* --glass-blur: 8px; */
+            --glow-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5); /* 定义发光颜色 */
+
+            /* 玻璃透明度调整：更清透 (冰白、影) */
+            --glass-alpha-light: 0.45;
+            --glass-alpha-dark: 0.55;
+        }
+
+        /* ============== 【修正核心】Flexbox 布局 ============== */
+        body,html{
+            height:100vh;margin:0;
+            background:linear-gradient(180deg,var(--bg),#07080a) !important;
+            font-family:"SF Pro Text","Segoe UI",Roboto,system-ui,-apple-system,Arial;
+            color:var(--text);
+            -webkit-font-smoothing:antialiased;
+
+            /* 关键：将 body 设置为垂直 Flex 容器 */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 假设 th:replace 的头部是一个块级元素，默认 flex-shrink: 0 */
+
+        .viewport-margin{
+            /* 关键：占据所有剩余垂直空间 */
+            flex-grow: 1;
+
+            /* 保持内容区的内边距 */
+            padding-top:4vh;
+            padding-bottom:4vh;
+            padding-left:6vw;
+            padding-right:6vw;
+            box-sizing:border-box;
+
+            /* 移除原有的固定高度（如 92vh） */
+            height: auto;
+
+            /* 确保内容在内边距内滚动 */
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        /* ======================================================= */
+
+
+        .app-container{width:100%;height:100%;position:relative}
+        .card-root{width:100%;height:100%;position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.02)}
+
+        /* 背景模糊效果 (略) */
+        .bg-root{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+        .bg-cover{position:absolute;inset:-20%;background-size:cover;background-position:center center;opacity:0;transition:opacity .9s;filter: blur(40px) brightness(0.7);transform: scale(1.1);}
+        .bg-cover.show{opacity:1}
+        .bg-overlay{position:absolute;inset:0;z-index:1;background:rgba(0,0,0,var(--overlay-alpha));pointer-events:none}
+        .bg-flow{position:absolute;inset:-30%;mix-blend-mode:screen;opacity:.95;z-index:2}
+
+        /* 仿玻璃 UI 布局 */
+        .ui-root{position:relative;z-index:4;height:100%;padding:22px;display:flex;gap:18px;align-items:stretch}
+
+        /* -------------------------
+           2. 信息面板 (info-panel)
+           ------------------------- */
+        .info-panel{
+            width:380px;
+            min-width:260px;
+            border-radius:12px;
+            padding:14px;
+            background:rgba(8, 10, 12, var(--glass-alpha-light));
+            border:1px solid rgba(255,255,255,.06);
+            backdrop-filter:blur(var(--glass-blur));
+            display:flex;flex-direction:column;gap:12px;max-height: 100%; overflow: hidden;
+        }
+
+        /* 静态头部 */
+        .info-header{display: flex;flex-direction: column;align-items: center;gap: 12px;padding-bottom: 12px;flex-shrink: 0;}
+
+        /* 专辑封面：强制正方形 */
+        .cover{
+            width: 100%;
+            max-width: 30vh;
+            max-height: 30vh;
+            aspect-ratio: 1 / 1;
+            border-radius: 6px;
+            overflow: hidden;
+            background:linear-gradient(180deg,#060708,#0b0f12);
+            margin: 0 auto;
+            padding: 0;
+        }
+        .cover img{width:100%;height:100%;object-fit:cover;display:block}
+
+        /* 标题样式 */
+        .track-info{text-align:center;width:100%;box-sizing:border-box}
+        .track-info .title{font-weight:800;font-size:18px;color: var(--text);}
+        .track-info .sep{color: rgba(208,214,216,.6);}
+        .track-info .artist{font-weight:400;font-size:15px;color:rgba(208,214,216,.6);}
+
+        /* 元信息列表 (略) */
+        .scrollable-meta{flex-grow: 1;overflow-y: auto;padding-right: 2px;}
+        .scrollable-meta::-webkit-scrollbar { width: 6px; }
+        .scrollable-meta::-webkit-scrollbar-thumb {
+            /* background-color: rgba(255, 255, 255, 0.08); */
+            border-radius: 3px; }
+        .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;align-items:start;margin-top:4px;padding-bottom: 10px;}
+        .meta-item{font-size:12px;color:var(--text);display:flex;gap:6px;align-items:flex-start;word-break:break-word;line-height:1.3;}
+        .meta-item .v{color:var(--text);min-width:100px;font-weight:700}
+        .meta-item .k{color:var(--text);min-width:40px;font-weight:500;white-space:pre-wrap;opacity:.5}
+
+        /* 固定播放控件 */
+        .audio-container-fixed {
+            padding-top: 10px;
+            background: transparent;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            margin: 0 -14px -14px -14px;
+            flex-shrink: 0;
+        }
+        .audio-bottom{display:flex;gap:8px;align-items:center;justify-content:center;padding:8px 8px 14px 8px;}
+        .audio-bottom audio{width:100%;max-width:100%;outline:0;filter:invert(.9) hue-rotate(180deg)}
+
+        /* -------------------------
+           3. 歌词面板 (纯文字流样式)
+           ------------------------- */
+        .right-panel{flex:1;display:flex;flex-direction:column;gap:18px;min-width:320px;z-index:4}
+        .panel{
+            flex:1;
+            border-radius:12px;
+            padding:14px;
+            background:rgba(14, 16, 18, var(--glass-alpha-dark));
+            border:1px solid rgba(255,255,255,.06);
+            backdrop-filter:blur(var(--glass-blur));
+            display:flex;flex-direction:column;overflow:hidden
+        }
+
+        /* 统一背景 */
+        .lyrics-module {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 10px 20px;
+            background: transparent;
+            position: relative;
+            will-change: scroll-position;
+        }
+        .lyrics-module::-webkit-scrollbar{width:6px}
+        .lyrics-module::-webkit-scrollbar-thumb{background:rgba(255,255,255,.04);border-radius:3px;border:1px solid rgba(255,255,255,.02)}
+
+        /* 歌词行样式和大小调整 */
+        .lyric-line {
+            text-align: center;
+            margin: 8px 12px;
+            padding: 6px 12px;
+            color: var(--muted);
+            opacity: 0.6;
+            font-size: 22px; /* 固定基础字号 */
+            line-height: 1.4;
+            transition:
+                    color 0.4s ease,
+                    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+                    text-shadow 0.4s ease;
+            will-change: transform;
+        }
+
+        .lyric-line.active {
+            color: rgba(224,224,224,0.8);
+            opacity: 1;
+            font-weight: 700;
+            /* 使用 scale 替代 font-size 变化 */
+            transform: scale(1.18);
+            text-shadow: 0 0 2px var(--accent), 0 0 8px var(--glow-color);
+        }
+
+        /* 激活行单词的基础样式 */
+        .lyric-line.active .word {
+            display: inline;
+            position: relative;
+
+            /* 2. 强制文字本体透明，只作为“模具”使用 */
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+
+            /* 染色层：纯白 */
+            background: linear-gradient(to right, #fff 100%, #fff 100%) no-repeat;
+            /* 核心变量：控制从左到右的宽度 */
+            background-size: var(--progress, 0%) 100%;
+
+            /* 将背景色裁剪至文字，并使原文字透明 */
+            -webkit-background-clip: text;
+            background-clip: text;
+
+            /* 线性平滑：补偿 timeUpdate 的频率空隙，确保肉眼看去是持续流动的 */
+            transition: background-size 0.2s linear;
+        }
+
+        /* 非激活行：保持冷静与间距，不显示染色效果 */
+        .lyric-line:not(.active) .word {
+            -webkit-text-fill-color: initial;
+            color: inherit;
+            opacity: 0.6;
+        }
+    </style>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <th:block th:replace="~{common/sub/iviep/lib/view-history :: viewhist}"></th:block>
+</head>
+
+<body style="/* background-color:#0a0a0a */"
+      th:attr="data-file-path=${file != null ? file.filePath : ''},
+               data-file-name=${file != null ? file.fileName : ''},
+               data-album=${album},
+               data-album_artist=${album_artist},
+               data-artist=${artist},
+               data-composer=${composer},
+               data-comment=${comment},
+               data-copyreight=${copyright},
+               data-disc_no=${disc_no},
+               data-disc_total=${disc_total},
+               data-genre=${genre},
+               data-isrc=${isrc},
+               data-lyrics=${lyrics},
+               data-performer=${performer},
+               data-title=${title},
+               data-track=${track},
+               data-track_total=${track_total},
+               data-upc=${upc},
+               data-year=${year},
+               data-cover=${cover},
+               data-duration=${duration},
+               data-bitrate=${bitrate},
+               data-sampleRate=${sampleRate},
+               data-channels=${channels},
+               data-encodingType=${encodingType}">
+
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+
+<div class="viewport-margin">
+    <div class="app-container">
+        <div class="card-root">
+            <div class="bg-root" id="bgRoot"></div>
+            <div class="bg-overlay" id="bgOverlay"></div>
+            <div class="bg-flow" id="bgFlow"></div>
+            <div class="ui-root">
+                <div class="info-panel" id="infoPanel">
+
+                    <div class="info-header">
+                        <div class="cover">
+                            <img id="coverImg" src="" alt="Album Art">
+                        </div>
+                        <div id="trackInfo" class="track-info" aria-hidden="false" style="display:none"></div>
+                    </div>
+
+                    <div class="scrollable-meta">
+                        <div class="meta-grid" id="metaGrid">
+                        </div>
+                    </div>
+
+                    <div class="audio-container-fixed" id="audioContainerFixed">
+                        <div class="audio-bottom" id="audioBottom">
+                            <audio id="audio" controls preload="metadata"></audio>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <div class="panel">
+                        <div class="lyrics-module" id="lyricsContainer">
+                            <div style="text-align:center;opacity:.22;margin-top:6px">NO DATA</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /* -------------------------
+        DOM & State
+        ------------------------- */
+    const audio = document.getElementById('audio');
+    const coverImg = document.getElementById('coverImg');
+    const lyricsContainer = document.getElementById('lyricsContainer');
+    const metaGrid = document.getElementById('metaGrid');
+    const bgRoot = document.getElementById('bgRoot');
+    const bgFlow = document.getElementById('bgFlow');
+    const bgOverlay = document.getElementById('bgOverlay');
+    const trackInfo = document.getElementById('trackInfo');
+
+    // Server-injected attributes
+    const SERVER_FILE_PATH = document.body.dataset.filePath || '';
+    const SERVER_FILE_NAME = document.body.dataset.fileName || '';
+    const SERVER_COVER = document.body.dataset.cover || '';
+    const SERVER_LYRICS = document.body.dataset.lyrics || '';
+    const SERVER_TAGS = {
+        artist: document.body.dataset.artist,
+        title: document.body.dataset.title,
+        album: document.body.dataset.album,
+        year: document.body.dataset.year,
+        genre: document.body.dataset.genre,
+        composer: document.body.dataset.composer,
+        performer: document.body.dataset.performer,
+        album_artist: document.body.dataset.albumArtist,
+        track: document.body.dataset.track,
+        track_total: document.body.dataset.track_total,
+        disc_no: document.body.dataset.discNo,
+        disk_total: document.body.dataset.disk_total,
+        comment: document.body.dataset.comment,
+        copyright: document.body.dataset.copyright,
+        isrc: document.body.dataset.isrc,
+        upc: document.body.dataset.upc,
+
+        duration: document.body.dataset.duration,
+        bitrate: document.body.dataset.bitrate,
+        sampleRate: document.body.dataset.samplerate,
+        channels: document.body.dataset.channels,
+        encodingType: document.body.dataset.encodingtype,
+        encoder: document.body.dataset.encoder
+    };
+
+    for (const key in SERVER_TAGS) {
+        if (!SERVER_TAGS[key] || String(SERVER_TAGS[key]).trim() === 'null') {
+            delete SERVER_TAGS[key];
+        } else {
+            SERVER_TAGS[key] = String(SERVER_TAGS[key]).trim();
+        }
+    }
+
+
+    let currentFilePath = null;
+    let lyricsData = [];
+    let isSynchronized = false;
+    let currentIndex = -1;
+    let isUserScrolling = false; // 用户手动滚动锁
+    let scrollResumeTimer = null; // 自动复位定时器
+    const DEFAULT_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Crect width='600' height='600' fill='%230b0c10'/%3E%3Cpath d='M300 200 L400 360 L200 360 Z' fill='none' stroke='%23333' stroke-width='3'/%3E%3C/svg%3E";
+    coverImg.src = DEFAULT_COVER; setBackgroundCover(DEFAULT_COVER, true); deriveAccentFromImage(DEFAULT_COVER);
+
+    audio.addEventListener('timeupdate', timeUpdateHandler);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+    // 播放状态监听：用于更新 Media Session API 的状态
+    audio.addEventListener('play', () => { if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; });
+    audio.addEventListener('pause', () => { if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; });
+
+    lyricsContainer.addEventListener('scroll', () => {});
+
+
+    /* helpers */
+    function updateStatus(msg){ console.log('STATUS:', msg); }
+    function stripExt(n){ return n.replace(/\.[^/.]+$/, ''); }
+
+    function updateTrackHeader(title, artist){
+        title = String(title || '').trim(); artist = String(artist || '').trim();
+        if (!title && !artist){ trackInfo.style.display = 'none'; trackInfo.innerHTML = ''; return; }
+        const safeTitle = escapeHtml(title || ''); const safeArtist = escapeHtml(artist || '');
+
+        if (safeArtist){
+            trackInfo.innerHTML = `<span class="title">${safeTitle}</span> <span class="sep">-</span> <span class="artist">${safeArtist}</span>`;
+        } else {
+            trackInfo.innerHTML = `<span class="title">${safeTitle}</span>`;
+        }
+        trackInfo.style.display = 'block';
+    }
+
+    /* Background helpers */
+    function setBackgroundCover(url, immediate=false){
+        const div = document.createElement('div'); div.className = 'bg-cover'; div.style.backgroundImage = `url('${url}')`;
+        bgRoot.appendChild(div);
+        requestAnimationFrame(()=> div.classList.add('show'));
+        setTimeout(()=>{ const covers = document.querySelectorAll('.bg-cover'); for (let i=0;i<covers.length-1;i++){ try{ covers[i].remove(); }catch{} } }, 1200);
+    }
+
+    function deriveAccentFromImage(url){
+        try {
+            const img = new Image(); img.crossOrigin = 'anonymous'; img.src = url;
+            img.onload = () => {
+                const w = Math.min(200, img.width), h = Math.min(200, img.height);
+                const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d'); const sx = Math.max(0,(img.width-w)/2), sy = Math.max(0,(img.height-h)/2);
+                ctx.drawImage(img, sx, sy, w, h, 0, 0, w, h);
+                const data = ctx.getImageData(0,0,w,h).data;
+                let r=0,g=0,b=0,count=0;
+                for (let i=0;i<data.length;i+=4){
+                    if (data[i+3] < 40) continue;
+                    r+=data[i]; g+=data[i+1]; b+=data[i+2]; count++;
+                }
+                if (!count) return;
+                r=Math.round(r/count); g=Math.round(g/count); b=Math.round(b/count);
+                document.documentElement.style.setProperty('--accent-r', r);
+                document.documentElement.style.setProperty('--accent-g', g);
+                document.documentElement.style.setProperty('--accent-b', b);
+                const flowColor = `rgba(${r},${g},${b},.1)`;
+                bgFlow.style.background = `linear-gradient(120deg, ${flowColor}, rgba(255,255,255,.02) 40%, rgba(0,0,0,.06))`;
+                const alpha = getComputedStyle(document.documentElement).getPropertyValue('--overlay-alpha') || 0.3;
+                bgOverlay.style.background = `rgba(0,0,0,${alpha})`;
+                document.documentElement.style.setProperty('--glow-color', `rgba(${r}, ${g}, ${b}, 0.5)`); // 更新发光颜色变量
+            };
+            img.onerror = ()=>{};
+        } catch(e){ console.warn('deriveAccentFromImage err', e); }
+    }
+
+    /* Parsers & Lyrics pipeline */
+    function parseTTML(xmlText) {
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const pElements = xmlDoc.getElementsByTagName("p");
+            const results = [];
+
+            for (const p of pElements) {
+                const pBegin = p.getAttribute("begin");
+                const pEnd = p.getAttribute("end");
+                const pTime = pBegin ? parseTimeToSeconds(pBegin) : 0;
+                const pEndTime = pEnd ? parseTimeToSeconds(pEnd) : pTime + 1;
+
+                const spans = p.getElementsByTagName("span");
+                let words = [];
+
+                if (spans.length > 0) {
+                    for (const span of spans) {
+                        const rawText = span.textContent;
+                        const wordText = rawText.trim();
+
+                        if (wordText) {
+                            const spanBegin = span.getAttribute("begin");
+                            const spanEnd = span.getAttribute("end");
+                            const spanDur = span.getAttribute("dur");
+
+                            // 【核心修正】直接解析绝对时间，不与 pTime 相加
+                            let sTime = spanBegin ? parseTimeToSeconds(spanBegin) : pTime;
+                            let eTime;
+
+                            if (spanEnd) {
+                                eTime = parseTimeToSeconds(spanEnd);
+                            } else if (spanDur) {
+                                eTime = sTime + parseTimeToSeconds(spanDur);
+                            } else {
+                                // 如果都没有，至少保证它在 p 的范围内
+                                eTime = pEndTime;
+                            }
+
+                            words.push({
+                                startTime: sTime,
+                                endTime: eTime,
+                                word: wordText,
+                                hasTrailingSpace: /\s$/.test(rawText) || rawText.includes(' ')
+                            });
+                        }
+                    }
+                }
+
+                results.push({
+                    time: pTime,
+                    text: p.textContent.trim().replace(/\s+/g, ' '),
+                    words: words.length > 0 ? words : null
+                });
+            }
+            return results;
+        } catch (e) {
+            console.error("TTML Parsing Error:", e);
+            return [];
+        }
+    }
+
+    function parseTimeToSeconds(timeStr) {
+        if (!timeStr) return 0;
+
+        // 1. 处理度量单位格式: "1.5s", "100ms", "2t" (ticks), "3f" (frames)
+        const match = timeStr.match(/^([\d.]+)(s|ms|t|f)$/);
+        if (match) {
+            const value = parseFloat(match[1]);
+            const unit = match[2];
+            switch (unit) {
+                case 's': return value;
+                case 'ms': return value / 1000;
+                case 't': return value / 100; // 假设每秒 100 ticks，视规范而定
+                case 'f': return value / 24;  // 假设 24 fps
+            }
+        }
+
+        // 2. 处理时钟格式: "00:00:01.500" 或 "00:01.5"
+        const parts = timeStr.split(':').map(parseFloat);
+        if (parts.length === 3) {
+            return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        } else if (parts.length === 2) {
+            return parts[0] * 60 + parts[1];
+        }
+
+        return parseFloat(timeStr) || 0;
+    }
+
+    function parseLRC(lrc){
+        const lines = String(lrc).split(/\r?\n/);
+        const results = [];
+        let offset = 0;
+        let title = '', artist = '', album = '';
+
+        for (const line of lines) {
+            const timeMatch = line.match(/\[(\d{1,2}):(\d{2})\.(\d{2,3})\]/g);
+            if (timeMatch) {
+                const text = line.replace(/\[(\d{1,2}):(\d{2})\.(\d{2,3})\]/g, '').trim();
+                for (const tm of timeMatch) {
+                    const parts = tm.match(/\[(\d{1,2}):(\d{2})\.(\d{2,3})\]/);
+                    if (parts) {
+                        const minutes = parseInt(parts[1], 10);
+                        const seconds = parseInt(parts[2], 10);
+                        const milliseconds = parseInt(parts[3].padEnd(3, '0'), 10);
+                        const time = minutes * 60 + seconds + milliseconds / 1000;
+                        results.push({ time, text, raw: line });
+                    }
+                }
+            } else if (line.startsWith('[ti:')) { title = line.substring(4, line.length - 1).trim(); }
+            else if (line.startsWith('[ar:')) { artist = line.substring(4, line.length - 1).trim(); }
+            else if (line.startsWith('[al:')) { album = line.substring(4, line.length - 1).trim(); }
+            else if (line.startsWith('[offset:')) { offset = parseInt(line.substring(8, line.length - 1), 10); }
+            else if (line.startsWith('[') || line.trim() === '') { continue; }
+            else {
+                results.push({ time: null, text: line.trim(), raw: line });
+            }
+        }
+        results.sort((a, b) => (a.time === null ? Infinity : a.time) - (b.time === null ? Infinity : b.time));
+
+        if (offset !== 0) {
+            results.forEach(r => { if (r.time !== null) r.time += offset / 1000; });
+        }
+        return results;
+    }
+
+    function parseSRT(srt){
+        const results = [];
+        const blocks = String(srt).split(/\r?\n\r?\n/);
+
+        for (const block of blocks) {
+            const lines = block.trim().split(/\r?\n/);
+            if (lines.length < 2) continue;
+
+            // SRT time format: 00:00:00,000 --> 00:00:00,000
+            const timeLine = lines.find(line => line.includes('-->'));
+            if (!timeLine) continue;
+
+            const timeMatch = timeLine.match(/(\d{2}):(\d{2}):(\d{2}),(\d{3})/g);
+            if (!timeMatch || timeMatch.length < 1) continue;
+
+            const startTimeStr = timeMatch[0];
+
+            const textLines = lines.slice(lines.indexOf(timeLine) + 1).filter(l => l.trim() !== '');
+            const text = textLines.join(' ').replace(/<[^>]*>/g, '').trim(); // Remove HTML tags common in SRT
+
+            if (text) {
+                const parts = startTimeStr.match(/(\d{2}):(\d{2}):(\d{2}),(\d{3})/);
+                if (parts) {
+                    const hours = parseInt(parts[1], 10);
+                    const minutes = parseInt(parts[2], 10);
+                    const seconds = parseInt(parts[3], 10);
+                    const milliseconds = parseInt(parts[4], 10);
+                    const time = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+                    results.push({ time, text, raw: block });
+                }
+            }
+        }
+        results.sort((a, b) => a.time - b.time);
+        return results;
+    }
+
+    /**
+     * 1. 处理歌词文本并初始化
+     */
+    async function processLyricsFromText(embeddedText) {
+        lyricsData = []; isSynchronized = false; currentIndex = -1;
+
+        if (embeddedText && typeof embeddedText === 'string') {
+            const looksLikeLrc = /\[\d{1,2}:\d{2}/.test(embeddedText) || /<\d{1,2}:\d{2}/.test(embeddedText);
+            if (looksLikeLrc) {
+                const parsed = parseLRC(embeddedText);
+                if (parsed.length) {
+                    lyricsData = parsed;
+                    isSynchronized = parsed.some(p => p.time != null);
+                    renderLyrics();
+                    return;
+                }
+            }
+            const lines = embeddedText.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+            if (lines.length) {
+                lyricsData = lines.map((t, i) => ({ time: null, text: t, words: null, raw: t }));
+                isSynchronized = false;
+                renderLyrics();
+                return;
+            }
+        }
+
+        // 占位逻辑
+        if (!lyricsData || lyricsData.length === 0) {
+            lyricsData = [{ time: null, text: "No Lyrics Available", words: null, raw: "No Lyrics Available" }];
+            isSynchronized = false;
+        }
+        renderLyrics();
+    }
+
+    /**
+     * 2. 渲染歌词 DOM
+     */
+    function renderLyrics() {
+        lyricsContainer.innerHTML = '';
+        currentIndex = -1;
+
+        lyricsData.forEach((line, idx) => {
+            const div = document.createElement('div');
+            div.className = 'lyric-line visible' + (isSynchronized ? '' : ' un-sync');
+            div.dataset.index = idx;
+            const timeInSeconds = line.time != null ? line.time : -1;
+            div.dataset.time = timeInSeconds;
+
+            // 占位符样式处理
+            if (line.text === "No Lyrics Available") {
+                div.style.opacity = '0.4';
+                div.style.fontSize = '18px';
+                div.style.pointerEvents = 'none';
+            }
+
+            // --- 逐字渲染逻辑 ---
+            if (line.words && line.words.length > 0) {
+                div.innerHTML = '';
+                line.words.forEach((w, i) => {
+                    const span = document.createElement('span');
+                    span.className = 'word';
+
+                    // 修复分词空格：如果标记有空格或者是本行最后一个词，加空格；否则不加
+                    const needsSpace = w.hasTrailingSpace || (i === line.words.length - 1);
+                    span.textContent = w.word + (needsSpace ? ' ' : '');
+
+                    span.dataset.start = w.startTime;
+                    // 为驱动逻辑预留结束时间
+                    span.dataset.end = w.endTime;
+                    div.appendChild(span);
+                });
+            } else {
+                // 普通 LRC 或无逐字数据的 fallback
+                div.innerHTML = escapeHtml(line.text || '');
+            }
+
+            div.addEventListener('click', () => {
+                if (timeInSeconds >= 0) audio.currentTime = timeInSeconds;
+            });
+            lyricsContainer.appendChild(div);
+        });
+    }
+
+    /**
+     * 3. 核心：时间更新回调 (含重新播放重置)
+     */
+    function timeUpdateHandler() {
+        if (!isSynchronized || !lyricsData.length) return;
+        const cur = audio.currentTime;
+
+        if (cur < 0.1 && currentIndex !== -1) {
+            setActiveIndex(-1);
+            currentIndex = -1;
+            fastSmoothScrollTo(lyricsContainer, 0, 450);
+            return;
+        }
+
+        const rightBound = lyricsData.findIndex(x => x.time == null);
+        const endIndex = rightBound === -1 ? lyricsData.length - 1 : rightBound - 1;
+        if (endIndex < 0) return;
+
+        let lo = 0, hi = endIndex, found = -1;
+        while (lo <= hi) {
+            const mid = Math.floor((lo + hi) / 2);
+            const t = lyricsData[mid].time;
+            if (t != null && t <= cur) { found = mid; lo = mid + 1; }
+            else hi = mid - 1;
+        }
+
+        if (found !== currentIndex) {
+            setActiveIndex(found);
+            currentIndex = found;
+        }
+
+        updateWordsInline(cur);
+    }
+
+    /**
+     * 4. 设置激活行 (含手动滚动锁判断)
+     */
+    function setActiveIndex(index) {
+        const nodes = document.querySelectorAll('.lyric-line');
+        if (!nodes.length) return;
+
+        // 1. 状态清理：移除旧行的 active 状态，并重置所有单词的进度变量
+        nodes.forEach(n => {
+            n.classList.remove('active');
+            // 关键：彻底清除所有单词的 CSS 变量进度，防止回退或跳转时出现视觉残留
+            const words = n.querySelectorAll('.word');
+            words.forEach(w => w.style.setProperty('--progress', '0%'));
+        });
+
+        // 2. 边界检查
+        if (index === -1 || !nodes[index]) return;
+
+        // 3. 激活新行：为新行 node 注入 active 类，开启 CSS 渐变渲染开关
+        const node = nodes[index];
+        node.classList.add('active');
+
+        // 4. 滚动逻辑：仅在用户未手动干预时自动对齐
+        if (!isUserScrolling) {
+            // 计算目标滚动位置：将当前行置于容器中心
+            const target = node.offsetTop - (lyricsContainer.clientHeight / 2) + (node.offsetHeight / 2);
+
+            // 调用你现有的平滑滚动函数
+            fastSmoothScrollTo(lyricsContainer, target, 450);
+        }
+    }
+
+    /**
+     * 5. 交互控制：监听用户滚动
+     */
+    lyricsContainer.addEventListener('scroll', () => {
+        // 仅在同步播放且未暂停时启动锁定机制
+        if (!isSynchronized || audio.paused || currentIndex === -1) return;
+
+        isUserScrolling = true; // 开启锁，阻止 setActiveIndex 触发滚动
+        if (scrollResumeTimer) clearTimeout(scrollResumeTimer);
+
+        scrollResumeTimer = setTimeout(() => {
+            isUserScrolling = false; // 3秒后解锁
+
+            // 自动回归当前高亮行
+            if (currentIndex !== -1) {
+                const nodes = document.querySelectorAll('.lyric-line');
+                const node = nodes[currentIndex];
+                if (node) {
+                    const target = node.offsetTop - (lyricsContainer.clientHeight / 2) + (node.offsetHeight / 2);
+                    fastSmoothScrollTo(lyricsContainer, target, 450);
+                }
+            }
+        }, 3000);
+    });
+
+    /**
+     * 6. 播放结束：清除激活状态并复位
+     */
+    audio.addEventListener('ended', () => {
+        currentIndex = -1;
+        isUserScrolling = false;
+        if (scrollResumeTimer) clearTimeout(scrollResumeTimer);
+
+        const nodes = document.querySelectorAll('.lyric-line');
+        nodes.forEach(n => n.classList.remove('active'));
+        fastSmoothScrollTo(lyricsContainer, 0, 450);
+    });
+
+    /**
+     * 7. 工具：平滑滚动函数
+     */
+    function fastSmoothScrollTo(el, to, duration) {
+        const start = el.scrollTop;
+        const change = to - start;
+        const startTime = performance.now();
+        function easeOutQuart(t) { return 1 - (--t) * t * t * t; }
+
+        function animate(now) {
+            const t = Math.min(1, (now - startTime) / duration);
+            el.scrollTop = start + change * easeOutQuart(t);
+            if (t < 1) requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+    }
+
+    /**
+     * 8. 逐字进度驱动引擎
+     */
+    /**
+     * 实时更新逐字进度：现场计算 start 到 end 的百分比
+     */
+    function updateWordsInline(currentTime) {
+        const activeNode = document.querySelector('.lyric-line.active');
+
+        // 哨兵 1: 检查活跃行是否存在
+        if (!activeNode) {
+            console.warn("[Engine] Skip: No .active line found at " + currentTime);
+            return;
+        }
+
+        const words = activeNode.querySelectorAll('.word');
+
+        // 哨兵 2: 检查是否有单词元素
+        if (words.length === 0) {
+            console.warn("[Engine] Skip: No .word elements in active line " + activeNode.dataset.index);
+            return;
+        }
+
+        words.forEach((span, i) => {
+            const start = parseFloat(span.dataset.start);
+            const end = parseFloat(span.dataset.end);
+
+            // 哨兵 3: 检查数据有效性
+            if (isNaN(start) || isNaN(end)) {
+                if (i === 0) console.error("[Engine] Data Error: Dataset is missing or NaN", span.dataset);
+                return;
+            }
+
+            const duration = end - start;
+            let finalPct = "0%";
+
+            if (currentTime < start) {
+                finalPct = "0%";
+            } else if (currentTime >= end) {
+                finalPct = "100%";
+            } else {
+                if (duration > 0) {
+                    const pct = ((currentTime - start) / duration) * 100;
+                    finalPct = Math.min(100, Math.max(0, pct)).toFixed(2) + '%';
+                }
+            }
+
+            // 哨兵 4: 采样日志 (仅输出当前行第一个词的状态，避免刷屏)
+            if (i === 0) {
+                console.log(`[Engine] Logic Check: Time=${currentTime.toFixed(3)} | Start=${start} | End=${end} | Result=${finalPct}`);
+            }
+
+            // 执行注入
+            span.style.setProperty('--progress', finalPct);
+        });
+    }
+
+    /* Metadata rendering */
+    function formatTagName(tagKey) {
+        if (tagKey === 'FILE NAME') return tagKey;
+        const key = String(tagKey).replace(/_/g, ' ').toLowerCase();
+        return key.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
+    function renderMetadata(tags, fileName){
+        const titleForHeader = tags.title || (fileName ? stripExt(fileName) : '');
+        const artistForHeader = tags.artist || '';
+        updateTrackHeader(titleForHeader, artistForHeader);
+
+        metaGrid.innerHTML = '';
+        const order = ['title', 'artist', 'album', 'album_artist', 'year', 'genre', 'track', 'track_total', 'disc_no', 'disc_total', 'duration', 'bitrate', 'samplerate', 'channels', 'encodingtype', 'composer', 'copyright', 'isrc', 'upc', 'encoder', 'file name'];
+
+        const addedKeys = new Set();
+
+        for (const key of order) {
+            let val = tags[key] || '';
+            if (key === 'file name' && !val) val = fileName;
+            if (val) {
+                if (key === 'duration' && val && !isNaN(val)) val = formatDuration(Number(val));
+                if (key === 'bitrate' && val && !isNaN(val)) val = val + ' kbps';
+                if (key === 'samplerate' && val && !isNaN(val)) val = val + ' Hz';
+                if (key === 'channels') val = val === '2' ? 'Stereo' : (val === '1' ? 'Mono' : val);
+
+                appendMetaItem(formatTagName(key), val);
+                addedKeys.add(key);
+            }
+        }
+
+        for (const key in tags) {
+            if (!addedKeys.has(key) && tags[key]) {
+                appendMetaItem(formatTagName(key), tags[key]);
+            }
+        }
+    }
+
+    function appendMetaItem(k,v, dynamic=false){
+        const keyLower = k.toLowerCase();
+        const found = Array.from(metaGrid.querySelectorAll('.meta-item .k')).find(n=>n && n.innerText.toLowerCase() === keyLower);
+        if (found && !dynamic) return;
+        if (found && dynamic){ const parent = found.parentElement; if (parent) parent.remove(); }
+        const div = document.createElement('div'); div.className = 'meta-item' + (dynamic ? ' dynamic' : '');
+        const ks = document.createElement('div'); ks.className = 'k'; ks.innerText = k;
+        const vs = document.createElement('div'); vs.className = 'v'; vs.innerText = v;
+        div.appendChild(ks); div.appendChild(vs); metaGrid.appendChild(div);
+    }
+
+    function handleLoadedMetadata(){ updateStatus('Audio metadata loaded'); }
+
+    function formatDuration(sec){ if (!sec || !isFinite(sec) || sec<=0) return 'Unknown'; const s=Math.floor(sec%60), m=Math.floor((sec/60)%60), h=Math.floor(sec/3600); return (h>0? h+':'+String(m).padStart(2,'0') : m) + ':' + String(s).padStart(2,'0'); }
+    function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+
+    // =========================================================================
+    // 【核心新增功能 1】尺寸压缩与 Blob 转换
+    // =========================================================================
+
+    /**
+     * 转换 Base64 Data URI 为 Blob 对象。
+     */
+    function base64ToBlob(base64DataUri) {
+        if (!base64DataUri || !base64DataUri.startsWith('data:')) return null;
+        try {
+            const parts = base64DataUri.split(',');
+            const mimeType = parts[0].match(/:(.*?);/)[1];
+            const data = atob(parts[1]);
+            const arrayBuffer = new ArrayBuffer(data.length);
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            for (let i = 0; i < data.length; i++) {
+                uint8Array[i] = data.charCodeAt(i);
+            }
+            return new Blob([uint8Array], { type: mimeType });
+        } catch (e) {
+            console.error('Failed to convert Base64 to Blob:', e);
+            return null;
+        }
+    }
+
+    /**
+     * 加载图像，将其压缩到指定尺寸 (512x512)，并返回新的 Blob URL。
+     */
+    async function resizeImageToBlobUrl(url, targetSize = 512) {
+        if (url === DEFAULT_COVER) return url;
+
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = targetSize;
+                canvas.height = targetSize;
+                const ctx = canvas.getContext('2d');
+
+                // 计算裁切和缩放
+                const imgRatio = img.width / img.height;
+                const canvasRatio = targetSize / targetSize;
+
+                let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+
+                if (imgRatio > canvasRatio) {
+                    drawHeight = targetSize;
+                    drawWidth = img.width * (targetSize / img.height);
+                    offsetX = (targetSize - drawWidth) / 2;
+                } else {
+                    drawWidth = targetSize;
+                    drawHeight = img.height * (targetSize / img.width);
+                    offsetY = (targetSize - drawHeight) / 2;
+                }
+
+                ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+
+                // 输出为 Blob URL
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(URL.createObjectURL(blob));
+                    } else {
+                        console.warn('Canvas toBlob failed, using original URL.');
+                        resolve(url);
+                    }
+                }, 'image/jpeg', 0.8);
+            };
+            img.onerror = () => {
+                console.warn('Image failed to load for resizing, using original URL.');
+                resolve(url);
+            };
+
+            // 如果是 Base64，先转为 Blob 再加载，避免直接在 img.src 使用超长 Base64
+            if (url.startsWith('data:')) {
+                const blob = base64ToBlob(url);
+                if (blob) {
+                    img.src = URL.createObjectURL(blob);
+                } else {
+                    img.src = url; // 回退
+                }
+            } else {
+                img.src = url;
+            }
+        });
+    }
+
+    // =========================================================================
+    // 【核心新增功能 2】Media Session API 控件
+    // =========================================================================
+
+    /**
+     * 更新 Media Session 的元数据
+     */
+    function updateMediaSessionMetadata(title, artist, album, artworkSrc) {
+        if (!('mediaSession' in navigator)) { return; }
+
+        let mimeType = 'image/jpeg';
+        if (artworkSrc && artworkSrc.startsWith('data:')) {
+            const match = artworkSrc.match(/^data:(image\/[^;]+);/);
+            if (match) {
+                mimeType = match[1];
+            }
+        }
+
+        const artwork = [{
+            src: artworkSrc || DEFAULT_COVER,
+            sizes: '512x512',
+            type: mimeType
+        }];
+
+        try {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: title || 'Untitled Track',
+                artist: artist || 'Unknown Artist',
+                album: album || 'Unknown Album',
+                artwork: artwork
+            });
+            console.log('Media Session Metadata updated successfully with 512x512 URL.');
+        } catch (error) {
+            console.error('Error setting MediaMetadata:', error);
+        }
+    }
+
+    /**
+     * 设置 Media Session 的动作处理器
+     */
+    function updateMediaSessionActionHandlers() {
+        if (!('mediaSession' in navigator)) return;
+
+        navigator.mediaSession.setActionHandler('play', () => {
+            if (audio.paused) audio.play();
+        });
+
+        navigator.mediaSession.setActionHandler('pause', () => {
+            if (!audio.paused) audio.pause();
+        });
+
+        const seekTime = 10;
+        navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+            const time = details.seekOffset || seekTime;
+            audio.currentTime = Math.max(0, audio.currentTime - time);
+        });
+
+        navigator.mediaSession.setActionHandler('seekforward', (details) => {
+            const time = details.seekOffset || seekTime;
+            audio.currentTime = Math.min(audio.duration, audio.currentTime + time);
+        });
+
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+            if (details.seekTime !== undefined && details.seekTime !== null) {
+                audio.currentTime = details.seekTime;
+            }
+        });
+
+        navigator.mediaSession.setActionHandler('previoustrack', null);
+        navigator.mediaSession.setActionHandler('nexttrack', null);
+    }
+
+    // =========================================================================
+    // Loading flow
+    // =========================================================================
+
+    async function loadFromInjectedData(){
+        if (!SERVER_FILE_PATH){ updateStatus('No server file path provided'); return; }
+
+        currentFilePath = SERVER_FILE_PATH;
+        audio.src = currentFilePath;
+        audio.load();
+
+        // 1. COVER - 获取原始封面 URL 或 Base64
+        let foundImg = SERVER_COVER;
+        if (!foundImg) {
+            const base = stripExt(SERVER_FILE_PATH);
+            if (await tryImageUrl(base + '.jpg')){ foundImg = base + '.jpg'; }
+            else if (await tryImageUrl(base + '.jpeg')){ foundImg = base + '.jpeg'; }
+            else if (await tryImageUrl(base + '.png')){ foundImg = base + '.png'; }
+        }
+        const finalCover = foundImg || DEFAULT_COVER;
+
+        // a. HTML DOM 封面显示
+        coverImg.src = finalCover;
+        setBackgroundCover(finalCover);
+        deriveAccentFromImage(finalCover);
+
+        // b. Media Session 封面准备：压缩到 512x512，生成新的 Blob URL
+        const mediaSessionArtworkUrl = await resizeImageToBlobUrl(finalCover, 512);
+
+
+        // 2. METADATA (保持不变)
+        const titleForHeader = SERVER_TAGS.title || (SERVER_FILE_NAME ? stripExt(SERVER_FILE_NAME) : '');
+        const artistForHeader = SERVER_TAGS.artist || '';
+        const albumForHeader = SERVER_TAGS.album || '';
+
+        renderMetadata(SERVER_TAGS, SERVER_FILE_NAME || currentFilePath.split('/').pop());
+
+
+        // 3. Media Session API 初始化，使用压缩后的 Blob URL
+        updateMediaSessionMetadata(titleForHeader, artistForHeader, albumForHeader, mediaSessionArtworkUrl);
+        updateMediaSessionActionHandlers();
+
+
+        // 4. LYRICS
+
+        const base = stripExt(SERVER_FILE_PATH);
+        const ttmlUrl = base + '.ttml';
+        const lrcUrl = base + '.lrc';
+        const srtUrl = base + '.srt';
+        let lyricsText = null;
+        if (await urlExists(ttmlUrl)){
+            lyricsText = await tryFetchText(ttmlUrl);
+            if (lyricsText) {
+                const parsed = parseTTML(lyricsText);
+                if (parsed && parsed.length){
+                    lyricsData = parsed;
+                    isSynchronized = parsed.some(p => p.time != null);
+                    renderLyrics();
+                    return;
+                }
+            }
+        } else if (await urlExists(lrcUrl)){
+            lyricsText = await tryFetchText(lrcUrl);
+            if (lyricsText) {
+                await processLyricsFromText(lyricsText);
+                return;
+            }
+        } else if (await urlExists(srtUrl)){
+            lyricsText = await tryFetchText(srtUrl);
+            if (lyricsText) {
+                const parsed = parseSRT(lyricsText);
+                if (parsed && parsed.length){
+                    lyricsData = parsed;
+                    isSynchronized = parsed.some(p=>p.time!=null);
+                    renderLyrics();
+                    return;
+                }
+            }
+        } else if (SERVER_LYRICS) {
+            await processLyricsFromText(SERVER_LYRICS);
+        } else {
+            // 外部文件也找不到，执行最终的清空和渲染（会触发 processLyricsFromText 的占位逻辑）
+            await processLyricsFromText(null);
+        }
+    }
+
+
+    /* Utility functions for external file check */
+    async function urlExists(url){
+        try { const r = await fetch(url, { method: 'HEAD' }); return r.ok; }
+        catch(e){ try { const r2 = await fetch(url, { method: 'GET' }); return r2.ok; } catch(e2){ return false; } }
+    }
+    async function tryFetchText(url){
+        try {
+            const r = await fetch(url);
+            if (!r.ok) return null;
+            const ct = r.headers.get('content-type') || '';
+            if (ct.includes('text') || ct.includes('application/octet-stream') || ct.includes('application/x-subrip') || ct.includes('application/json')){ return await r.text(); }
+            return await r.text();
+        } catch(e){ return null; }
+    }
+    async function tryImageUrl(url){
+        try {
+            const r = await fetch(url, { method: 'GET' });
+            if (!r.ok) return false;
+            const ct = r.headers.get('content-type') || '';
+            return ct.startsWith('image/');
+        } catch(e){ return false; }
+    }
+
+
+    /* init visuals */
+    (function initFlowColor(){
+        const r=getComputedStyle(document.documentElement).getPropertyValue('--accent-r')||'102';
+        const g=getComputedStyle(document.documentElement).getPropertyValue('--accent-g')||'252';
+        const b=getComputedStyle(document.documentElement).getPropertyValue('--accent-b')||'241';
+        bgFlow.style.background=`linear-gradient(120deg, rgba(${r},${g},${b},.1), rgba(255,255,255,.02) 40%, rgba(0,0,0,.06))`;
+        const alpha = getComputedStyle(document.documentElement).getPropertyValue('--overlay-alpha') || 0.3;
+        bgOverlay.style.background = `rgba(0,0,0,${alpha})`;
+    })();
+
+
+    // start
+    document.addEventListener('DOMContentLoaded', ()=> {
+        loadFromInjectedData().catch(e=> console.error('Initialization error:', e));
+    });
+</script>
+</body>
+</html>

@@ -31,10 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import tech.ravon.model.inver.Course;
-import tech.ravon.model.inver.File;
-import tech.ravon.model.inver.User;
-import tech.ravon.model.inver.ViewRecord;
+import tech.ravon.model.inver.*;
 import tech.ravon.service.inver.*;
 import tech.ravon.vo.inver.CourseVO;
 
@@ -210,7 +207,7 @@ public class InsightfulVerseController {
         request.setAttribute("file", file);
         switch (file.getType().toLowerCase()) {
             case "mp4", "mkv", "mov", "wmv" -> {
-                return "InsightfulVerse/VideoPlayer";
+                return "InsightfulVerse/Player/VideoPlayer";
             }
             case "wav", "wma", "mp3", "flac", "m4a" -> {
                 String filepath = System.getProperty("user.dir") + "/src/main/resources/static" + file.getFilePath();
@@ -271,7 +268,7 @@ public class InsightfulVerseController {
                         e.printStackTrace();
                     }
                 }
-                return "InsightfulVerse/AudioPlayer";
+                return "InsightfulVerse/Player/AudioPlayer";
             }
         }
         System.out.println(file);
@@ -643,6 +640,13 @@ public class InsightfulVerseController {
             }
             return redirectPath + "#cs" + id;
         }
+    }
+
+    @RequestMapping("/InsightfulVerse/Version")
+    public String version(HttpServletRequest request) {
+        List<Version> versionList = iVVersionService.getAllVersion();
+        request.setAttribute("versionList", versionList);
+        return "InsightfulVerse/Version";
     }
 
     @RequestMapping("/InsightfulVerse/AiBot")
