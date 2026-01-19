@@ -17,6 +17,8 @@
 package tech.ravon.controller;
 
 import jakarta.servlet.http.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
@@ -24,7 +26,6 @@ import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.KeyNotFoundException;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.images.Artwork;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,48 +43,37 @@ import java.util.*;
 import java.util.List;
 
 @Controller
+@RequiredArgsConstructor
+@Slf4j
 public class InsightfulVerseController {
 
-    @Autowired
-    UserService userService;
-    @Autowired
-    CourseService courseService;
-    @Autowired
-    FileService fileService;
-    @Autowired
-    ViewRecordService viewRecordService;
-    @Autowired
-    VersionService iVVersionService;
-    @Autowired
-    AiBotService aiBotService;
-    @Autowired
-    MailService mailService;
-    @Autowired
-    CodeService codeService;
-    @Autowired
-    PageService pageService;
-    @Autowired
-    CollectionService collectionService;
-    @Autowired
-    HaloService haloService;
+    private final UserService userService;
+    private final CourseService courseService;
+    private final FileService fileService;
+    private final ViewRecordService viewRecordService;
+    private final VersionService iVVersionService;
+    private final AiBotService aiBotService;
+    private final MailService mailService;
+    private final CodeService codeService;
+    private final PageService pageService;
+    private final CollectionService collectionService;
+    private final HaloService haloService;
 
-    @RequestMapping("/InsightfulVerse/")
-    public String IVMain() {
-        return "InsightfulVerse/index";
-    }
-
-    @RequestMapping("/InsightfulVerse/index")
-    public String IVIndex() {
+    @RequestMapping({"/InsightfulVerse/", "/InsightfulVerse/index"})
+    public String ivIndex() {
+        log.info("Handle request: GET /InsightfulVerse/index");
         return "InsightfulVerse/index";
     }
 
     @RequestMapping("/InsightfulVerse/About")
-    public String IVAbout() {
+    public String ivAbout() {
+        log.info("Handle request: GET /InsightfulVerse/About");
         return "InsightfulVerse/About";
     }
 
     @RequestMapping("/InsightfulVerse/Code")
-    public String IVCode(HttpServletRequest request) {
+    public String ivCode(HttpServletRequest request) {
+        log.info("Handle request: GET /InsightfulVerse/Code");
         File file = null;
         if (request.getSession().getAttribute("codeFile") != null) {
             file = (File) request.getSession().getAttribute("file");
@@ -112,7 +102,7 @@ public class InsightfulVerseController {
                     sb.append(line).append("\n");
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Read file failed, path={}", filePath, e);
             }
             request.setAttribute("fileId", file.getFileId());
             request.setAttribute("lang", fileType);
@@ -123,12 +113,15 @@ public class InsightfulVerseController {
 
     @ResponseBody
     @RequestMapping("/InsightfulVerse/Code.run")
-    public String IVXCode(HttpServletRequest request, HttpServletResponse response) {
+    public String ivXCode(HttpServletRequest request, HttpServletResponse response) {
+        log.info("Handle request: POST /InsightfulVerse/Code.run");
+        String code = request.getParameter("code");
+        String lang = request.getParameter("lang");
         String result;
         try {
             result = codeService.runCode(request, response);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Code exec failed, code={}, lang={}", code, lang, e);
             request.getSession().setAttribute("errorMessage", e.getMessage());
             return "redirect:/InsightfulVerse/Error";
         }
@@ -136,15 +129,15 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/Course")
-    public String IVCourse(HttpServletRequest request) {
+    public String ivCourse(HttpServletRequest request) {
+        log.info("Handle request: POST /InsightfulVerse/Course");
         List<CourseVO> courseList = courseService.allCourseVO(request);
-        System.out.println(courseList.toString());
         request.setAttribute("courseList", courseList);
         return "InsightfulVerse/Course";
     }
 
     @RequestMapping("/InsightfulVerse/CourseInfo")
-    public String IVCourseInfo(HttpServletRequest request) {
+    public String ivCourseInfo(HttpServletRequest request) {
         Long courseId = Long.valueOf(request.getParameter("courseId"));
         User user = (User) request.getSession().getAttribute("user");
         if (user != null && user.getUserId() != null) {
@@ -522,48 +515,34 @@ public class InsightfulVerseController {
     public ResponseEntity<Map<String, Object>> IVHalo(HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
         User user = (User) request.getSession().getAttribute("user");
-
-        if (user != null && user.getUserId() != null) {
-            if (user.getAuthority().equals("infinite")) {
-                // 检查是否已授权
-                if (request.getSession().getAttribute("authorize") == null ||
-                        !(boolean) request.getSession().getAttribute("authorize")) {
-                    response.put("status", "unauthorized");
-                    response.put("redirectUrl", "/InsightfulVerse/VerifyPerm");
-                    return ResponseEntity.status(401).body(response);
-                } else {
-                    // 已授权，执行SQL
-                    String code = request.getParameter("code");
-                    if (code == null || code.trim().isEmpty()) {
-                        response.put("status", "error");
-                        response.put("message", "SQL code cannot be empty");
-                        return ResponseEntity.badRequest().body(response);
-                    }
-
-                    try {
-                        List<List<String>> resultList = haloService.runSQL(code);
-                        response.put("status", "success");
-                        response.put("data", resultList);
-                        return ResponseEntity.ok(response);
-                    } catch (Exception e) {
-                        response.put("status", "error");
-                        response.put("message", "SQL execution error: " + e.getMessage());
-                        return ResponseEntity.status(500).body(response);
-                    }
-                }
-            } else {
-                // 权限不足
-                response.put("status", "forbidden");
-                response.put("message", "Insufficient permissions");
-                response.put("redirectUrl", "/InsightfulVerse/Personal");
-                return ResponseEntity.status(403).body(response);
-            }
-        } else {
-            // 未登录
-            response.put("status", "unauthenticated");
-            response.put("message", "User not logged in");
-            response.put("redirectUrl", "/InsightfulVerse/Personal");
+        if (user == null || user.getUserId() == null) {
+            response.put("status", "unauthorized");
+            response.put("redirectUrl", "/InsightfulVerse/VerifyPerm");
             return ResponseEntity.status(401).body(response);
+        } else if (!checkPermission(request)) {
+            response.put("status", "forbidden");
+            response.put("message", "Insufficient permissions");
+            response.put("redirectUrl", "/InsightfulVerse/Personal");
+            return ResponseEntity.status(403).body(response);
+        } else {
+            // 已授权，执行SQL
+            String code = request.getParameter("code");
+            if (code == null || code.trim().isEmpty()) {
+                response.put("status", "error");
+                response.put("message", "SQL code cannot be empty");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            try {
+                List<List<String>> resultList = haloService.runSQL(code);
+                response.put("status", "success");
+                response.put("data", resultList);
+                return ResponseEntity.ok(response);
+            } catch (Exception e) {
+                response.put("status", "error");
+                response.put("message", "SQL execution error: " + e.getMessage());
+                return ResponseEntity.status(500).body(response);
+            }
         }
     }
 
@@ -592,13 +571,6 @@ public class InsightfulVerseController {
 
     @RequestMapping("/InsightfulVerse/Search")
     public String Search(HttpServletRequest request) {
-        User user = (User) request.getSession().getAttribute("user");
-        if (user != null && user.getUserId() != null) {
-            if (user.getAuthority() == "infinite" && (boolean) request.getSession().getAttribute("authorize")) {
-                request.getSession().setAttribute("lastUrl", request.getRequestURL());
-                return "redirect:/InsightfulVerse/VerifyPerm";
-            }
-        }
         String type = request.getParameter("type");
         String keyword = request.getParameter("keyword");
         if (!Objects.equals(type, "all") && !Objects.equals(type, "course") && !Objects.equals(type, "file")) {
@@ -738,5 +710,19 @@ public class InsightfulVerseController {
         } else {
             return "{\"message\": \"No active stream to interrupt for session " + sessionId + ".\"}";
         }
+    }
+
+    private boolean checkPermission(HttpServletRequest request) {
+        User user = (User) request.getSession().getAttribute("user");
+        if (
+            user != null
+            && user.getUserId() != null
+            && "infinite".equals(user.getAuthority())
+            && Boolean.TRUE.equals(request.getSession().getAttribute("authorize"))
+        ) {
+            request.getSession().setAttribute("lastUrl", request.getRequestURL());
+            return false;
+        }
+        return true;
     }
 }

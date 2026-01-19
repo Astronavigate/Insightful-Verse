@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package tech.ravon.service.inver;
+package tech.ravon;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+public class Hello {
 
-public interface CodeService {
-    String runCode(HttpServletRequest request, HttpServletResponse response);
-    String runC(String code);
-    String runCpp(String code);
-    String runJava(String code);
-    String runPython(String code);
-    String runRust(String code);
-    String runZig(String code);
+    public static void main(String[] args) {
+        System.out.println("Hello, Ravon!");
+    }
+
 }

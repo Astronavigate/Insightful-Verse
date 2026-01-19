@@ -16,7 +16,7 @@
 
 package tech.ravon.service.inver.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tech.ravon.service.inver.AiBotService;
@@ -42,14 +42,14 @@ public class AiBotServiceImpl implements AiBotService {
     private String LLAMA_API_BASE_URL;
 
     private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
+    private final Gson gson;
     private final ConcurrentMap<String, Thread> activeStreamThreads = new ConcurrentHashMap<>();
 
     public AiBotServiceImpl() {
         this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)  // 使用 HTTP/1.1 避免不支持的升级请求
+                .version(HttpClient.Version.HTTP_1_1) // 使用 HTTP/1.1 避免不支持的升级请求
                 .build();
-        this.objectMapper = new ObjectMapper();
+        this.gson = new Gson();
     }
 
     @Override
@@ -60,18 +60,19 @@ public class AiBotServiceImpl implements AiBotService {
         }
 
         Thread streamThread = new Thread(() -> {
-            HttpResponse<InputStream> response = null;
+            HttpResponse<InputStream> response;
             try {
                 Map<String, Object> requestData = new HashMap<>();
                 requestData.put("prompt", prompt);
                 requestData.put("max_tokens", maxTokens);
                 requestData.put("stream", true);
-                String requestBody = objectMapper.writeValueAsString(requestData);
+
+                String requestBody = gson.toJson(requestData);
 
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(LLAMA_API_BASE_URL + "/stream_generate"))
                         .header("Content-Type", "application/json")
-                        .header("Accept", "text/event-stream")  // 明确接收 SSE
+                        .header("Accept", "text/event-stream")
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                         .build();
 

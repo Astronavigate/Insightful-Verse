@@ -350,6 +350,7 @@
                             <li data-value="java">Java</li>
                             <li data-value="python">Python</li>
                             <li data-value="rust">Rust</li>
+                            <li data-value="zig">Zig</li>
                         </ul>
                     </div>
                     <button class="control-btn" id="fontToggleBtn" title="Typeface"><i class="bi bi-fonts"></i></button>
@@ -402,7 +403,8 @@
         c: `#include <stdio.h>\nint main() {\n    printf("Hello, World!");\n    return 0;\n}`,
         'c++': `#include <iostream>\nint main() {\n    std::cout << "Hello, World!";\n    return 0;\n}`,
         python: `print("Hello, World!")`,
-        rust: `fn main() {\n    println!("Hello, World!");\n}`
+        rust: `fn main() {\n    println!("Hello, World!");\n}`,
+        zig: `const std = @import("std");\npub fn main() !void {\n    var buf: [1024]u8 = undefined;\n    var w = std.fs.File.stdout().writer(&buf);\n    const out = &w.interface;\n    try out.print("Hello, World!\\n", .{});\n    try out.flush();\n}`
     };
 
     document.addEventListener('DOMContentLoaded', () => {

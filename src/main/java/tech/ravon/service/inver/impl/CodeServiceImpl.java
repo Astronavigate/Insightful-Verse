@@ -43,6 +43,8 @@ public class CodeServiceImpl implements CodeService {
                     return runCpp(code);
                 case "rust", "rs":
                     return runRust(code);
+                case "zig":
+                    return runZig(code);
                 default:
                     return "Not supported language.";
             }
@@ -153,6 +155,11 @@ public class CodeServiceImpl implements CodeService {
         return runCompiledCode(code, "rust", "main.rs", "rust_exec.exe", "rustc");
     }
 
+    @Override
+    public String runZig(String code) {
+        return runCompiledCode(code, "zig", "main.zig", "main.exe", "zig", "build-exe");
+    }
+
     // ------------------- 通用编译方法 -------------------
     private String runCompiledCode(String code, String langFolder, String sourceFileName,
                                    String execFileName, String compiler, String... flags) {
@@ -168,9 +175,8 @@ public class CodeServiceImpl implements CodeService {
             command.add(compiler);
             for (String flag : flags) command.add(flag);
             command.add(sourceFileName);
-            if (!compiler.equals("rustc")) { // Rust 输出用 -o
-                command.add("-o");
-                command.add(execFileName);
+            if (compiler.equals("zig")) {
+                command.add("-femit-bin=" + execFileName);
             } else {
                 command.add("-o");
                 command.add(execFileName);
