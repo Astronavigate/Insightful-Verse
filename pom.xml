@@ -158,6 +158,47 @@
             <version>3.0.1</version>
         </dependency>
 
+		<!-- pdf process -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>3.0.6</version>
+		</dependency>
+
+		<!-- cv video process -->
+		<dependency>
+			<groupId>org.bytedeco</groupId>
+			<artifactId>javacv</artifactId>
+			<version>1.5.12</version>
+		</dependency>
+		<dependency>
+			<groupId>org.bytedeco</groupId>
+			<artifactId>javacv-platform</artifactId>
+			<version>1.5.12</version>
+		</dependency>
+
+		<!-- epub process -->
+		<dependency>
+			<groupId>io.documentnode</groupId>
+			<artifactId>epub4j-core</artifactId>
+			<version>4.2.3</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<!-- apache poi gen pdf -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.5.1</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-scratchpad</artifactId>
+			<version>5.5.1</version>
+			<scope>compile</scope>
+		</dependency>
+
         <!-- UUID generator -->
         <dependency>
             <groupId>com.fasterxml.uuid</groupId>

@@ -17,7 +17,18 @@
 package tech.ravon.service.inver.impl;
 
 import com.fasterxml.uuid.Generators;
+import io.documentnode.epub4j.domain.Book;
+import io.documentnode.epub4j.epub.EpubReader;
 import jakarta.servlet.http.*;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -27,13 +38,23 @@ import tech.ravon.model.inver.User;
 import tech.ravon.service.inver.AnnotationService;
 import tech.ravon.service.inver.FileService;
 import tech.ravon.service.inver.ViewRecordService;
+import tech.ravon.vo.inver.FileVO;
 
-import java.io.IOException;
-import java.io.InputStream;
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class FileServiceImpl implements FileService {
 
     @Autowired
@@ -55,30 +76,36 @@ public class FileServiceImpl implements FileService {
 
     /* ===================== helpers ===================== */
 
+    /**
+     * 返回相对目录名（不带前导或尾部斜杠），例如 "doc", "media", "img"
+     */
     private String resolveInsertDirectory(String ext) {
-        if (ext == null) return "/media/";
+        if (ext == null) return "/etc";
         ext = ext.toLowerCase();
 
         if (ext.matches("doc|docx|xls|xlsx|ppt|pptx|csv|txt|md|pdf|epub"))
-            return "/doc/";
+            return "/doc";
 
         if (ext.matches("mp4|mkv|mov|wmv|wav|wma|mp3|flac|m4a"))
-            return "/media/";
+            return "/media";
 
         if (ext.matches("jpg|jpeg|heif|raw|png|gif|webp|ico"))
-            return "/img/";
+            return "/img";
 
         if (ext.matches("cpp|py|c|java|h|html|css|js|jsp|php|pyc|aspx|ts|rs|sql"))
-            return "/code/";
+            return "/code";
 
-        return "/etc/";
+        return "/etc";
     }
 
+    /**
+     * 将 insertDir（相对目录名）解析到 ${user.dir}/data/<insertDir>
+     */
     private Path resolveStaticPath(String insertDir) throws Exception {
         Path path = Paths.get(
                 System.getProperty("user.dir"),
-                "src", "main", "resources",
-                "static" + insertDir
+                "data",
+                insertDir
         );
         if (!Files.exists(path)) {
             Files.createDirectories(path);
@@ -88,14 +115,23 @@ public class FileServiceImpl implements FileService {
 
     private String extractBaseName(String path) {
         String name = Paths.get(path).getFileName().toString();
-        return name.substring(0, name.lastIndexOf('.'));
+        int idx = name.lastIndexOf('.');
+        return idx == -1 ? name : name.substring(0, idx);
     }
 
     /* ===================== service ===================== */
 
     @Override
-    public String getFile(HttpServletRequest request, HttpServletResponse response) {
-        return "";
+    public List<File> listFiles() {
+        return fileDao.getAllFiles();
+    }
+
+    @Override
+    public List<File> getFilesByPop(Long limit) {
+        if (limit == 0L) {
+            limit = 10L;
+        }
+        return fileDao.getFilesByPop(limit);
     }
 
     @Override
@@ -106,6 +142,11 @@ public class FileServiceImpl implements FileService {
     @Override
     public List<File> getCourseFiles(Long courseId) {
         return fileDao.getFilesByCourse(courseId);
+    }
+
+    @Override
+    public List<FileVO> getCourseFilesVO(Long userId, Long courseId) {
+        return fileDao.getFilesVOByCourse(userId, courseId);
     }
 
     @Override
@@ -124,12 +165,13 @@ public class FileServiceImpl implements FileService {
         try {
             Path filePath = Paths.get(
                     System.getProperty("user.dir"),
-                    "src", "main", "resources",
-                    "static",
+                    "data",
                     file.getFilePath()
             );
             Files.deleteIfExists(filePath);
         } catch (Exception ignored) {}
+
+        // 删除注释与浏览记录、数据库记录
         annotationService.deleteAnnotationsByUserAndBook(userId, fileId);
         viewRecordService.delRecordByFileId(fileId);
         fileDao.deleteFile(fileId);
@@ -201,7 +243,10 @@ public class FileServiceImpl implements FileService {
                     );
                 }
             } else {
-                insertDir  = oldFile.getFilePath().substring(0, oldFile.getFilePath().lastIndexOf('/') + 1);
+                // oldFile.getFilePath example: "doc/uuid.pdf"
+                String oldPath = oldFile.getFilePath();
+                int lastSlash = oldPath.lastIndexOf('/');
+                insertDir = (lastSlash == -1) ? "" : oldPath.substring(0, lastSlash);
                 staticPath = resolveStaticPath(insertDir);
             }
 
@@ -216,6 +261,7 @@ public class FileServiceImpl implements FileService {
                             staticPath.resolve(baseName + "." + ext),
                             StandardCopyOption.REPLACE_EXISTING
                     );
+                    // Note: Files.copy(InputStream, Path, CopyOption...) signature used earlier.
                 }
             }
 
@@ -223,14 +269,13 @@ public class FileServiceImpl implements FileService {
             if (oldFile != null && hasMedia) {
                 Path oldPath = Paths.get(
                         System.getProperty("user.dir"),
-                        "src", "main", "resources",
-                        "static",
+                        "data",
                         oldFile.getFilePath()
                 );
 
                 Path parentDir = oldPath.getParent();
                 String fileName = oldPath.getFileName().toString();
-                // 提取纯文件名并拼接点号，例如 "uuid."
+                // 提取纯文件名前缀，例如 "uuid."
                 int dotIndex = fileName.lastIndexOf('.');
                 String prefix = ((dotIndex == -1) ? fileName : fileName.substring(0, dotIndex)) + ".";
 
@@ -258,12 +303,12 @@ public class FileServiceImpl implements FileService {
 
             if (fileId == null || fileId.isEmpty()) {
                 file.setType(mediaExt);
-                file.setFilePath(insertDir + baseName + "." + mediaExt);
+                file.setFilePath(insertDir + "/" + baseName + "." + mediaExt);
             } else {
                 file.setFileId(Long.valueOf(fileId));
                 if (hasMedia) {
                     file.setType(mediaExt);
-                    file.setFilePath(insertDir + baseName + "." + mediaExt);
+                    file.setFilePath(insertDir + "/" + baseName + "." + mediaExt);
                 } else {
                     file.setType(oldFile.getType());
                     file.setFilePath(oldFile.getFilePath());
@@ -272,8 +317,282 @@ public class FileServiceImpl implements FileService {
 
             fileDao.updFile(file, userId);
 
+            createThumbnail(file.getFilePath());
+
         } catch (Exception e) {
             throw new RuntimeException("File upload failed", e);
         }
+    }
+
+    private static final int MAX_EDGE = 1920;
+    private static final String SUFFIX = "-Thumbnail.jpg";
+
+    public String createThumbnail(String filePath) {
+        if (filePath == null || filePath.isEmpty()) return null;
+
+        try {
+            java.io.File sourceFile = Paths.get(System.getProperty("user.dir"), "data", filePath).toFile();
+            if (!sourceFile.exists()) return null;
+
+            String nameNoExt = sourceFile.getName();
+            int dot = nameNoExt.lastIndexOf('.');
+            if (dot != -1) nameNoExt = nameNoExt.substring(0, dot);
+
+            java.io.File thumbFile = new java.io.File(sourceFile.getParentFile(), nameNoExt + SUFFIX);
+            if (thumbFile.exists()) return thumbFile.getAbsolutePath();
+
+            BufferedImage raw = extractRawImage(sourceFile);
+            if (raw == null) return null;
+
+            BufferedImage scaled = scaleImage(raw);
+            ImageIO.write(scaled, "jpg", thumbFile);
+
+            return thumbFile.getAbsolutePath();
+        } catch (Exception e) {
+            log.error("缩略图生成中断 [{}]: {}", filePath, e.getMessage());
+            return null;
+        }
+    }
+
+    private BufferedImage extractRawImage(java.io.File file) {
+        String name = file.getName().toLowerCase();
+        String ext = getExt(name);
+
+        try {
+            // 1. 媒体类：视频与音频 (解决 FLAC 卡顿)
+            if (ext.matches("mp4|mkv|mov|wmv|avi|webm|mp3|flac|m4a|wav|wma")) {
+                return extractMediaFrame(file);
+            }
+
+            // 2. 电子书 (使用 epub4j-core)
+            if (ext.equals("epub")) {
+                return extractEpubCover(file);
+            }
+
+            // 3. 文档类
+            if (ext.equals("pdf")) {
+                try (PDDocument doc = Loader.loadPDF(file)) {
+                    return new PDFRenderer(doc).renderImage(0, 1.5f);
+                }
+            }
+            if (ext.matches("ppt|pptx")) {
+                return renderPptFirstSlide(file);
+            }
+            if (ext.matches("xls|xlsx|csv")) {
+                try (InputStream is = new FileInputStream(file);
+                     Workbook wb = WorkbookFactory.create(is)) {
+                    return renderExcel(wb.getSheetAt(0));
+                }
+            }
+
+            // 4. 文本/代码类 (防御性渲染)
+            if (ext.matches("doc|docx|txt|md|java|py|cpp|c|h|html|css|js|ts|rs|sql|php|jsp|aspx")) {
+                return renderTextOverlay(file, ext.toUpperCase());
+            }
+
+            // 5. 图片类
+            if (ext.matches("jpg|jpeg|png|gif|webp|ico|raw|heif")) {
+                return ImageIO.read(file);
+            }
+
+        } catch (Throwable t) {
+            log.warn("解析格式 [{}] 失败，使用占位图替代", ext);
+        }
+
+        return renderDefaultPlaceholder(ext.toUpperCase());
+    }
+
+    private BufferedImage extractMediaFrame(java.io.File file) {
+        // 孤鹰原则：不猜测、不等待、不妥协
+        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(file)) {
+            // 1. 扩容探测：WebP 封面往往在文件头部需要更多数据才能定界
+            grabber.setOption("probesize", "5242880");      // 5MB 探测空间
+            grabber.setOption("analyzeduration", "2000000"); // 2秒探测时间
+
+            // 2. 卸载负重：强制不加载音频流，专注于封面提取
+            grabber.setAudioStream(-1);
+
+            grabber.start();
+
+            // 3. 动态像素转换：不再强制 bgr24，让 Java2DFrameConverter 处理格式转换
+            Frame frame = null;
+
+            // WebP 封面可能需要连续 grab 才能跳过元数据包
+            for (int i = 0; i < 15; i++) {
+                frame = grabber.grabImage();
+                // 只要抓取到图像数据且宽度大于 0，立即撤退
+                if (frame != null && frame.image != null && frame.imageWidth > 0) {
+                    break;
+                }
+            }
+
+            if (frame == null || frame.image == null) {
+                log.warn("未能从媒体文件 [{}] 中剥离有效图像流", file.getName());
+                grabber.stop();
+                return renderDefaultPlaceholder("WEBP/IMG");
+            }
+
+            BufferedImage bi = new Java2DFrameConverter().getBufferedImage(frame);
+            grabber.stop();
+            return bi;
+        } catch (Throwable e) {
+            log.error("媒体解析核心崩溃 [{}]: {}", file.getName(), e.getMessage());
+            return renderDefaultPlaceholder("MEDIA");
+        }
+    }
+
+    private BufferedImage extractEpubCover(java.io.File file) {
+        try (InputStream is = new FileInputStream(file)) {
+            Book book = new EpubReader().readEpub(is);
+
+            // 1. 尝试获取官方定义的封面
+            if (book.getCoverImage() != null) {
+                return ImageIO.read(new ByteArrayInputStream(book.getCoverImage().getData()));
+            }
+
+            // 2. 容错逻辑：寻找资源库中第一个出现的图片文件
+            // 很多电子书虽然没标记封面，但第一个图片通常就是封面
+            for (io.documentnode.epub4j.domain.Resource resource : book.getResources().getAll()) {
+                String href = resource.getHref().toLowerCase();
+                if (href.endsWith(".jpg") || href.endsWith(".jpeg") || href.endsWith(".png")) {
+                    log.info("从资源路径探测到疑似封面: {}", resource.getHref());
+                    return ImageIO.read(new ByteArrayInputStream(resource.getData()));
+                }
+            }
+        } catch (Exception e) {
+            log.warn("EPUB 解析中断 [{}]: {}", file.getName(), e.getMessage());
+        }
+
+        // 3. 实在找不到，返回冷峻风格的占位图
+        return renderDefaultPlaceholder("EPUB");
+    }
+
+    private BufferedImage renderPptFirstSlide(java.io.File file) throws Exception {
+        try (FileInputStream is = new FileInputStream(file);
+             XMLSlideShow ppt = new XMLSlideShow(is)) {
+            if (ppt.getSlides().isEmpty()) return null;
+            Dimension pg = ppt.getPageSize();
+            BufferedImage img = new BufferedImage(pg.width, pg.height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = img.createGraphics();
+            g.setColor(Color.WHITE);
+            g.fillRect(0, 0, pg.width, pg.height);
+            ppt.getSlides().get(0).draw(g);
+            g.dispose();
+            return img;
+        }
+    }
+
+    private BufferedImage renderTextOverlay(java.io.File file, String label) {
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE);
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), decoder))) {
+            List<String> lines = reader.lines().limit(40).collect(Collectors.toList());
+            BufferedImage bi = new BufferedImage(1200, 1600, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = bi.createGraphics();
+            g.setColor(new Color(15, 17, 26));
+            g.fillRect(0, 0, 1200, 1600);
+            g.setColor(new Color(100, 120, 140));
+            g.setFont(new Font("SansSerif", Font.BOLD, 60));
+            g.drawString(label, 50, 100);
+            g.setColor(new Color(173, 186, 199));
+            g.setFont(new Font("Consolas", Font.PLAIN, 20));
+            int y = 180;
+            for (String line : lines) {
+                String clean = line.replace("\t", "    ");
+                g.drawString(clean.length() > 55 ? clean.substring(0, 55) : clean, 50, y);
+                y += 35;
+            }
+            g.dispose();
+            return bi;
+        } catch (Exception e) {
+            return renderDefaultPlaceholder(label);
+        }
+    }
+
+    private BufferedImage renderDefaultPlaceholder(String ext) {
+        BufferedImage bi = new BufferedImage(800, 800, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = bi.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setColor(new Color(20, 22, 30));
+        g.fillRect(0, 0, 800, 800);
+        g.setColor(new Color(45, 50, 65));
+        g.setStroke(new BasicStroke(4));
+        g.drawRect(40, 40, 720, 720);
+        g.setColor(new Color(173, 186, 199));
+        g.setFont(new Font("Consolas", Font.BOLD, 100));
+        FontMetrics fm = g.getFontMetrics();
+        g.drawString(ext, (800 - fm.stringWidth(ext)) / 2, 420);
+        g.dispose();
+        return bi;
+    }
+
+    private BufferedImage scaleImage(BufferedImage src) {
+        int size = 1000;
+        int w = src.getWidth();
+        int h = src.getHeight();
+
+        // 1. 创建目标正方形画布
+        BufferedImage out = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = out.createGraphics();
+
+        // 开启高质量渲染
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // ---------------------------------------------------------
+        // 步骤 A：绘制模糊背景 (Blur Background)
+        // ---------------------------------------------------------
+        // 将原图强制拉伸填充整个 1000x1000 区域
+        g.drawImage(src, 0, 0, size, size, null);
+
+        // 覆盖一层半透明深色蒙版，增加冷峻感与深邃感 (符合你对夜色的偏好)
+        g.setColor(new Color(10, 12, 18, 180)); // 深色且 70% 不透明度
+        g.fillRect(0, 0, size, size);
+
+        // ---------------------------------------------------------
+        // 步骤 B：绘制等比例原图 (Center Contain)
+        // ---------------------------------------------------------
+        // 计算缩放因子，确保原图完整显示且不拉伸 (Contain 模式)
+        double scale = Math.min((double) size / w, (double) size / h);
+        int sw = (int) (w * scale);
+        int sh = (int) (h * scale);
+
+        // 居中位置计算
+        int x = (size - sw) / 2;
+        int y = (size - sh) / 2;
+
+        // 绘制顶层清晰原图
+        g.drawImage(src, x, y, sw, sh, null);
+
+        g.dispose();
+        return out;
+    }
+
+    private BufferedImage renderExcel(Sheet sheet) {
+        BufferedImage img = new BufferedImage(1200, 800, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        g.setColor(new Color(10, 15, 25));
+        g.fillRect(0, 0, 1200, 800);
+        g.setColor(new Color(173, 186, 199));
+        g.setFont(new Font("Monospaced", Font.PLAIN, 16));
+        for (int i = 0; i < 20; i++) {
+            Row r = sheet.getRow(i);
+            if (r == null) continue;
+            for (int j = 0; j < 6; j++) {
+                Cell c = r.getCell(j);
+                String val = (c == null) ? "" : c.toString();
+                g.drawString(val.length() > 15 ? val.substring(0, 12) + ".." : val, 30 + j * 180, 50 + i * 35);
+            }
+        }
+        g.dispose();
+        return img;
+    }
+
+    private String getExt(String name) {
+        int dot = name.lastIndexOf('.');
+        return (dot == -1) ? "" : name.substring(dot + 1).toLowerCase();
     }
 }

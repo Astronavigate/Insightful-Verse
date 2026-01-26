@@ -1,6 +1,7 @@
 package tech.ravon.controller;
 
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,10 +17,10 @@ import java.util.Map;
 
 @Controller
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class InsightfulVerseRestController {
 
-    @Autowired
-    private AnnotationService annotationService;
+    private final AnnotationService annotationService;
 
     /**
      * List annotations for current session user and a book.

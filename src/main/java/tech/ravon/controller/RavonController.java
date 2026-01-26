@@ -32,13 +32,13 @@ import java.util.Map;
 @Controller
 public class RavonController {
     @RequestMapping("/index")
-    public String Index() {
+    public String index() {
         return "index";
     }
 
-    @RequestMapping("/old")
-    public String oldIndex() {
-        return "oldIndex";
+    @RequestMapping("/v1/index")
+    public String v1Index() {
+        return "v1Index";
     }
 
     @RequestMapping("/test")
@@ -46,73 +46,60 @@ public class RavonController {
         return "test";
     }
 
-    @RequestMapping("/testW")
-    public String testWord() {
-        return "testWord";
-    }
-    @RequestMapping("/testS")
-    public String testExcel() {
-        return "testExcel";
-    }
-    @RequestMapping("/testP")
-    public String testPPT() {
-        return "testPPT";
-    }
-
     @RequestMapping("/about")
-    public ModelAndView About() {
+    public ModelAndView about() {
         ModelAndView mv = new ModelAndView("About");
         return mv;
     }
 
     @RequestMapping("/products")
-    public ModelAndView Products() {
+    public ModelAndView products() {
         ModelAndView mv = new ModelAndView("Products");
         return mv;
     }
 
     @RequestMapping("/support")
-    public ModelAndView Support() {
+    public ModelAndView support() {
         ModelAndView mv = new ModelAndView("Support");
         return mv;
     }
 
     @RequestMapping("/myInfo")
-    public ModelAndView MyInfo() {
+    public ModelAndView myInfo() {
         ModelAndView mv = new ModelAndView("MyInfo");
         return mv;
     }
 
     @RequestMapping("/login")
-    public ModelAndView Login() {
+    public ModelAndView login() {
         ModelAndView mv = new ModelAndView("Login");
         mv.addObject("finUrl", "index");
         return mv;
     }
 
     @RequestMapping("/register")
-    public ModelAndView Register() {
+    public ModelAndView register() {
         ModelAndView mv = new ModelAndView("Register");
         mv.addObject("finUrl", "index");
         return mv;
     }
 
     @RequestMapping("/unregister")
-    public ModelAndView Unregister() {
+    public ModelAndView unregister() {
         ModelAndView mv = new ModelAndView("Unregister");
         mv.addObject("finUrl", "index");
         return mv;
     }
 
     @RequestMapping("/updateInfo")
-    public ModelAndView UpdateInfo() {
+    public ModelAndView updateInfo() {
         ModelAndView mv = new ModelAndView("UpdateInfo");
         mv.addObject("finUrl", "myInfo");
         return mv;
     }
 
     @RequestMapping("/ChangeLang")
-    public String ChangeLang(@RequestParam(required = false) String lang,
+    public String changeLang(@RequestParam(required = false) String lang,
                              HttpServletRequest request,
                              HttpServletResponse response,
                              Model model) {
@@ -176,7 +163,7 @@ public class RavonController {
     }
 
     @RequestMapping("/ChangeLang.do")
-    public String ChangeLangDo(@RequestParam String lang,
+    public String changeLangDo(@RequestParam String lang,
                                HttpServletRequest request,
                                HttpServletResponse response) {
 

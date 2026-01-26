@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="tech.ravon.mapper.GeoLocationDao">
+
+    <resultMap id="GeoLocationMap" type="tech.ravon.model.GeoLocation">
+        <id property="locationId" column="location_id"/>
+        <result property="contCode" column="cont_code"/>
+        <result property="contName" column="cont_name"/>
+        <result property="ctryCode" column="ctry_code"/>
+        <result property="ctryName" column="ctry_name"/>
+        <result property="sub1Code" column="sub1_code"/>
+        <result property="sub1Name" column="sub1_name"/>
+        <result property="sub2Code" column="sub2_code"/>
+        <result property="sub2Name" column="sub2_name"/>
+        <result property="cityName" column="city_name"/>
+        <result property="timeZone" column="time_zone"/>
+        <result property="localeCode" column="locale_code"/>
+        <result property="postcode" column="postcode"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="GeoLocationMap">
+        SELECT *
+        FROM base.geo_location
+        WHERE location_id = #{locationId}
+    </select>
+
+    <!-- 对应你的 UNIQUE(cont_code, sub1_code, sub2_code, city_name) -->
+    <select id="selectByUnique" resultMap="GeoLocationMap">
+        SELECT *
+        FROM base.geo_location
+        WHERE cont_code = #{contCode}
+            AND ctry_code = #{ctryCode}
+            AND sub1_code IS NOT DISTINCT FROM #{sub1Code}
+            AND sub2_code IS NOT DISTINCT FROM #{sub2Code}
+            AND city_name IS NOT DISTINCT FROM #{cityName}
+            AND postcode IS NOT DISTINCT FROM #{postcode}
+            LIMIT 1
+    </select>
+
+    <insert id="insert" >
+        INSERT INTO base.geo_location (
+            cont_code, cont_name,
+            ctry_code, ctry_name,
+            sub1_code, sub1_name,
+            sub2_code, sub2_name,
+            city_name, time_zone, locale_code, postcode
+        )
+        VALUES (
+            #{contCode}, #{contName},
+            #{ctryCode}, #{ctryName},
+            #{sub1Code}, #{sub1Name},
+            #{sub2Code}, #{sub2Name},
+            #{cityName}, #{timeZone}, #{localeCode}, #{postcode}
+        )
+        ON CONFLICT (cont_code, sub1_code, sub2_code, city_name) DO NOTHING
+    </insert>
+
+</mapper>

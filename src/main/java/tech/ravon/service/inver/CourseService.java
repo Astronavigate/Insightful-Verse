@@ -28,7 +28,7 @@ public interface CourseService {
 
     List<Course> allCourse();
 
-    List<CourseVO> allCourseVO(HttpServletRequest request);
+    List<CourseVO> allCourseVO(Long userId);
 
     void deleteCourse(HttpServletRequest request, Long courseId);
 

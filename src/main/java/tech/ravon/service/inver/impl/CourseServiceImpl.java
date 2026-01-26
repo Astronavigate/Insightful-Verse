@@ -53,10 +53,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public List<CourseVO> allCourseVO(HttpServletRequest request) {
-        User user = (User) request.getSession().getAttribute("user");
-        Long userId = null;
-        if (user != null) userId = user.getUserId();
+    public List<CourseVO> allCourseVO(Long userId) {
         List<CourseVO> courseVOList = courseDao.getAllCourseVO(userId);
         return courseVOList;
     }

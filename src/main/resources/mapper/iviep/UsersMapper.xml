@@ -61,7 +61,7 @@
     </select>
 
     <!-- 注销用户 -->
-    <delete id="unregisterUser">
+    <delete id="deleteUser">
         DELETE FROM users
         WHERE user_id = #{userId}
     </delete>

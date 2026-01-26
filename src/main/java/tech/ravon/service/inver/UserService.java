@@ -23,17 +23,17 @@ import tech.ravon.model.inver.User;
 
 public interface UserService extends IService<User> {
 
-    User Login(HttpServletRequest request, HttpServletResponse response);
+    User login(String identifier, String password);
 
-    void Logout(HttpServletRequest request, HttpServletResponse response);
+    void logout(HttpServletRequest request, HttpServletResponse response);
 
-    String Register(HttpServletRequest request, HttpServletResponse response);
+    String register(HttpServletRequest request, HttpServletResponse response);
 
-    String Unregister(HttpServletRequest request, HttpServletResponse response);
+    String deleteAccount(HttpServletRequest request);
 
-    User Userinfo(HttpServletRequest request);
+    User userinfo(String identifier);
 
-    String UpdateUser(HttpServletRequest request, HttpServletResponse response);
+    String updateUser(HttpServletRequest request);
 
     User verifyPerm(HttpServletRequest request, HttpServletResponse response);
 

@@ -27,10 +27,10 @@ public interface UserDao extends BaseMapper<User> {
 
     User getUserInfo(String identifier);
 
-    Long doUserRegister(String username, String email, String phone, String password, String authority);
+    void registerUser(String username, String email, String phone, String password, String authority);
 
     int updateUserInfo(Long userId, String username, String email, String phone, String password);
 
-    int unregisterUser(Long userId);
+    int deleteUser(Long userId);
 
 }

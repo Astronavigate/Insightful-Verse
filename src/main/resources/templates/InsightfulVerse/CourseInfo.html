@@ -35,31 +35,50 @@
             <h5 style="margin-top: 0.5rem" th:text="#{insightful.file.add}">Add a new file</h5>
         </div>
 
-        <div style="border-radius: 6px !important;  margin: 1px 3px 1px 3px;" th:each="source : ${#lists.isEmpty(sourceList) ? null : sourceList}">
-            <a class="list-group-item list-group-item-action"
-               th:href="@{/InsightfulVerse/File(fileId=${source.fileId})}">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">
-                        <button th:if="${session.user != null && (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
-                                type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#updFileForm"
-                                th:data-file-id="${source.fileId}" th:data-file-name="${source.fileName}" th:data-file-remark="${source.remarks}"
-                                th:text="#{insightful.file.edit}"
-                                onclick="updFile(this)">
-                            Edit
-                        </button>
-                        <button th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
-                                type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#delFileForm"
-                                th:data-file-id="${source.fileId}" th:data-file-name="${source.fileName}"
-                                th:text="#{insightful.file.delete}"
-                                onclick="delFile(this)">
-                            Delete
-                        </button>
-                        &nbsp;&nbsp;&nbsp;
-                        <span th:text="${source.fileName}">File Name</span>
-                    </h5>
-                    <small th:text="${#dates.format(source.uploadDate, 'yyyy-MM-dd')}">Upload Date</small>
+        <div style="border-radius: 6px !important; margin: 1px 3px 1px 3px;" th:each="source : ${sourceList}">
+            <a class="list-group-item list-group-item-action" th:href="@{/InsightfulVerse/File(fileId=${source.fileId})}"
+               th:id="|sc${source.fileId}|">
+                <div class="d-flex align-items-center">
+
+                    <div class="flex-shrink-0 me-3">
+                        <img th:src="${source.getThumb()}"
+                             class="img-thumbnail"
+                             style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; background: #0a0c12;">
+                    </div>
+
+                    <div class="flex-grow-1">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">
+                                <button th:if="${session.user != null && (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
+                                        type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#updFileForm"
+                                        th:data-file-id="${source.fileId}" th:data-file-name="${source.fileName}" th:data-file-remark="${source.remarks}"
+                                        th:text="#{insightful.file.edit}" onclick="updFile(this)">Edit</button>
+
+                                <button th:if="${session.user != null and (session.user.authority == 'admin' or session.user.authority == 'infinite')}"
+                                        type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#delFileForm"
+                                        th:data-file-id="${source.fileId}" th:data-file-name="${source.fileName}"
+                                        th:text="#{insightful.file.delete}" onclick="delFile(this)">Delete</button>
+                                &nbsp;&nbsp;&nbsp;
+                                <span th:text="${source.fileName}">File Name</span>
+                            </h5>
+                            <small>
+                                <span th:text="${#dates.format(source.uploadDate, 'yyyy-MM-dd')}">Date</span>
+                                <button th:if="${session.user != null}"
+                                        type="button"
+                                        class="favorite-btn"
+                                        th:data-id="${source.fileId}"
+                                        th:data-type="source"
+                                        th:data-favorited="${source.isFavorite}"
+                                        style="background: none; border: none; z-index: 30;">
+                                    <i th:class="${source.isFavorite} ? 'bi-star-fill text-warning' : 'bi-star text-secondary'"
+                                       style="font-size: 1.2rem;"></i>
+                                </button>
+                            </small>
+                        </div>
+                        <p class="mb-1 text-muted" th:text="${source.remarks}">Remarks</p>
+                    </div>
+
                 </div>
-                <p class="mb-1" th:text="${source.remarks}">File Remarks</p>
             </a>
         </div>
 
@@ -178,6 +197,24 @@
         id.value = button.getAttribute('data-file-id');
         name.innerText = "Delete File " + button.getAttribute('data-file-name');
     }
+
+    // -------------------- 收藏功能 --------------------
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+        btn.addEventListener('click', function(event) {
+            event.preventDefault(); // 阻止 a 标签跳转
+            event.stopPropagation(); // 阻止事件冒泡
+
+            const id = this.getAttribute('data-id');
+            const type = this.getAttribute('data-type');
+
+            // 构造跳转链接
+            // 参数1: id, 参数2: type
+            const targetUrl = `/InsightfulVerse/Favorite.do?id=${id}&type=${type}`;
+
+            // 执行跳转
+            window.location.href = targetUrl;
+        });
+    });
 
     function cleanModal() {
         let id = document.getElementById("upd-file-id");

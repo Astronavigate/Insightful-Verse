@@ -19,7 +19,8 @@ package tech.ravon.service.inver.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import tech.ravon.model.inver.User;
 import tech.ravon.service.inver.MailService;
 import tech.ravon.service.inver.UserService;
@@ -28,26 +29,20 @@ import tech.ravon.service.inver.ViewRecordService;
 import tech.ravon.lib.Hash;
 import org.springframework.stereotype.Service;
 
-/**
-* @author Anubis
-* @description 针对表【users】的数据库操作Service实现
-* @createDate 2024-11-03 21:56:02
-*/
+import java.util.Objects;
+
+@RequiredArgsConstructor
 @Service
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UserDao, User>
     implements UserService{
 
-    @Autowired
-    UserDao userDao;
-    @Autowired
-    MailService mailService;
-    @Autowired
-    ViewRecordService viewRecordService;
+    private final UserDao userDao;
+    private final MailService mailService;
+    private final ViewRecordService viewRecordService;
 
     @Override
-    public User Login(HttpServletRequest request, HttpServletResponse response) {
-        String identifier = request.getParameter("identifier");
-        String password = request.getParameter("password");
+    public User login(String identifier, String password) {
         User user = null;
         user = userDao.getUserInfo(identifier);
         if (user == null){
@@ -56,18 +51,18 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User>
         if (Hash.verify(user.getPassword(), password)) {
             return user;
         } else {
-            System.out.println("VERIFY RESULT " + Hash.verify(user.getPassword(), password));
+            log.warn("Password verify result: {}", Hash.verify(user.getPassword(), password));
             return null;
         }
     }
 
     @Override
-    public void Logout(HttpServletRequest request, HttpServletResponse response) {
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
         request.getSession().removeAttribute("user");
     }
 
     @Override
-    public String Register(HttpServletRequest request, HttpServletResponse response) {
+    public String register(HttpServletRequest request, HttpServletResponse response) {
         String username = request.getParameter("username");
         String email = request.getParameter("email");
         String phone = request.getParameter("phone");
@@ -85,18 +80,18 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User>
         }
 
         try {
-            userDao.doUserRegister(username, email, phone, Hash.calculate(password), null);
+            userDao.registerUser(username, email, phone, Hash.calculate(password), null);
             User user = userDao.getUserInfo(email);
             request.getSession().setAttribute("user", user);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to register user. username={}, email={}, phone={}", username, email, phone, e);
             return  "Register failed, please check if your email and phone number are unique.\nError Detail: " + e;
         }
         return null;
     }
 
     @Override
-    public String Unregister(HttpServletRequest request, HttpServletResponse response) {
+    public String deleteAccount(HttpServletRequest request) {
         String password = request.getParameter("password");
         String captcha = request.getParameter("captcha");
         Long userId = null;
@@ -112,7 +107,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User>
         if (Hash.verify(user.getPassword(), password)) {
             int result = 0;
             viewRecordService.delRecordByUserId(userId);
-            result = userDao.unregisterUser(userId);
+            result = userDao.deleteUser(userId);
             if (result < 1) {
                 return "Delete account error, just try again.";
             }
@@ -123,24 +118,12 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User>
     }
 
     @Override
-    public User Userinfo(HttpServletRequest request) {
-        String identifier = null;
-        User user = (User) request.getSession().getAttribute("user");
-        if (user != null && user.getUserId() != null) {
-            identifier = String.valueOf(user.getUserId());
-        }
-        if (identifier == null) {
-            identifier = request.getParameter("userId");
-        }
-        if (identifier == null) {
-            identifier = request.getParameter("identifier");
-        }
-        user = userDao.getUserInfo(identifier);
-        return user;
+    public User userinfo(String identifier) {
+        return userDao.getUserInfo(identifier);
     }
 
     @Override
-    public String UpdateUser(HttpServletRequest request, HttpServletResponse response) {
+    public String updateUser(HttpServletRequest request) {
         String username = request.getParameter("username");
         String email = request.getParameter("email");
         String phone = request.getParameter("phone");
@@ -148,9 +131,14 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User>
         String rePassword = request.getParameter("rePassword");
         String oldPassword = request.getParameter("oldPassword");
         String captcha = request.getParameter("captcha");
-        User user = Userinfo(request);
+
+        User user = userinfo(email);
 
         User originUser = (User) request.getSession().getAttribute("user");
+
+        if (!Objects.equals(user.getUserId(), originUser.getUserId())) {
+            return "No permission operation other account.";
+        }
         Long userId = originUser.getUserId();
 
         String errInfo = mailService.check(request, captcha, user.getEmail());

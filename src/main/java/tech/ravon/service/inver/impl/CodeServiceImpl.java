@@ -20,12 +20,10 @@ public class CodeServiceImpl implements CodeService {
     private static final Logger logger = LoggerFactory.getLogger(CodeServiceImpl.class);
 
     // 统一保存路径
-    private static final String BASE_TEMP_DIR = "src/main/resources/static/code/temp/";
+    private static final String BASE_TEMP_DIR = "data/code/temp/";
 
     @Override
-    public String runCode(HttpServletRequest request, HttpServletResponse response) {
-        String code = request.getParameter("code");
-        String lang = request.getParameter("lang");
+    public String runCode(String code, String lang) {
 
         if (!isCodeSafe(code, lang)) {
             return "Exception: Unsafe code detected.";

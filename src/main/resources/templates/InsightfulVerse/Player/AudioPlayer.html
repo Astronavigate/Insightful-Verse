@@ -28,12 +28,14 @@
            ------------------------- */
         :root{
             /* 冷色调优先: 黑、深蓝、冰白 */
-            --bg:#030405;
-            --text:#fff;
-            --muted:#d0d6d8;
+            --bg: #030405;
+            --text: #fff;
+            --muted: #d0d6d8;
             /* 强调色：冷色系青色，象征意志与掌控 */
-            --accent-r:102;--accent-g:252;--accent-b:241;
-            --accent:rgb(var(--accent-r),var(--accent-g),var(--accent-b));
+            --accent-r: 102;
+            --accent-g: 252;
+            --accent-b: 241;
+            --accent: rgb(var(--accent-r), var(--accent-g), var(--accent-b));
             --overlay-alpha:.3;
             /* --glass-blur: 8px; */
             --glow-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5); /* 定义发光颜色 */
@@ -45,11 +47,12 @@
 
         /* ============== 【修正核心】Flexbox 布局 ============== */
         body,html{
-            height:100vh;margin:0;
-            background:linear-gradient(180deg,var(--bg),#07080a) !important;
-            font-family:"SF Pro Text","Segoe UI",Roboto,system-ui,-apple-system,Arial;
-            color:var(--text);
-            -webkit-font-smoothing:antialiased;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(180deg, var(--bg), #07080a) !important;
+            font-family:"SF Pro Text", "Segoe UI", Roboto, system-ui, -apple-system, Arial;
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
 
             /* 关键：将 body 设置为垂直 Flex 容器 */
             display: flex;
@@ -63,11 +66,11 @@
             flex-grow: 1;
 
             /* 保持内容区的内边距 */
-            padding-top:4vh;
-            padding-bottom:4vh;
-            padding-left:6vw;
-            padding-right:6vw;
-            box-sizing:border-box;
+            padding-top: 4vh;
+            padding-bottom: 4vh;
+            padding-left: 6vw;
+            padding-right: 6vw;
+            box-sizing: border-box;
 
             /* 移除原有的固定高度（如 92vh） */
             height: auto;
@@ -79,66 +82,173 @@
         /* ======================================================= */
 
 
-        .app-container{width:100%;height:100%;position:relative}
-        .card-root{width:100%;height:100%;position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.02)}
+        .app-container {
+            width: 100%;
+            height: 100%;
+            position: relative
+        }
+        .card-root {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, .02)}
 
-        /* 背景模糊效果 (略) */
-        .bg-root{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-        .bg-cover{position:absolute;inset:-20%;background-size:cover;background-position:center center;opacity:0;transition:opacity .9s;filter: blur(40px) brightness(0.7);transform: scale(1.1);}
-        .bg-cover.show{opacity:1}
-        .bg-overlay{position:absolute;inset:0;z-index:1;background:rgba(0,0,0,var(--overlay-alpha));pointer-events:none}
-        .bg-flow{position:absolute;inset:-30%;mix-blend-mode:screen;opacity:.95;z-index:2}
+        .bg-root {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden
+        }
+        .bg-cover {
+            position: absolute;
+            inset: -20%;
+            background-size: cover;
+            background-position: center center;
+            opacity: 0;
+            transition: opacity .9s;
+            filter: blur(40px) brightness(0.7);
+            transform: scale(1.1);
+        }
+        .bg-cover.show {
+            opacity: 1
+        }
+        .bg-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: rgba(0, 0, 0, var(--overlay-alpha));
+            pointer-events: none
+        }
+        .bg-flow {
+            position: absolute;
+            inset: -30%;
+            mix-blend-mode: screen;
+            opacity: .95;
+            z-index: 2
+        }
 
-        /* 仿玻璃 UI 布局 */
-        .ui-root{position:relative;z-index:4;height:100%;padding:22px;display:flex;gap:18px;align-items:stretch}
+        .ui-root {
+            position: relative;
+            z-index: 4;
+            height: 100%;
+            padding: 22px;
+            display: flex;
+            gap: 18px;
+            align-items: stretch
+        }
 
         /* -------------------------
            2. 信息面板 (info-panel)
            ------------------------- */
-        .info-panel{
-            width:380px;
-            min-width:260px;
-            border-radius:12px;
-            padding:14px;
-            background:rgba(8, 10, 12, var(--glass-alpha-light));
-            border:1px solid rgba(255,255,255,.06);
-            backdrop-filter:blur(var(--glass-blur));
-            display:flex;flex-direction:column;gap:12px;max-height: 100%; overflow: hidden;
+        .info-panel {
+            width: 380px;
+            min-width: 260px;
+            border-radius: 12px;
+            padding: 14px;
+            background: rgba(8, 10, 12, var(--glass-alpha-light));
+            border: 1px solid rgba(255, 255, 255, .06);
+            backdrop-filter: blur(var(--glass-blur));
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 100%;
+            overflow: hidden;
         }
 
         /* 静态头部 */
-        .info-header{display: flex;flex-direction: column;align-items: center;gap: 12px;padding-bottom: 12px;flex-shrink: 0;}
+        .info-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 12px;
+            flex-shrink: 0;
+        }
 
         /* 专辑封面：强制正方形 */
-        .cover{
+        .cover {
             width: 100%;
             max-width: 30vh;
             max-height: 30vh;
             aspect-ratio: 1 / 1;
             border-radius: 6px;
             overflow: hidden;
-            background:linear-gradient(180deg,#060708,#0b0f12);
+            background: linear-gradient(180deg, #060708, #0b0f12);
             margin: 0 auto;
             padding: 0;
         }
-        .cover img{width:100%;height:100%;object-fit:cover;display:block}
+        .cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block
+        }
 
         /* 标题样式 */
-        .track-info{text-align:center;width:100%;box-sizing:border-box}
-        .track-info .title{font-weight:800;font-size:18px;color: var(--text);}
-        .track-info .sep{color: rgba(208,214,216,.6);}
-        .track-info .artist{font-weight:400;font-size:15px;color:rgba(208,214,216,.6);}
+        .track-info {
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box
+        }
+        .track-info .title {
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--text);
+        }
+        .track-info .sep {
+            color: rgba(208,214,216,.6);
+        }
+        .track-info .artist {
+            font-weight: 400;
+            font-size: 15px;
+            color: rgba(208,214,216,.6);
+        }
 
         /* 元信息列表 (略) */
-        .scrollable-meta{flex-grow: 1;overflow-y: auto;padding-right: 2px;}
-        .scrollable-meta::-webkit-scrollbar { width: 6px; }
+        .scrollable-meta {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+        .scrollable-meta::-webkit-scrollbar {
+            width: 6px;
+        }
         .scrollable-meta::-webkit-scrollbar-thumb {
             /* background-color: rgba(255, 255, 255, 0.08); */
-            border-radius: 3px; }
-        .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;align-items:start;margin-top:4px;padding-bottom: 10px;}
-        .meta-item{font-size:12px;color:var(--text);display:flex;gap:6px;align-items:flex-start;word-break:break-word;line-height:1.3;}
-        .meta-item .v{color:var(--text);min-width:100px;font-weight:700}
-        .meta-item .k{color:var(--text);min-width:40px;font-weight:500;white-space:pre-wrap;opacity:.5}
+            border-radius: 3px;
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 12px;
+            align-items: start;
+            margin-top: 4px;
+            padding-bottom: 10px;
+        }
+        .meta-item {
+            font-size: 12px;
+            color: var(--text);
+            display: flex;
+            gap: 6px;
+            align-items: flex-start;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+        .meta-item .v {
+            color: var(--text);
+            min-width: 100px;
+            font-weight: 700
+        }
+        .meta-item .k {
+            color: var(--text);
+            min-width: 40px;
+            font-weight: 500;
+            white-space: pre-wrap;
+            opacity: .5
+        }
 
         /* 固定播放控件 */
         .audio-container-fixed {
@@ -149,21 +259,41 @@
             margin: 0 -14px -14px -14px;
             flex-shrink: 0;
         }
-        .audio-bottom{display:flex;gap:8px;align-items:center;justify-content:center;padding:8px 8px 14px 8px;}
-        .audio-bottom audio{width:100%;max-width:100%;outline:0;filter:invert(.9) hue-rotate(180deg)}
+        .audio-bottom {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 8px 14px 8px;
+        }
+        .audio-bottom audio {
+            width: 100%;
+            max-width: 100%;
+            outline: 0;
+            filter: invert() opacity(0.7) brightness(1.4)
+        }
 
         /* -------------------------
            3. 歌词面板 (纯文字流样式)
            ------------------------- */
-        .right-panel{flex:1;display:flex;flex-direction:column;gap:18px;min-width:320px;z-index:4}
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            min-width: 320px;
+            z-index: 4
+        }
         .panel{
-            flex:1;
-            border-radius:12px;
-            padding:14px;
-            background:rgba(14, 16, 18, var(--glass-alpha-dark));
-            border:1px solid rgba(255,255,255,.06);
-            backdrop-filter:blur(var(--glass-blur));
-            display:flex;flex-direction:column;overflow:hidden
+            flex: 1;
+            border-radius: 12px;
+            padding: 14px;
+            background: rgba(14, 16, 18, var(--glass-alpha-dark));
+            border: 1px solid rgba(255, 255, 255, .06);
+            backdrop-filter: blur(var(--glass-blur));
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
         }
 
         /* 统一背景 */
@@ -176,8 +306,14 @@
             position: relative;
             will-change: scroll-position;
         }
-        .lyrics-module::-webkit-scrollbar{width:6px}
-        .lyrics-module::-webkit-scrollbar-thumb{background:rgba(255,255,255,.04);border-radius:3px;border:1px solid rgba(255,255,255,.02)}
+        .lyrics-module::-webkit-scrollbar {
+            width: 6px
+        }
+        .lyrics-module::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, .04);
+            border-radius: 3px;
+            border: 1px solid rgba(255, 255, 255, .02)
+        }
 
         /* 歌词行样式和大小调整 */
         .lyric-line {
@@ -196,7 +332,7 @@
         }
 
         .lyric-line.active {
-            color: rgba(224,224,224,0.8);
+            color: rgba(224, 224, 224, 0.8);
             opacity: 1;
             font-weight: 700;
             /* 使用 scale 替代 font-size 变化 */
@@ -239,29 +375,29 @@
 <body style="/* background-color:#0a0a0a */"
       th:attr="data-file-path=${file != null ? file.filePath : ''},
                data-file-name=${file != null ? file.fileName : ''},
-               data-album=${album},
-               data-album_artist=${album_artist},
-               data-artist=${artist},
-               data-composer=${composer},
-               data-comment=${comment},
-               data-copyreight=${copyright},
-               data-disc_no=${disc_no},
-               data-disc_total=${disc_total},
-               data-genre=${genre},
-               data-isrc=${isrc},
-               data-lyrics=${lyrics},
-               data-performer=${performer},
-               data-title=${title},
-               data-track=${track},
-               data-track_total=${track_total},
-               data-upc=${upc},
-               data-year=${year},
-               data-cover=${cover},
-               data-duration=${duration},
-               data-bitrate=${bitrate},
-               data-sampleRate=${sampleRate},
-               data-channels=${channels},
-               data-encodingType=${encodingType}">
+               data-album=${audio?.tags['album']},
+               data-album_artist=${audio?.tags['album_artist']},
+               data-artist=${audio?.tags['artist']},
+               data-composer=${audio?.tags['composer']},
+               data-comment=${audio?.tags['comment']},
+               data-copyright=${audio?.tags['copyright']},
+               data-disc_no=${audio?.tags['disc_no']},
+               data-disc_total=${audio?.tags['disc_total']},
+               data-genre=${audio?.tags['genre']},
+               data-isrc=${audio?.tags['isrc']},
+               data-lyrics=${audio?.tags['lyrics']},
+               data-performer=${audio?.tags['performer']},
+               data-title=${audio?.tags['title']},
+               data-track=${audio?.tags['track']},
+               data-track_total=${audio?.tags['track_total']},
+               data-upc=${audio?.tags['upc']},
+               data-year=${audio?.tags['year']},
+               data-cover=${audio?.cover},
+               data-duration=${audio?.duration},
+               data-bitrate=${audio?.bitrate},
+               data-sampleRate=${audio?.sampleRate},
+               data-channels=${audio?.channels},
+               data-encodingType=${audio?.encodingType}">
 
 <th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
@@ -965,7 +1101,7 @@
         updateTrackHeader(titleForHeader, artistForHeader);
 
         metaGrid.innerHTML = '';
-        const order = ['title', 'artist', 'album', 'album_artist', 'year', 'genre', 'track', 'track_total', 'disc_no', 'disc_total', 'duration', 'bitrate', 'samplerate', 'channels', 'encodingtype', 'composer', 'copyright', 'isrc', 'upc', 'encoder', 'file name'];
+        const order = ['title', 'artist', 'album', 'album_artist', 'year', 'genre', 'track', 'track_total', 'disc_no', 'disc_total', 'duration', 'bitrate', 'samplerate', 'channels', 'encodingtype', 'composer', 'copyright', 'ISRC', 'UPC', 'encoder', 'file name'];
 
         const addedKeys = new Set();
 

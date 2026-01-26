@@ -27,16 +27,20 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 指定静态资源的路径（可以是绝对路径）
+        // 指定静态资源的路径
         String staticPath = Paths.get(System.getProperty("user.dir"), "src", "main", "resources", "static").toUri().toString();
-        registry.addResourceHandler("/**")
-                .addResourceLocations(staticPath)
-                .setCachePeriod(0); // 禁用缓存
 
-        // 指定Code的路径（可以是绝对路径）
+        // 指定 Data 的路径
+        String dataPath = Paths.get(System.getProperty("user.dir"), "data").toUri().toString();
+
+        // 指定 Test 的路径
         String testPath = Paths.get(System.getProperty("user.dir"), "src", "main", "resources", "test").toUri().toString();
         registry.addResourceHandler("/**")
-                .addResourceLocations(staticPath)
+                .addResourceLocations(
+                        staticPath,
+                        dataPath,
+                        testPath
+                )
                 .setCachePeriod(0); // 禁用缓存
     }
 }

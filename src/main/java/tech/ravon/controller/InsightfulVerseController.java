@@ -19,22 +19,21 @@ package tech.ravon.controller;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jaudiotagger.audio.AudioFile;
-import org.jaudiotagger.audio.AudioFileIO;
-import org.jaudiotagger.audio.AudioHeader;
-import org.jaudiotagger.tag.FieldKey;
-import org.jaudiotagger.tag.KeyNotFoundException;
-import org.jaudiotagger.tag.Tag;
-import org.jaudiotagger.tag.images.Artwork;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import tech.ravon.lib.AudioTools;
+import tech.ravon.lib.AudioTools.*;
+import tech.ravon.model.GeoAccess;
 import tech.ravon.model.inver.*;
+import tech.ravon.service.GeoAccessService;
 import tech.ravon.service.inver.*;
+import tech.ravon.vo.inver.AudioInfoVO;
 import tech.ravon.vo.inver.CourseVO;
+import tech.ravon.vo.inver.FileVO;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -42,8 +41,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
-@Controller
 @RequiredArgsConstructor
+@Controller
 @Slf4j
 public class InsightfulVerseController {
 
@@ -58,10 +57,18 @@ public class InsightfulVerseController {
     private final PageService pageService;
     private final CollectionService collectionService;
     private final HaloService haloService;
+    private final GeoAccessService geoAccessService;
 
-    @RequestMapping({"/InsightfulVerse/", "/InsightfulVerse/index"})
-    public String ivIndex() {
+    @RequestMapping("/InsightfulVerse/")
+    public String ivReIndex() {
+        return "redirect:/InsightfulVerse/index";
+    }
+
+    @RequestMapping("/InsightfulVerse/index")
+    public String ivIndex(HttpServletRequest request) {
         log.info("Handle request: GET /InsightfulVerse/index");
+        List<File> fileList = fileService.getFilesByPop(4L);
+        request.setAttribute("fileList", fileList);
         return "InsightfulVerse/index";
     }
 
@@ -84,7 +91,7 @@ public class InsightfulVerseController {
             request.setAttribute("lang", null);
             request.setAttribute("codeContent", null);
         } else {
-            String classpath = System.getProperty("user.dir") + "/src/main/resources/static";
+            String classpath = System.getProperty("user.dir") + "/data";
             String filePath = classpath + file.getFilePath();
             String fileType = switch (file.getType().toLowerCase()) {
                 case "c" -> "c";
@@ -113,13 +120,13 @@ public class InsightfulVerseController {
 
     @ResponseBody
     @RequestMapping("/InsightfulVerse/Code.run")
-    public String ivXCode(HttpServletRequest request, HttpServletResponse response) {
-        log.info("Handle request: POST /InsightfulVerse/Code.run");
+    public String ivXCode(HttpServletRequest request) {
         String code = request.getParameter("code");
         String lang = request.getParameter("lang");
+        log.info("Handle request: POST /InsightfulVerse/Code.run, Lang: {}", lang);
         String result;
         try {
-            result = codeService.runCode(request, response);
+            result = codeService.runCode(code, lang);
         } catch (Exception e) {
             log.error("Code exec failed, code={}, lang={}", code, lang, e);
             request.getSession().setAttribute("errorMessage", e.getMessage());
@@ -130,8 +137,11 @@ public class InsightfulVerseController {
 
     @RequestMapping("/InsightfulVerse/Course")
     public String ivCourse(HttpServletRequest request) {
-        log.info("Handle request: POST /InsightfulVerse/Course");
-        List<CourseVO> courseList = courseService.allCourseVO(request);
+        log.info("Handle request: GET /InsightfulVerse/Course");
+        User user = (User) request.getSession().getAttribute("user");
+        Long userId = null;
+        if (user != null) userId = user.getUserId();
+        List<CourseVO> courseList = courseService.allCourseVO(userId);
         request.setAttribute("courseList", courseList);
         return "InsightfulVerse/Course";
     }
@@ -139,51 +149,79 @@ public class InsightfulVerseController {
     @RequestMapping("/InsightfulVerse/CourseInfo")
     public String ivCourseInfo(HttpServletRequest request) {
         Long courseId = Long.valueOf(request.getParameter("courseId"));
+        log.info("Handle request: GET /InsightfulVerse/CourseInfo?{}", courseId);
         User user = (User) request.getSession().getAttribute("user");
-        if (user != null && user.getUserId() != null) {
-            if (user.getAuthority() == "infinite" && (boolean) request.getSession().getAttribute("authorize")) {
+        Long userId = null;
+        if (user != null) {
+            userId = user.getUserId();
+            if (user.getUserId() != null && user.getAuthority() == "infinite" &&
+                    (boolean) request.getSession().getAttribute("authorize")) {
                 request.getSession().setAttribute("lastUrl", request.getRequestURL());
                 return "redirect:/InsightfulVerse/VerifyPerm";
             }
         }
-        List<File> sourceList = fileService.getCourseFiles(courseId);
+        List<FileVO> sourceList = fileService.getCourseFilesVO(userId, courseId);
         request.setAttribute("sourceList", sourceList);
         return "InsightfulVerse/CourseInfo";
     }
 
     @RequestMapping("/InsightfulVerse/Error")
     public String error(HttpServletRequest request) {
+        Object errMsg = request.getSession().getAttribute("errorMessage");
+        log.info("Handle request: GET /InsightfulVerse/Error, Cause: {}", errMsg);
         request.setAttribute("errorMessage", request.getSession().getAttribute("errorMessage"));
         request.getSession().setAttribute("errorMessage", null);
         return "InsightfulVerse/Error";
     }
 
     @RequestMapping("/InsightfulVerse/Login")
-    public String IVLogin() {
+    public String ivLogin() {
+        log.info("Handle request: GET /InsightfulVerse/Login");
         return "InsightfulVerse/Login";
     }
 
     @RequestMapping("/InsightfulVerse/Login.do")
-    public String IVXLogin(HttpServletRequest request, HttpServletResponse response) {
-        User user = userService.Login(request, response);
-        if (user == null || user.getUserId() == null) {
+    public String ivXLogin(HttpServletRequest request, HttpServletResponse response) {
+        String identifier = request.getParameter("identifier");
+        String password = request.getParameter("password");
+        log.info("Handle request: POST /InsightfulVerse/Login.do, identifier: {}", identifier);
+        User user = userService.login(identifier, password);
+        if (user.getUserId() == null) {
             request.getSession().setAttribute("errorMessage", "Login failed, please check your username and password and try again.");
             return "redirect:/InsightfulVerse/Error";
         } else {
+            String ip = geoAccessService.getClientIp(request);
+
+/*
+            log.debug(geoAccessService.setGeoAccess("131.38.173.92", 10000000000L).toString()); // DOD
+            log.debug(geoAccessService.setGeoAccess("131.46.237.185", 10000000000L).toString()); // AF
+            log.debug(geoAccessService.setGeoAccess("65.248.36.175", 10000000000L).toString()); // X
+            log.debug(geoAccessService.setGeoAccess("104.134.196.157", 10000000000L).toString()); // GO
+            log.debug(geoAccessService.setGeoAccess("165.204.52.173", 10000000000L).toString()); // AMD
+            log.debug(geoAccessService.setGeoAccess("174.193.53.204", 10000000000L).toString()); // V
+*/
+
+            if (user.getUserId() != 1000000000L) {
+                GeoAccess geo = geoAccessService.setGeoAccess(ip, user.getUserId());
+                log.info("User {} login at {}", geo.getUserId(), geo.getBaseInfo());
+            }
+
             request.getSession().setAttribute("user", user);
             return "redirect:/InsightfulVerse/index";
         }
     }
 
     @RequestMapping("/InsightfulVerse/Logout")
-    public String IVLogout(HttpServletRequest request, HttpServletResponse response) {
+    public String ivLogout(HttpServletRequest request, HttpServletResponse response) {
+        log.info("Handle request: POST /InsightfulVerse/Logout, userId: {}",
+                ((User) request.getSession().getAttribute("user")).getUserId());
         request.getSession().removeAttribute("user");
-        userService.Logout(request, response);
+        userService.logout(request, response);
         return "redirect:/InsightfulVerse/index";
     }
 
     @RequestMapping("/InsightfulVerse/Personal")
-    public String IVersonal(HttpServletRequest request) {
+    public String ivPersonal(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("user");
         if (user == null) {
             return "redirect:/InsightfulVerse/Login";
@@ -191,86 +229,33 @@ public class InsightfulVerseController {
         List<ViewRecord> viewRecordList = viewRecordService.recentViewedFile(user.getUserId());
         request.setAttribute("viewRecordList", viewRecordList);
         request.setAttribute("ivVersion", iVVersionService.getLatestVersion());
+        request.setAttribute("geoAccessList", geoAccessService.getGeoAccessByUser(user.getUserId()).stream().limit(5).toList());
         return "InsightfulVerse/Personal";
     }
 
     @RequestMapping("/InsightfulVerse/Player")
-    public String IVPlayer(HttpServletRequest request) {
+    public String ivPlayer(HttpServletRequest request) {
         File file = (File) request.getSession().getAttribute("file");
+        log.info("Handle request: GET /InsightfulVerse/Player, request media: {}", file.getFileId());
         request.setAttribute("file", file);
         switch (file.getType().toLowerCase()) {
-            case "mp4", "mkv", "mov", "wmv" -> {
-                return "InsightfulVerse/Player/VideoPlayer";
-            }
             case "wav", "wma", "mp3", "flac", "m4a" -> {
-                String filepath = System.getProperty("user.dir") + "/src/main/resources/static" + file.getFilePath();
-                java.io.File iofile = new java.io.File(filepath);
-
-                if (iofile != null && iofile.exists()) {
-                    System.out.println("file exists");
-                    try {
-                        AudioFile audioFile = AudioFileIO.read(iofile);
-                        Tag tag = audioFile.getTag();
-                        AudioHeader header = audioFile.getAudioHeader();
-
-                        // 输出所有标签信息
-                        if (tag != null) {
-                            for (FieldKey key : FieldKey.values()) {
-                                try {
-                                    String value = tag.getFirst(key);
-                                    if (value != null && !value.trim().isEmpty()) {
-                                        request.setAttribute(key.name().toLowerCase(), value);
-                                        System.out.println(key.name() + ": " + value);
-                                    }
-                                } catch (UnsupportedOperationException | KeyNotFoundException e) {
-                                    // 忽略不支持或不存在的字段
-                                }
-                            }
-
-                            // 获取封面
-                            List<Artwork> artworkList = tag.getArtworkList();
-                            if (!artworkList.isEmpty()) {
-                                Artwork artwork = artworkList.get(0);
-                                byte[] imageData = artwork.getBinaryData();
-                                String mime = artwork.getMimeType();
-                                String base64 = Base64.getEncoder().encodeToString(imageData);
-                                String dataUri = "data:" + mime + ";base64," + base64;
-                                request.setAttribute("cover", dataUri);
-
-                                // 输出 Base64 前 20 个字符
-                                System.out.println("Cover(Base64 20 chars): " + (base64.length() > 20 ? base64.substring(0, 20) : base64));
-                            }
-                        }
-
-                        // 音频文件信息
-                        if (header != null) {
-                            request.setAttribute("duration", header.getTrackLength());
-                            request.setAttribute("bitrate", header.getBitRate());
-                            request.setAttribute("sampleRate", header.getSampleRateAsNumber());
-                            request.setAttribute("channels", header.getChannels());
-                            request.setAttribute("encodingType", header.getEncodingType());
-
-                            System.out.println("Duration: " + header.getTrackLength());
-                            System.out.println("Bitrate: " + header.getBitRate());
-                            System.out.println("SampleRate: " + header.getSampleRateAsNumber());
-                            System.out.println("Channels: " + header.getChannels());
-                            System.out.println("EncodingType: " + header.getEncodingType());
-                        }
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                AudioInfoVO audioInfoVO = AudioTools.parseAudioMetadata(file.getFilePath());
+                if (audioInfoVO != null) {
+                    request.setAttribute("audio", audioInfoVO);
                 }
                 return "InsightfulVerse/Player/AudioPlayer";
             }
+            default -> {
+                return "InsightfulVerse/Player/VideoPlayer";
+            }
         }
-        System.out.println(file);
-        return "InsightfulVerse/Player";
     }
 
     @RequestMapping("/InsightfulVerse/Reader")
-    public String IVReader(HttpServletRequest request) {
+    public String ivReader(HttpServletRequest request) {
         File file = (File) request.getSession().getAttribute("file");
+        log.info("Handle request: GET /InsightfulVerse/Reader, request document: {}", file.getFileId());
         request.setAttribute("file", file);
         switch (file.getType().toLowerCase()) {
             case "doc", "docx" -> {
@@ -295,20 +280,23 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/Painter")
-    public String IVPainter(HttpServletRequest request) {
+    public String ivPainter(HttpServletRequest request) {
         File file = (File) request.getSession().getAttribute("file");
+        log.info("Handle request: GET /InsightfulVerse/Reader, request picture: {}", file.getFileId());
         request.setAttribute("file", file);
         return "/InsightfulVerse/Painter";
     }
 
     @RequestMapping("/InsightfulVerse/Register")
-    public String IVRegister() {
+    public String ivRegister() {
+        log.info("Handle request: GET /InsightfulVerse/Register");
         return "InsightfulVerse/Register";
     }
 
     @RequestMapping("/InsightfulVerse/Register.do")
-    public String IVXRegister(HttpServletRequest request, HttpServletResponse response) {
-        String message = userService.Register(request, response);
+    public String ivxRegister(HttpServletRequest request, HttpServletResponse response) {
+        String message = userService.register(request, response);
+        log.info("Handle request: POST /InsightfulVerse/Register.do");
         if (message == null) {
             return "redirect:/InsightfulVerse/index";
         } else {
@@ -318,14 +306,16 @@ public class InsightfulVerseController {
         }
     }
 
-    @RequestMapping("/InsightfulVerse/Unregister")
-    public String IVUnregister() {
-        return "InsightfulVerse/Unregister";
+    @RequestMapping("/InsightfulVerse/DelAccount")
+    public String ivDelAccount() {
+        log.info("Handle request: GET /InsightfulVerse/DelAccount");
+        return "InsightfulVerse/DelAccount";
     }
 
-    @RequestMapping("/InsightfulVerse/Unregister.do")
-    public String IVXUnregister(HttpServletRequest request, HttpServletResponse response) {
-        String message = userService.Unregister(request, response);
+    @RequestMapping("/InsightfulVerse/DelAccount.do")
+    public String ivxDelAccount(HttpServletRequest request) {
+        String message = userService.deleteAccount(request);
+        log.info("Handle request: POST /InsightfulVerse/DelAccount.do");
         if (message != null) {
             request.getSession().setAttribute("errorMessage", message);
             return "redirect:/InsightfulVerse/Error";
@@ -335,8 +325,9 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/UpdateUser")
-    public String IVUpdateUser(HttpServletRequest request) {
-        User user = userService.Userinfo(request);
+    public String ivUpdateUser(HttpServletRequest request) {
+        User user = userService.userinfo(getIdentifierSession(request));
+        log.info("Handle request: GET /InsightfulVerse/UpdateUser");
         if (user == null) {
             request.getSession().setAttribute("errorMessage", "Please log in first.");
             return "redirect:/InsightfulVerse/Error";
@@ -345,27 +336,38 @@ public class InsightfulVerseController {
         return "InsightfulVerse/UpdateInfo";
     }
 
+    private String getIdentifierSession(HttpServletRequest request) {
+        String identifier = null;
+        User user = (User) request.getSession().getAttribute("user");
+        if (user != null && user.getUserId() != null) {
+            identifier = String.valueOf(user.getUserId());
+        }
+        if (identifier == null) {
+            identifier = request.getParameter("userId");
+        }
+        if (identifier == null) {
+            identifier = request.getParameter("identifier");
+        }
+        return identifier;
+    }
+
     @RequestMapping("/InsightfulVerse/UpdateUser.do")
-    public String IVXUpdateUser(HttpServletRequest request, HttpServletResponse response) {
-        String message = userService.UpdateUser(request, response);
-        System.out.println(message == null ? "null-message" : message);
+    public String ivxUpdateUser(HttpServletRequest request) {
+        String identifier = getIdentifierSession(request);
+        log.info("Handle request: POST /InsightfulVerse/UpdateUser.do, user identifier: {}", identifier);
+        String message = userService.updateUser(request);
         if (message != null) {
             request.getSession().setAttribute("errorMessage", message);
             return "redirect:/InsightfulVerse/Error";
         }
-        User user = userService.Userinfo(request);
+        User user = userService.userinfo(identifier);
         request.getSession().setAttribute("user", user);
         return "redirect:/InsightfulVerse/Personal";
     }
 
     @RequestMapping("/InsightfulVerse/NihilityZone")
-    public String IVNihilityZone(HttpServletRequest request) {
-        String codeContent = (String) request.getSession().getAttribute("codeContent");
-        List<List<String>> resultList = (List<List<String>>) request.getSession().getAttribute("resultList");
-        request.getSession().removeAttribute("resultList");
-        request.getSession().removeAttribute("codeContent");
-        request.setAttribute("resultList", resultList);
-        request.setAttribute("codeContent", codeContent);
+    public String ivNihilityZone(HttpServletRequest request) {
+        log.info("Handle request: REQUEST /InsightfulVerse/NihilityZone, user identifier: {}", getIdentifierSession(request));
         User user = (User) request.getSession().getAttribute("user");
         if (user == null || user.getUserId() == null) {
             return "redirect:/InsightfulVerse/";
@@ -379,9 +381,44 @@ public class InsightfulVerseController {
         return "InsightfulVerse/NihilityZone";
     }
 
+    @RequestMapping("/InsightfulVerse/Halo")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> ivHalo(HttpServletRequest request) {
+        Map<String, Object> response = new HashMap<>();
+        User user = (User) request.getSession().getAttribute("user");
+        if (user == null || user.getUserId() == null) {
+            response.put("status", "unauthorized");
+            response.put("redirectUrl", "/InsightfulVerse/VerifyPerm");
+            return ResponseEntity.status(401).body(response);
+        } else if (!checkPermission(request)) {
+            response.put("status", "forbidden");
+            response.put("message", "Insufficient permissions");
+            response.put("redirectUrl", "/InsightfulVerse/Personal");
+            return ResponseEntity.status(403).body(response);
+        } else {
+            String code = request.getParameter("code");
+            if (code == null || code.trim().isEmpty()) {
+                response.put("status", "error");
+                response.put("message", "SQL code cannot be empty");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            try {
+                List<List<String>> resultList = haloService.runSQL(code);
+                response.put("status", "success");
+                response.put("data", resultList);
+                return ResponseEntity.ok(response);
+            } catch (Exception e) {
+                response.put("status", "error");
+                response.put("message", "SQL execution error: " + e.getMessage());
+                return ResponseEntity.status(500).body(response);
+            }
+        }
+    }
+
     @ResponseBody
     @RequestMapping("/InsightfulVerse/VerifyCode")
-    public String IVVerifyCode(HttpServletRequest request) {
+    public String ivVerifyCode(HttpServletRequest request) {
         return mailService.getCaptcha(request);
     }
 
@@ -510,42 +547,6 @@ public class InsightfulVerseController {
         return "redirect:/InsightfulVerse/Personal";
     }
 
-    @RequestMapping("/InsightfulVerse/Halo")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> IVHalo(HttpServletRequest request) {
-        Map<String, Object> response = new HashMap<>();
-        User user = (User) request.getSession().getAttribute("user");
-        if (user == null || user.getUserId() == null) {
-            response.put("status", "unauthorized");
-            response.put("redirectUrl", "/InsightfulVerse/VerifyPerm");
-            return ResponseEntity.status(401).body(response);
-        } else if (!checkPermission(request)) {
-            response.put("status", "forbidden");
-            response.put("message", "Insufficient permissions");
-            response.put("redirectUrl", "/InsightfulVerse/Personal");
-            return ResponseEntity.status(403).body(response);
-        } else {
-            // 已授权，执行SQL
-            String code = request.getParameter("code");
-            if (code == null || code.trim().isEmpty()) {
-                response.put("status", "error");
-                response.put("message", "SQL code cannot be empty");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            try {
-                List<List<String>> resultList = haloService.runSQL(code);
-                response.put("status", "success");
-                response.put("data", resultList);
-                return ResponseEntity.ok(response);
-            } catch (Exception e) {
-                response.put("status", "error");
-                response.put("message", "SQL execution error: " + e.getMessage());
-                return ResponseEntity.status(500).body(response);
-            }
-        }
-    }
-
     @RequestMapping("/InsightfulVerse/ViewHistory")
     public String IVViewHistory(HttpServletRequest request) {
         int max = request.getParameter("max") == null || request.getParameter("max").isEmpty() ? 15 : Integer.parseInt(request.getParameter("max"));
@@ -603,14 +604,14 @@ public class InsightfulVerseController {
             collectionService.updateCollItem(user.getUserId(), id, type);
         }
 
-        if ("file".equalsIgnoreCase(type)) {
-            return "redirect:/InsightfulVerse/CourseInfo?courseId=10000000000#sc" + id;
+        if ("source".equalsIgnoreCase(type)) {
+            File file = fileService.getFileById(id);
+            return "redirect:/InsightfulVerse/CourseInfo?courseId=" + file.getCourseId() + "#sc" + id;
         } else {
-            String redirectPath = "redirect:/InsightfulVerse/Course";
             if (keyword != null && !keyword.isEmpty()) {
-                redirectPath += "?keyword=" + keyword;
+                return "redirect:/InsightfulVerse/Course#cs" + id;
             }
-            return redirectPath + "#cs" + id;
+            return "redirect/InsightfulVerse/Course";
         }
     }
 
@@ -619,6 +620,16 @@ public class InsightfulVerseController {
         List<Version> versionList = iVVersionService.getAllVersion();
         request.setAttribute("versionList", versionList);
         return "InsightfulVerse/Version";
+    }
+
+    @RequestMapping("/InsightfulVerse/GeoAccess")
+    public String geoAccess(HttpServletRequest request) {
+        User user = (User) request.getSession().getAttribute("user");
+        if (user == null) {
+            return "redirect:/InsightfulVerse/Login";
+        }
+        request.setAttribute("geoAccessList", geoAccessService.getGeoAccessByUser(user.getUserId()));
+        return "InsightfulVerse/GeoAccess";
     }
 
     @RequestMapping("/InsightfulVerse/AiBot")
@@ -721,8 +732,8 @@ public class InsightfulVerseController {
             && Boolean.TRUE.equals(request.getSession().getAttribute("authorize"))
         ) {
             request.getSession().setAttribute("lastUrl", request.getRequestURL());
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 }

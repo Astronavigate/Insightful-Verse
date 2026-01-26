@@ -1,0 +1,208 @@
+<!--
+  Copyright 2025 Astronavigate
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Insightful Verse Geo Access</title>
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+
+    <!-- OpenLayers -->
+    <link rel="stylesheet" href="/lib/ol-10.7.0/ol.css">
+    <script src="/lib/ol-10.7.0/dist/ol.js"></script>
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .geo-container {
+            display: flex;
+            gap: 16px;
+            border-radius: 28.8px;
+        }
+
+        #map {
+            flex: 2;
+            border-radius: 28.8px;
+            overflow: hidden;
+        }
+
+        .geo-list {
+            flex: 1;
+        }
+
+        .geo-item {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .geo-item:hover:not(.active) {
+            background-color: rgb(195, 219, 255);
+        }
+
+        .geo-time,
+        .geo-latlng,
+        .geo-network {
+            font-size: small;
+        }
+
+        .geo-item.active,
+        .geo-item.active .geo-time,
+        .geo-item.active .geo-location,
+        .geo-item.active .geo-latlng,
+        .geo-item.active .geo-network {
+            color: white !important;
+        }
+
+        .geo-list::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
+<div class="container" style="padding-top: 2.5rem;">
+    <div class="geo-container" style="height: 76vh;">
+
+        <div id="map" class="liquid"></div>
+
+        <div class="geo-list list-group liquid overflow-y-auto">
+            <a href="javascript:void(0);" class="list-group-item geo-item"
+               th:each="g : ${geoAccessList}"
+               th:attr="data-lat=${g.latitude}, data-lng=${g.longitude}, data-acc=${g.accRadius}"
+               onclick="jumpTo(this)">
+
+                <!-- IP + 时间 -->
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="fw-bold geo-ip" th:text="${g.ip}">IP</div>
+                    <small class="geo-time" th:text="${#temporals.format(g.accessTime, 'yyyy-MM-dd HH:mm:ss')}"></small>
+                </div>
+
+                <!-- 经纬度 -->
+                <div class="geo-latlng mb-1">
+                    Lat: <span th:text="${g.latitude}">0</span>,
+                    Lng: <span th:text="${g.longitude}">0</span>,
+                    Acc: <span th:text="${g.accRadius}">0</span>
+                </div>
+
+                <!-- 网络信息 -->
+                <div class="geo-network">
+                    AS<span th:text="${g.asn}">ASN</span>,
+                    <span th:text="${g.aso}">ASO</span>
+                </div>
+
+                <!-- 地点：city / sub1 / country -->
+                <div class="geo-location mb-1" th:text="${g.cityName + ', ' + g.sub1Name + ', ' + g.ctryName}">City, Region, Country</div>
+
+            </a>
+        </div>
+
+    </div>
+</div>
+<div class="blank"></div>
+
+<th:block th:replace="~{common/min-footer.html}"></th:block>
+
+<script>
+    const map = new ol.Map({
+        target: 'map',
+        controls: ol.control.defaults.defaults().extend([
+            new ol.control.ScaleLine({
+                bar: true,
+                steps: 4,
+                text: true
+            })
+        ]),
+        layers: [
+            new ol.layer.Tile({
+                source: new ol.source.OSM()
+                /*source: new ol.source.XYZ({
+                    url: 'https://{a-c}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                })*/
+            })
+        ],
+        view: new ol.View({
+            center: ol.proj.fromLonLat([0, 0]),
+            zoom: 2
+        })
+    });
+
+    const markerSource = new ol.source.Vector();
+    const markerLayer = new ol.layer.Vector({ source: markerSource });
+    map.addLayer(markerLayer);
+
+    let currentSelected = null;
+
+    function validLatLng(lat, lng) {
+        return !isNaN(lat) && !isNaN(lng) &&
+            lat >= -90 && lat <= 90 &&
+            lng >= -180 && lng <= 180;
+    }
+
+    function jumpTo(el) {
+        if (currentSelected) currentSelected.classList.remove('active');
+        el.classList.add('active');
+        currentSelected = el;
+
+        let lat = parseFloat(el.dataset.lat);
+        let lng = parseFloat(el.dataset.lng);
+
+        if (!validLatLng(lat, lng)) { lat = 0; lng = 0; }
+
+        markerSource.clear();
+
+        const center = ol.proj.fromLonLat([lng, lat]);
+
+        // 点标记
+        const marker = new ol.Feature({
+            geometry: new ol.geom.Point(center)
+        });
+        markerSource.addFeature(marker);
+
+        // 圆形半径
+        let radiusKm = parseFloat(el.dataset.acc) || 0;
+        let radiusMeters = radiusKm * 1000;
+        // radiusMeters = Math.max(radiusMeters, 5000); // 适当放大上限以便观察
+
+        if (radiusMeters > 0) {
+            // 创建地理圆（EPSG:4326）
+            const circlePolygon = ol.geom.Polygon.circular([lng, lat], radiusMeters, 128);
+            // 变换到地图投影（EPSG:3857）
+            circlePolygon.transform('EPSG:4326', 'EPSG:3857');
+
+            const circleFeature = new ol.Feature(circlePolygon);
+            circleFeature.setStyle(new ol.style.Style({
+                stroke: new ol.style.Stroke({ color: 'rgba(0, 191, 255, 0.5)', width: 1.5 }),
+                fill: new ol.style.Fill({ color: 'rgba(0, 191, 255, 0.1)' })
+            }));
+            markerSource.addFeature(circleFeature);
+        }
+
+        map.getView().animate({
+            center: center,
+            zoom: lat === 0 && lng === 0 ? 2 : 14, // 增加缩放深度以看清圆
+            duration: 800
+        });
+
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+</script>
+</body>
+</html>

@@ -84,19 +84,69 @@
     </div>
     <nav class="pager-body">
         <ul class="pagination justify-content-center">
-            <li class="page-item" th:if="${currentPage > 1}">
-                <a class="page-link" th:href="@{/InsightfulVerse/ViewHistory(page=${currentPage - 1}, max=${param.max})}"
-                   th:text="#{insightful.view.previous}">Previous</a>
-            </li>
+            <th:block th:if="${totalPages <= 11}">
+                <li class="page-item"
+                    th:each="i : ${#numbers.sequence(1, totalPages)}"
+                    th:classappend="${i == currentPage} ? ' active'">
+                    <a class="page-link"
+                       th:href="@{/InsightfulVerse/ViewHistory(page=${i}, max=${param.max})}"
+                       th:text="${i}"></a>
+                </li>
+            </th:block>
 
-            <li class="page-item" th:each="i : ${#numbers.sequence(1, totalPages)}" th:classappend="${i == currentPage} ? ' active' : ''">
-                <a class="page-link" th:href="@{/InsightfulVerse/ViewHistory(page=${i}, max=${param.max})}" th:text="${i}"></a>
-            </li>
+            <th:block th:if="${totalPages > 11}">
+                <th:block th:if="${currentPage <= 5}">
+                    <li class="page-item"
+                        th:each="i : ${#numbers.sequence(1, 9)}"
+                        th:classappend="${i == currentPage} ? ' active'">
+                        <a class="page-link"
+                           th:href="@{/InsightfulVerse/ViewHistory(page=${i}, max=${param.max})}"
+                           th:text="${i}"></a>
+                    </li>
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <li class="page-item">
+                        <a class="page-link"
+                           th:href="@{/InsightfulVerse/ViewHistory(page=${totalPages}, max=${param.max})}"
+                           th:text="${totalPages}"></a>
+                    </li>
+                </th:block>
 
-            <li class="page-item" th:if="${currentPage < totalPages}">
-                <a class="page-link" th:href="@{/InsightfulVerse/ViewHistory(page=${currentPage + 1}, max=${param.max})}"
-                   th:text="#{insightful.view.next}">Next</a>
-            </li>
+                <th:block th:if="${currentPage >= totalPages - 4}">
+                    <li class="page-item">
+                        <a class="page-link"
+                           th:href="@{/InsightfulVerse/ViewHistory(page=1, max=${param.max})}">1</a>
+                    </li>
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <li class="page-item"
+                        th:each="i : ${#numbers.sequence(totalPages - 8, totalPages)}"
+                        th:classappend="${i == currentPage} ? ' active'">
+                        <a class="page-link"
+                           th:href="@{/InsightfulVerse/ViewHistory(page=${i}, max=${param.max})}"
+                           th:text="${i}"></a>
+                    </li>
+                </th:block>
+
+                <th:block th:if="${currentPage > 5 and currentPage < totalPages - 4}">
+                    <li class="page-item">
+                        <a class="page-link"
+                           th:href="@{/InsightfulVerse/ViewHistory(page=1, max=${param.max})}">1</a>
+                    </li>
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <li class="page-item"
+                        th:each="i : ${#numbers.sequence(currentPage - 3, currentPage + 3)}"
+                        th:classappend="${i == currentPage} ? ' active'">
+                        <a class="page-link"
+                           th:href="@{/InsightfulVerse/ViewHistory(page=${i}, max=${param.max})}"
+                           th:text="${i}"></a>
+                    </li>
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <li class="page-item">
+                        <a class="page-link"
+                           th:href="@{/InsightfulVerse/ViewHistory(page=${totalPages}, max=${param.max})}"
+                           th:text="${totalPages}"></a>
+                    </li>
+                </th:block>
+            </th:block>
         </ul>
     </nav>
 

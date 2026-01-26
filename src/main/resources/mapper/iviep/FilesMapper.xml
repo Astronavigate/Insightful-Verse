@@ -15,11 +15,36 @@
             <result property="filePath" column="file_path" jdbcType="VARCHAR"/>
     </resultMap>
 
+    <resultMap id="FileVOResultMap" type="tech.ravon.vo.inver.FileVO" extends="BaseResultMap">
+        <result property="isFavorite" column="is_favorite" jdbcType="INTEGER"/>
+        <result property="favoriteTime" column="favorite_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
     <sql id="Base_Column_List">
         file_id,file_name,file_type,
         course_id,file_remark,upload_user,
         upload_date,file_path
     </sql>
+
+    <select id="getAllFiles" resultMap="BaseResultMap">
+        SELECT * FROM files
+    </select>
+
+    <select id="getFilesByPop" resultMap="BaseResultMap">
+        SELECT f.*
+        FROM files f
+                 LEFT JOIN (
+            SELECT
+                file_id,
+                SUM(view_count) AS total_sum
+            FROM view_records
+            GROUP BY file_id
+        ) v_stat ON f.file_id = v_stat.file_id
+        ORDER BY v_stat.total_sum DESC, f.file_id ASC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
 
     <select id="getFileById" resultType="tech.ravon.model.inver.File" resultMap="BaseResultMap">
         SELECT * FROM files WHERE file_id = #{fileId} LIMIT 1
@@ -29,6 +54,33 @@
         SELECT *
         FROM files
         WHERE course_id = #{courseId}
+    </select>
+
+    <select id="getFilesVOByCourse" resultMap="FileVOResultMap">
+        SELECT
+            f.file_id,
+            f.file_name,
+            f.file_type,
+            f.course_id,
+            f.file_remark,
+            f.upload_user,
+            f.upload_date,
+            f.file_path,
+            MAX(CASE WHEN col.user_id = #{userId} THEN 1 ELSE 0 END) AS is_favorite,
+            MAX(CASE WHEN col.user_id = #{userId} THEN ci.create_at ELSE NULL END) AS favorite_time
+        FROM
+            inver.files f
+                LEFT JOIN
+            inver.collection_items ci ON f.file_id = ci.item_id AND ci.item_type = 'source'
+                LEFT JOIN
+            inver.collections col ON ci.collection_id = col.collection_id
+        WHERE
+            f.course_id = #{courseId}
+        GROUP BY
+            f.file_id, f.file_name, f.file_type, f.course_id, f.file_remark,
+            f.upload_user, f.upload_date, f.file_path
+        ORDER BY
+            f.file_id ASC
     </select>
 
     <insert id="updFile" parameterType="map">

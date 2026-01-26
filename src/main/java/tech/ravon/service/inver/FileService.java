@@ -20,17 +20,22 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Service;
 import tech.ravon.model.inver.File;
+import tech.ravon.vo.inver.FileVO;
 
 import java.util.List;
 
 @Service
 public interface FileService {
 
-    String getFile(HttpServletRequest request, HttpServletResponse response);
+    List<File> listFiles();
+
+    List<File> getFilesByPop(Long limit);
 
     File getFileById(Long fileId);
 
     List<File> getCourseFiles(Long courseId);
+
+    List<FileVO> getCourseFilesVO(Long userId, Long courseId);
 
     void deleteFile(HttpServletRequest request, Long fileId);
 
@@ -39,5 +44,7 @@ public interface FileService {
     void updFile(HttpServletRequest request, HttpServletResponse response);
 
     List<File> getFileByName(String keyword);
+
+    String createThumbnail(String filePath);
 
 }

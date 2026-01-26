@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="tech.ravon.mapper.GeoAccessDao">
+
+    <resultMap id="GeoAccessMap" type="tech.ravon.model.GeoAccess">
+        <id property="geoAccId" column="geo_acc_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="accessTime" column="access_time"/>
+        <result property="ip" column="ip"/>
+
+        <result property="locationId" column="location_id"/>
+        <result property="geonameId" column="geoname_id"/>
+        <result property="latitude" column="latitude"/>
+        <result property="longitude" column="longitude"/>
+        <result property="accRadius" column="acc_radius"/>
+        <result property="network" column="network"/>
+        <result property="asn" column="asn"/>
+        <result property="aso" column="aso"/>
+
+        <result property="contCode" column="cont_code"/>
+        <result property="contName" column="cont_name"/>
+        <result property="ctryCode" column="ctry_code"/>
+        <result property="ctryName" column="ctry_name"/>
+        <result property="sub1Code" column="sub1_code"/>
+        <result property="sub1Name" column="sub1_name"/>
+        <result property="sub2Code" column="sub2_code"/>
+        <result property="sub2Name" column="sub2_name"/>
+        <result property="cityName" column="city_name"/>
+        <result property="timeZone" column="time_zone"/>
+        <result property="localeCode" column="locale_code"/>
+        <result property="postcode" column="postcode"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="geoAccId">
+        INSERT INTO base.geo_access (
+            user_id, access_time, ip, location_id, geoname_id,
+            latitude, longitude, acc_radius, network, asn, aso
+        )
+        VALUES (
+            #{userId}, #{accessTime}, #{ip}, #{locationId}, #{geonameId},
+            #{latitude}, #{longitude}, #{accRadius}, #{network}, #{asn}, #{aso}
+        )
+    </insert>
+
+    <select id="list" resultMap="GeoAccessMap">
+        SELECT g.geo_acc_id, g.user_id, g.access_time, g.ip,
+        g.location_id, g.geoname_id,
+        g.latitude, g.longitude, g.acc_radius, g.network, g.asn, g.aso,
+        l.cont_code, l.cont_name, l.ctry_code, l.ctry_name,
+        l.sub1_code, l.sub1_name, l.sub2_code, l.sub2_name,
+        l.city_name, l.time_zone, l.locale_code, l.postcode
+        FROM base.geo_access g
+        LEFT JOIN base.geo_location l ON g.location_id = l.location_id
+        ORDER BY g.access_time DESC
+        <if test="offset != null and pageSize != null">
+            LIMIT #{pageSize} OFFSET #{offset}
+        </if>
+    </select>
+
+    <select id="listByUserGrouped" resultMap="GeoAccessMap">
+        SELECT g.geo_acc_id, g.user_id, g.access_time, g.ip,
+        g.location_id, g.geoname_id,
+        g.latitude, g.longitude, g.acc_radius, g.network, g.asn, g.aso,
+        l.cont_code, l.cont_name, l.ctry_code, l.ctry_name,
+        l.sub1_code, l.sub1_name, l.sub2_code, l.sub2_name,
+        l.city_name, l.time_zone, l.locale_code, l.postcode
+        FROM base.geo_access g
+        LEFT JOIN base.geo_location l ON g.location_id = l.location_id
+        ORDER BY g.user_id, g.access_time DESC
+        <if test="offset != null and pageSize != null">
+            LIMIT #{pageSize} OFFSET #{offset}
+        </if>
+    </select>
+
+    <select id="getIdByInfo">
+        SELECT geo_acc_id
+        FROM base.geo_access
+        WHERE user_id = #{userId} AND access_time = #{time}
+    </select>
+
+    <select id="selectById" resultMap="GeoAccessMap">
+        SELECT g.geo_acc_id, g.user_id, g.access_time, g.ip,
+               g.location_id, g.geoname_id,
+               g.latitude, g.longitude, g.acc_radius, g.network, g.asn, g.aso,
+               l.cont_code, l.cont_name, l.ctry_code, l.ctry_name,
+               l.sub1_code, l.sub1_name, l.sub2_code, l.sub2_name,
+               l.city_name, l.time_zone, l.locale_code, l.postcode
+        FROM base.geo_access g
+                 LEFT JOIN base.geo_location l ON g.location_id = l.location_id
+        WHERE g.geo_acc_id = #{geoAccId}
+    </select>
+
+    <select id="selectByUser" resultMap="GeoAccessMap">
+        SELECT g.geo_acc_id, g.user_id, g.access_time, g.ip,
+               g.location_id, g.geoname_id,
+               g.latitude, g.longitude, g.acc_radius, g.network, g.asn, g.aso,
+               l.cont_code, l.cont_name, l.ctry_code, l.ctry_name,
+               l.sub1_code, l.sub1_name, l.sub2_code, l.sub2_name,
+               l.city_name, l.time_zone, l.locale_code, l.postcode
+        FROM base.geo_access g
+                 LEFT JOIN base.geo_location l ON g.location_id = l.location_id
+        WHERE g.user_id = #{userId}
+        ORDER BY g.access_time DESC
+    </select>
+
+    <select id="selectByIp" resultMap="GeoAccessMap">
+        SELECT g.geo_acc_id, g.user_id, g.access_time, g.ip,
+               g.location_id, g.geoname_id,
+               g.latitude, g.longitude, g.acc_radius, g.network, g.asn, g.aso,
+               l.cont_code, l.cont_name, l.ctry_code, l.ctry_name,
+               l.sub1_code, l.sub1_name, l.sub2_code, l.sub2_name,
+               l.city_name, l.time_zone, l.locale_code, l.postcode
+        FROM base.geo_access g
+                 LEFT JOIN base.geo_location l ON g.location_id = l.location_id
+        WHERE g.ip = #{ip}
+        ORDER BY g.access_time DESC
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM base.geo_access WHERE geo_acc_id = #{geoAccId};
+    </delete>
+
+    <delete id="deleteByUserAndTime">
+        DELETE FROM base.geo_access
+        <where>
+            <choose>
+                <when test="userId != null or before != null">
+                    <if test="userId != null">
+                        AND user_id = #{userId}
+                    </if>
+
+                    <if test="before != null">
+                        AND access_time &lt; #{before}
+                    </if>
+                </when>
+
+                <otherwise>
+                    AND 1 = 0
+                </otherwise>
+            </choose>
+        </where>
+    </delete>
+
+</mapper>

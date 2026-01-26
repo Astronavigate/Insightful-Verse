@@ -20,7 +20,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public interface CodeService {
-    String runCode(HttpServletRequest request, HttpServletResponse response);
+    String runCode(String code, String lang);
     String runC(String code);
     String runCpp(String code);
     String runJava(String code);

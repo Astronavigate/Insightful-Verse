@@ -42,7 +42,7 @@ public class DatabaseBackupService {
     private static final String DB_NAME = "ravon";           // 数据库名
     private static final String DB_USER = "ravon";           // 数据库用户名
     private static final String DB_PASSWORD = "11725110307"; // 密码（示例：与原来一致）
-    private static final String SCHEMA = "inver";            // 要导出的 schema（如果要导出全部 schema，设置为 null 或空字符串）
+    private static final String SCHEMA = null;            // 要导出的 schema（如果要导出全部 schema，设置为 null 或空字符串）
 
     private static final String FILE_PREFIX = "ravon_backup_";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");

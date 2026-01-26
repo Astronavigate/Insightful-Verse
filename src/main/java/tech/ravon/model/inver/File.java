@@ -48,6 +48,14 @@ public class File implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 
+    public String getThumb() {
+        if (this.filePath == null || this.filePath.isEmpty()) return "/img/none.jpg";
+
+        String p = this.filePath;
+        int d = p.lastIndexOf('.');
+        return (d != -1 ? p.substring(0, d) : p) + "-Thumbnail.jpg";
+    }
+
     @Override
     public boolean equals(Object that) {
         if (this == that) {

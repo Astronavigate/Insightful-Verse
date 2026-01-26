@@ -19,15 +19,22 @@ package tech.ravon.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import tech.ravon.model.inver.File;
+import tech.ravon.vo.inver.FileVO;
 
 import java.util.List;
 
 @Mapper
 public interface FileDao extends BaseMapper<File> {
 
+    List<File> getAllFiles();
+
+    List<File> getFilesByPop(Long limit);
+
     File getFileById(Long fileId);
 
     List<File> getFilesByCourse(Long courseId);
+
+    List<FileVO> getFilesVOByCourse(Long userId, Long courseId);
 
     void updFile(File file, Long userId);
 
