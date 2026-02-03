@@ -32,7 +32,7 @@ public interface CourseService {
 
     void deleteCourse(HttpServletRequest request, Long courseId);
 
-    void updateCourse(Course course);
+    Course updateCourse(Course course);
 
     List<Course> getCourseByName(String keyword);
 

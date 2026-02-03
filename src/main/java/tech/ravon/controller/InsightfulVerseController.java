@@ -456,18 +456,18 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/UpdFile")
-    public String IVUpdFile(HttpServletRequest request, HttpServletResponse response) {
+    public String ivUpdFile(HttpServletRequest request, HttpServletResponse response) {
         String courseId = request.getParameter("courseId");
         User user = (User) request.getSession().getAttribute("user");
         if (user == null || user.getUserId() == null || (!user.getAuthority().equals("admin") && !user.getAuthority().equals("infinite"))) {
             return "redirect:" + request.getHeader("Referer");
         }
-        fileService.updFile(request, response);
-        return "redirect:" + request.getHeader("Referer");
+        File file = fileService.updFile(request, response);
+        return "redirect:/InsightfulVerse/CourseInfo?courseId=" + courseId + "#sc" + file.getFileId();
     }
 
     @RequestMapping("/InsightfulVerse/DelFile")
-    public String IVDelFile(HttpServletRequest request) {
+    public String ivDelFile(HttpServletRequest request) {
         Long fileId = Long.valueOf(request.getParameter("fileId"));
         String courseId = request.getParameter("courseId");
         User user = (User) request.getSession().getAttribute("user");
@@ -479,7 +479,7 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/UpdCourse")
-    public String IVUpdCourse(@RequestParam(required = false) String courseId,
+    public String ivUpdCourse(@RequestParam(required = false) String courseId,
                                  @RequestParam(required = false) String courseName,
                                  @RequestParam(required = false) String courseInfo,
                                  HttpServletRequest request) {
@@ -497,12 +497,12 @@ public class InsightfulVerseController {
         }
         course.setCourseName(courseName);
         course.setCourseInfo(courseInfo);
-        courseService.updateCourse(course);
-        return "redirect:" + request.getHeader("Referer");
+        course.setCourseId(courseService.updateCourse(course).getCourseId());
+        return "redirect:/InsightfulVerse/Course#cs" + course.getCourseId();
     }
 
     @RequestMapping("/InsightfulVerse/DelCourse")
-    public String IVDelCourse(@RequestParam Long courseId, HttpServletRequest request) {
+    public String ivDelCourse(@RequestParam Long courseId, HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("user");
 
         // 权限验证
@@ -528,7 +528,7 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/VerifyPerm")
-    public String IVVerifyPerm(HttpServletRequest request) {
+    public String ivVerifyPerm(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute("user");
         if (user == null || !user.getAuthority().equals("infinite")) {
             return "redirect:/InsightfulVerse/";
@@ -537,7 +537,7 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/VerifyPerm.do")
-    public String IVXVerifyPerm(HttpServletRequest request, HttpServletResponse response) {
+    public String ivxVerifyPerm(HttpServletRequest request, HttpServletResponse response) {
         User user = userService.verifyPerm(request, response);
         if (user != null && user.getAuthority().equals("infinite")) {
             request.getSession().setAttribute("authorize", true);
@@ -548,7 +548,7 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/ViewHistory")
-    public String IVViewHistory(HttpServletRequest request) {
+    public String ivViewHistory(HttpServletRequest request) {
         int max = request.getParameter("max") == null || request.getParameter("max").isEmpty() ? 15 : Integer.parseInt(request.getParameter("max"));
         int page = request.getParameter("page") == null || request.getParameter("page").isEmpty() ? 1 : Integer.parseInt(request.getParameter("page"));
         User user = (User) request.getSession().getAttribute("user");
@@ -571,7 +571,7 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/Search")
-    public String Search(HttpServletRequest request) {
+    public String search(HttpServletRequest request) {
         String type = request.getParameter("type");
         String keyword = request.getParameter("keyword");
         if (!Objects.equals(type, "all") && !Objects.equals(type, "course") && !Objects.equals(type, "file")) {
@@ -611,7 +611,7 @@ public class InsightfulVerseController {
             if (keyword != null && !keyword.isEmpty()) {
                 return "redirect:/InsightfulVerse/Course#cs" + id;
             }
-            return "redirect/InsightfulVerse/Course";
+            return "redirect:/InsightfulVerse/Course";
         }
     }
 
@@ -633,94 +633,8 @@ public class InsightfulVerseController {
     }
 
     @RequestMapping("/InsightfulVerse/AiBot")
-    public String AiBot(HttpServletRequest request) {
+    public String aiBot(HttpServletRequest request) {
         return "InsightfulVerse/AiBot";
-    }
-
-    /**
-     * 处理流式 AI 文本生成请求。
-     * 使用 SseEmitter 实现服务器发送事件 (Server-Sent Events)
-     * 将 AI 模型的流式输出实时推送到客户端。
-     *
-     * @param prompt 用户输入的提示词
-     * @param session HttpSession 对象，用于获取会话ID作为流的唯一标识符
-     * @return SseEmitter 对象，用于将数据流式传输到客户端
-     */
-    @RequestMapping("/InsightfulVerse/AiBot/stream")
-    public SseEmitter streamAiResponse(@RequestParam String prompt, HttpSession session) {
-        String sessionId = session.getId();
-        System.out.println("New stream request for session: " + sessionId + " with prompt: " + prompt);
-
-        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE); // 单位：毫秒，Long.MAX_VALUE 表示几乎永不超时
-
-        // 设置完成、超时和错误回调，以正确管理 SseEmitter 的生命周期
-        emitter.onCompletion(() -> {
-            System.out.println("SSE stream completed for session: " + sessionId);
-            // 这里可以添加清理逻辑，例如从 Service 的 activeStreamThreads 中移除
-            // 但因为 Service 层的 finally 块中已经处理了移除，这里可以省略或用于额外清理
-        });
-
-        emitter.onTimeout(() -> {
-            System.out.println("SSE stream timed out for session: " + sessionId);
-            emitter.complete(); // 超时时关闭连接
-            // 尝试中断后端流
-            aiBotService.interruptClientStream(sessionId);
-        });
-
-        emitter.onError(error -> {
-            System.err.println("SSE stream error for session: " + sessionId + ": " + error.getMessage());
-            emitter.completeWithError(error); // 错误时关闭连接并传递错误
-            // 尝试中断后端流
-            aiBotService.interruptClientStream(sessionId);
-        });
-
-        // 调用 Service 层的方法进行流式生成
-        // 传入 sessionId 以便 Service 层跟踪和管理线程
-        aiBotService.streamGenerateText(sessionId, prompt, 8192, new AiBotService.TextStreamCallback() {
-            @Override
-            public void onNewText(String textChunk) {
-                try {
-                    emitter.send(SseEmitter.event().data(textChunk));
-                } catch (IOException e) {
-                    System.err.println("Failed to send SSE event for session " + sessionId + ": " + e.getMessage());
-                    emitter.completeWithError(e); // 发送失败时完成 SseEmitter
-                }
-            }
-
-            @Override
-            public void onComplete() {
-                emitter.complete(); // 流正常完成
-                System.out.println("AI Stream to client completed for session: " + sessionId);
-            }
-
-            @Override
-            public void onError(Throwable error) {
-                emitter.completeWithError(error); // 错误时完成 SseEmitter
-                System.err.println("AI Stream error for session " + sessionId + ": " + error.getMessage());
-            }
-        });
-
-        return emitter;
-    }
-
-    /**
-     * 处理中断 AI 文本生成请求。
-     * 前端通过 POST 请求调用此接口来中断正在进行的流。
-     *
-     * @param session HttpSession 对象，用于获取会话ID，以中断对应的流
-     * @return 成功或失败消息的 JSON 字符串
-     */
-    @RequestMapping("/InsightfulVerse/AiBot/interrupt") // 例如：POST /InsightfulVerse/AiBot/interrupt
-    public String interruptAiGeneration(HttpSession session) {
-        String sessionId = session.getId();
-        System.out.println("Interrupt request received for session: " + sessionId);
-        // 尝试中断客户端线程，并会同时调用 Llama.cpp 后端的中断API
-        boolean interrupted = aiBotService.interruptClientStream(sessionId);
-        if (interrupted) {
-            return "{\"message\": \"Interruption signal sent for session " + sessionId + ".\"}";
-        } else {
-            return "{\"message\": \"No active stream to interrupt for session " + sessionId + ".\"}";
-        }
     }
 
     private boolean checkPermission(HttpServletRequest request) {
@@ -731,6 +645,7 @@ public class InsightfulVerseController {
             && "infinite".equals(user.getAuthority())
             && Boolean.TRUE.equals(request.getSession().getAttribute("authorize"))
         ) {
+            request.getSession().setAttribute("lastUrl", request.getRequestURL());
             request.getSession().setAttribute("lastUrl", request.getRequestURL());
             return true;
         }

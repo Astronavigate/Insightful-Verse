@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 3uJIcqzyktnlH7A3lDAfGZ1lfbeAVJuflAJnGGMSa2vyzgEhcGxkmsAikwSl61m
+\restrict jdpRL33RELs5z2JcJKUbzgYCLpJljq5PYx5hd9QifA3pprKnDnIpnjIasikD4jS
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -1213,6 +1213,9 @@ COPY base.geo_access (geo_acc_id, user_id, access_time, ip, location_id, geoname
 25	10000000000	2026-02-03 10:55:28.646354	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
 26	10000000000	2026-02-03 11:15:07.052171	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
 27	10000000000	2026-02-03 18:04:39.208651	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+28	10000000000	2026-02-03 23:03:56.186227	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+29	10000000000	2026-02-03 23:55:44.354149	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+30	10000000000	2026-02-04 00:49:38.549479	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
 \.
 
 
@@ -1261,9 +1264,9 @@ COPY inver.class (class_id, class_name) FROM stdin;
 --
 
 COPY inver.collection_items (collection_item_id, item_id, item_type, collection_id, create_at) FROM stdin;
-4	10000000002	course	1	2026-01-03 14:46:14.29366
 8	10000000055	source	1	2026-01-26 15:11:12.979584
 11	10000000019	source	1	2026-01-26 15:28:42.024323
+15	10000000002	course	1	2026-02-03 23:08:27.621203
 \.
 
 
@@ -1336,11 +1339,11 @@ COPY inver.files (file_id, file_name, file_type, course_id, file_remark, upload_
 10000000048	Test Word by Word Lyrics	flac	10000000006		10000000000	2026-01-16	/media/019bc744-cafc-75be-92f8-48cfbff96ea9.flac
 10000000052	東坡樂府 by Shi Su	epub	10000000005	"東坡樂府" by Shi Su is a collection of poetic works written in the late 11th century. This compilation honors the renowned Chinese poet and statesman Su Shi and reflects his passion for life, nature, and artistry. The poems capture various themes such as love, nostalgia, and the beauty of spring, often set against the backdrop of scenic landscapes. The opening of the collection features a series of verses that convey the poet's observations and reflections during seasons like spring and autumn. Su Shi's lyrical style shines through as he explores the emotions tied to nature and personal experiences with friends and loved ones. The poems, rich with imagery, evoke a sense of longing and appreciation for transient moments and relationships, setting the stage for a deeper exploration of the poet's thoughts and feelings in the subsequent sections of the collection. (This is an automatically generated summary.)	10000000000	2026-01-17	/doc/019bcbb7-5d1b-7a65-a711-737902183e26.epub
 10000000053	李太白集 by Bai Li	epub	10000000005	"李太白集" by Bai Li is a collection of poetry written in the 8th century. This work presents a rich anthology of poems crafted by the famed Tang dynasty poet Li Bai, known for his vivid imagery, emotional depth, and connection to nature. The collection showcases Li Bai’s themes of romance, nature, and the pursuit of a transcendent existence. At the start of the anthology, the introductory information details the historical context of Li Bai's life, establishing his birth in the year 701 and providing references to significant events during the Tang dynasty that shaped his poetry. The opening portion includes a glimpse of poetic forms and themes that resonate within Li Bai’s works, such as the carefree spirit of youth, the influence of nature, and allusions to his philosophical musings on life, love, and the cosmos. Through these preliminary introductions and selected poems, readers are invited to explore the profound reflections and aesthetic beauty that characterize Li Bai’s poetry. (This is an automatically generated summary.)	10000000000	2026-01-17	/doc/019bcbcd-698f-7716-82a1-f03152ef3b92.epub
-10000000054	The King James Version of the Bible	epub	10000000005	"The King James Version of the Bible" is an English translation of the Christian Bible commissioned in 1604 and published in 1611 under King James VI and I. This translation for the Church of England contains 80 books and was created to address controversies surrounding existing versions. Celebrated for its majestic style, it has profoundly shaped English literature, Christian thought, and everyday speech for over four centuries. The translation became the unchallenged standard in English Protestant churches and remains one of the most widely read versions today. (This is an automatically generated summary.)	10000000000	2026-01-17	/doc/019bcbd5-8253-73eb-93c1-27258255ed5a.epub
 10000000019	絵本 - Sān-Z & HOYO-MiX	flac	10000000002	Set beneath a heavy, leaden sky where "happiness never poured down," the song tracks the movement of a solitary figure defined by the single shadow at their feet. It is a story of internal fracture—where wings shatter and the soul plunges into a bottomless dark—only to be reclaimed through the sheer mechanics of persistence and the mutual recognition between companions who have been walking together all along and its solitude.	10000000000	2026-02-03	/media/019bcb47-5784-7e95-a562-8b78a9d4cb48.flac
 10000000050	山海經 by Anonymous	epub	10000000005	"山海經" by Anonymous is a Chinese classic text compiled during the early Han dynasty, though early versions may have existed since the 4th century BCE. This mythic compilation describes over 550 mountains and 300 channels across pre-Qin China, blending fabulous geography with cultural accounts and mythology. The work catalogs medicines, animals, geological features, and short myths through detailed descriptions organized by cardinal directions—mixing mundane observations with fanciful and strange creatures in a repetitious, encyclopedic format. (This is an automatically generated summary.)	10000000000	2026-01-17	/doc/019bcbb5-48a8-73eb-a6cf-00ea4f90beee.epub
 10000000051	道德經 by Laozi	epub	10000000005	"道德經" by Laozi is an ancient Chinese text from the late Warring States period (475-221 BCE). Traditionally attributed to the sage Laozi, this foundational work of Taoism explores the Way and its virtue through philosophical teachings. The text has profoundly influenced Chinese philosophy, religion, and culture, while also becoming one of the most translated works in world literature. Its authorship remains debated, with archaeological discoveries continuing to reveal earlier manuscript versions that reshape understanding of this classic. (This is an automatically generated summary.)	10000000000	2026-01-17	/doc/019bcbb6-4da0-78a7-9aef-61f14d44f2ee.epub
 10000000047	Good Luck, Babe! - Chappell Roan	flac	10000000002	In April 2024, Roan sent an email to fans stating that "Good Luck, Babe!" would be released on April 5, writing that the song is "about wishing good luck to someone who is denying fate".	10000000000	2026-02-03	/media/019bc9a6-a0bf-750d-a8d2-e7b87050ea22.flac
+10000000054	The King James Version of the Bible	epub	10000000005	"The King James Version of the Bible" is an English translation of the Christian Bible commissioned in 1604 and published in 1611 under King James VI and I. This translation for the Church of England contains 80 books and was created to address controversies surrounding existing versions. Celebrated for its majestic style, it has profoundly shaped English literature, Christian thought, and everyday speech for over four centuries. The translation became the unchallenged standard in English Protestant churches and remains one of the most widely read versions today. (This is an automatically generated summary.)	10000000000	2026-02-04	/doc/019bcbd5-8253-73eb-93c1-27258255ed5a.epub
 10000000056	test music	flac	10000000006		10000000000	2026-01-19	/media/019bd42b-7379-7a54-8810-0c79c4e52e5b.flac
 10000000057	Test New Data Dir	flac	10000000006		10000000000	2026-01-25	/media/019bf31e-49f8-71ce-834f-7aa345e150c2.flac
 10000000058	Test Gen Music Subtitle	flac	10000000006		10000000000	2026-01-30	/media/019c0dce-2d3f-773e-a5fb-5bcef09fe315.flac
@@ -1436,6 +1439,7 @@ e24e0920-3b9b-11f0-8b9c-a51ae60b576a	1.0.30.1000.beta.1.aic	1. Added automatic d
 019bd654-e4c2-7924-9306-996fab0257a7	1.4.138.1223.beta.2.aic	1. Added support for online Zig code compilation; 2. Updated dependencies to the latest stable version; 3. Optimized some controller code.	2026-01-19 21:02:43.580746+08
 019bfb10-f144-7676-855d-ebe237cd3885	1.4.143.1248.beta.3.aic	1. Added a feature for saving course resources to favorites; 2. Updated the homepage to display the top 5 most viewed resources by registered users; 3. Optimized some styling; 4. Optimized some code in the config and controller sections.	2026-01-27 00:09:23.823555+08
 019c224e-781f-71c2-8a08-80d68747137b	2.0.155.1264.release.aix	1. Updated FastAPI interface and backend service logic; 2. Upgraded the AI ​​model to Phi-4-Q3_K_S; 3. Added vector-enhanced retrieval functionality (based on Weaviate storage, using mxbai-embed-large-v1 as the embedding model); 4. Integrated Whisper to automatically generate missing subtitles (SRT format) for audio and video resources; 5. Added corresponding vector addition, deletion, and modification operations during the creation, update, and deletion lifecycle of courses and files.	2026-02-03 15:02:44.867892+08
+019c246b-850b-7274-9196-979814197c03	2.0.155.1266.release.aix	1. Fixed the redirect error when adding courses to favorites; 2. Optimized the redirect after editing course and resource information; 3. Removed deprecated interfaces.	2026-02-04 00:52:45.976532+08
 \.
 
 
@@ -1614,7 +1618,7 @@ SELECT pg_catalog.setval('base.geo_access_basic_seq', 10000000005, true);
 -- Name: geo_access_geo_acc_id_seq; Type: SEQUENCE SET; Schema: base; Owner: ravon
 --
 
-SELECT pg_catalog.setval('base.geo_access_geo_acc_id_seq', 27, true);
+SELECT pg_catalog.setval('base.geo_access_geo_acc_id_seq', 30, true);
 
 
 --
@@ -1649,7 +1653,7 @@ SELECT pg_catalog.setval('inver.class_class_id_seq', 10000000001, false);
 -- Name: collection_items_collection_item_id_seq; Type: SEQUENCE SET; Schema: inver; Owner: ravon
 --
 
-SELECT pg_catalog.setval('inver.collection_items_collection_item_id_seq', 12, true);
+SELECT pg_catalog.setval('inver.collection_items_collection_item_id_seq', 16, true);
 
 
 --
@@ -2333,5 +2337,5 @@ ALTER TABLE ONLY public.sylt_structure
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 3uJIcqzyktnlH7A3lDAfGZ1lfbeAVJuflAJnGGMSa2vyzgEhcGxkmsAikwSl61m
+\unrestrict jdpRL33RELs5z2JcJKUbzgYCLpJljq5PYx5hd9QifA3pprKnDnIpnjIasikD4jS
 

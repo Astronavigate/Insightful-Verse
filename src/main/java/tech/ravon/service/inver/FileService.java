@@ -41,7 +41,7 @@ public interface FileService {
 
     void deleteCourseFiles(HttpServletRequest request, Long courseId);
 
-    void updFile(HttpServletRequest request, HttpServletResponse response);
+    File updFile(HttpServletRequest request, HttpServletResponse response);
 
     List<File> getFileByName(String keyword);
 

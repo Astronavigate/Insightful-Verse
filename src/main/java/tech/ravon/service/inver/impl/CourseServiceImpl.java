@@ -64,12 +64,13 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public void updateCourse(Course course) {
+    public Course updateCourse(Course course) {
         courseDao.updateCourse(course);
         course = courseDao.getCourseByInfo(course);
         String fileHref = "/InsightfulVerse/CourseInfo?courseId=" + course.getCourseId();
         String contentForVector = "CourseName: " + course.getCourseName() + "\nRemark: " + course.getCourseInfo() + "\nHref: " + fileHref;
         vectorService.updVector(String.valueOf(course.getCourseId()), "inver.courses", contentForVector);
+        return courseDao.getCourseByInfo(course);
     }
 
     @Override

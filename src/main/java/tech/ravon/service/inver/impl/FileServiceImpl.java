@@ -196,10 +196,10 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void updFile(HttpServletRequest request, HttpServletResponse response) {
+    public File updFile(HttpServletRequest request, HttpServletResponse response) {
         try {
             User user = (User) request.getSession().getAttribute("user");
-            if (user == null) return;
+            if (user == null) return null;
 
             Long userId     = user.getUserId();
             String fileId   = request.getParameter("fileId");
@@ -230,7 +230,7 @@ public class FileServiceImpl implements FileService {
             } else if (oldFile != null) {
                 baseName = extractBaseName(oldFile.getFilePath());
             } else {
-                return;
+                return null;
             }
 
             String mediaExt = null;
@@ -359,6 +359,8 @@ public class FileServiceImpl implements FileService {
                     }
                 }).start();
             }
+
+            return newFile;
 
         } catch (Exception e) {
             throw new RuntimeException("File upload failed", e);

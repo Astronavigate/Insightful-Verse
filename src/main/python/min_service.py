@@ -212,7 +212,10 @@ Assistant:"""
             return {
                 "type": "final_answer",
                 "content": response.content,
-                "sources": [d.metadata for d in docs],
+                "sources": [
+                    {"content": d.page_content, "metadata": d.metadata}
+                    for d in docs
+                ],
                 "query_refined": len(query) >= 600
             }
         except Exception as e:
@@ -223,7 +226,10 @@ Assistant:"""
         prompt, docs = self._build_prompt(query, table_name)
 
         def generate():
-            yield json.dumps({"type": "metadata", "sources": [d.metadata for d in docs]}) + "\n"
+            yield json.dumps({"type": "metadata", "sources": [
+                {"content": d.page_content, "metadata": d.metadata}
+                for d in docs
+            ]}) + "\n"
             for chunk in self.llm.stream(prompt):
                 if chunk.content:
                     yield json.dumps({"type": "token", "content": chunk.content}) + "\n"
