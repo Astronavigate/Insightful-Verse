@@ -80,7 +80,7 @@ nv.models.stackedArea = function() {
             data = d3.layout.stack()
                 .order(order)
                 .offset(offset)
-                .values(function(d) { return d.values })  //TODO: make values customizeable in EVERY model in this fashion
+                .values(function(d) { return d.values })  //TODO: make values customizeable in EVERY models in this fashion
                 .x(getX)
                 .y(getY)
                 .out(transformData)

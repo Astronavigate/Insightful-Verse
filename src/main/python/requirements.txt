@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+asyncpg
+weaviate-client
+sentence-transformers
+faster-whisper
+llama-cpp-python
+python-dotenv
+
+langchain-weaviate
+langchain-community
+torch
+langchain-core
+soundfile
+librosa
+transformers
+openai-whisper

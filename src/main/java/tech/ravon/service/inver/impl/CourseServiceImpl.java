@@ -17,13 +17,12 @@
 package tech.ravon.service.inver.impl;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import tech.ravon.mapper.CourseDao;
-import tech.ravon.mapper.FileDao;
 import tech.ravon.model.inver.Course;
 import org.springframework.stereotype.Service;
 import tech.ravon.model.inver.File;
-import tech.ravon.model.inver.User;
+import tech.ravon.service.VectorService;
 import tech.ravon.service.inver.CourseService;
 import tech.ravon.service.inver.FileService;
 import tech.ravon.service.inver.ViewRecordService;
@@ -31,31 +30,26 @@ import tech.ravon.vo.inver.CourseVO;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @Service
 public class CourseServiceImpl implements CourseService {
 
-    @Autowired
-    private CourseDao courseDao;
+    private final CourseDao courseDao;
 
-    @Autowired
-    private FileDao fileDao;
+    private final FileService fileService;
 
-    @Autowired
-    FileService fileService;
+    private final ViewRecordService viewRecordService;
 
-    @Autowired
-    ViewRecordService viewRecordService;
+    private final VectorService vectorService;
 
     @Override
     public List<Course> allCourse() {
-        List<Course> courseList = courseDao.getAllCourse();
-        return courseList;
+        return courseDao.getAllCourse();
     }
 
     @Override
     public List<CourseVO> allCourseVO(Long userId) {
-        List<CourseVO> courseVOList = courseDao.getAllCourseVO(userId);
-        return courseVOList;
+        return courseDao.getAllCourseVO(userId);
     }
 
     @Override
@@ -66,11 +60,16 @@ public class CourseServiceImpl implements CourseService {
         }
         fileService.deleteCourseFiles(request, courseId);
         courseDao.deleteCourse(courseId);
+        vectorService.delVector(String.valueOf(courseId), "inver.courses");
     }
 
     @Override
     public void updateCourse(Course course) {
         courseDao.updateCourse(course);
+        course = courseDao.getCourseByInfo(course);
+        String fileHref = "/InsightfulVerse/CourseInfo?courseId=" + course.getCourseId();
+        String contentForVector = "CourseName: " + course.getCourseName() + "\nRemark: " + course.getCourseInfo() + "\nHref: " + fileHref;
+        vectorService.updVector(String.valueOf(course.getCourseId()), "inver.courses", contentForVector);
     }
 
     @Override

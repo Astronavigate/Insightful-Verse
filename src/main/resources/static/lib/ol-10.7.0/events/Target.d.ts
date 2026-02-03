@@ -11,7 +11,7 @@ export type EventTargetLike = EventTarget | Target;
  * There are two important simplifications compared to the specification:
  *
  * 1. The handling of `useCapture` in `addEventListener` and
- *    `removeEventListener`. There is no real capture model.
+ *    `removeEventListener`. There is no real capture models.
  * 2. The handling of `stopPropagation` and `preventDefault` on `dispatchEvent`.
  *    There is no event target hierarchy. When a listener calls
  *    `stopPropagation` or `preventDefault` on an event object, it means that no

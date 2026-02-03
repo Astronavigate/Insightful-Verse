@@ -676,7 +676,7 @@ public class InsightfulVerseController {
 
         // 调用 Service 层的方法进行流式生成
         // 传入 sessionId 以便 Service 层跟踪和管理线程
-        aiBotService.streamGenerateText(sessionId, prompt, 2048, new AiBotService.TextStreamCallback() {
+        aiBotService.streamGenerateText(sessionId, prompt, 8192, new AiBotService.TextStreamCallback() {
             @Override
             public void onNewText(String textChunk) {
                 try {

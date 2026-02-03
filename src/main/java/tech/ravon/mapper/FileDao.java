@@ -42,4 +42,6 @@ public interface FileDao extends BaseMapper<File> {
 
     List<File> getFileByName(String keyword);
 
+    File getFileByInfo(File file);
+
 }

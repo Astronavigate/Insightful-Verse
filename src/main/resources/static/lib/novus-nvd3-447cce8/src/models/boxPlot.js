@@ -11,7 +11,7 @@ nv.models.boxPlot = function() {
         id = Math.floor(Math.random() * 10000), // Create semi-unique ID in case user doesn't select one
         xScale = d3.scale.ordinal(),
         yScale = d3.scale.linear(),
-        getX  = function(d) { return d.label }, // Default data model selectors.
+        getX  = function(d) { return d.label }, // Default data models selectors.
         getQ1 = function(d) { return d.values.Q1 },
         getQ2 = function(d) { return d.values.Q2 },
         getQ3 = function(d) { return d.values.Q3 },
@@ -296,11 +296,11 @@ nv.models.boxPlot = function() {
         // rectClass: {get: function(){return rectClass;}, set: function(_){rectClass=_;}},
         y: {
             get: function() {
-                console.warn('BoxPlot \'y\' chart option is deprecated. Please use model overrides instead.');
+                console.warn('BoxPlot \'y\' chart option is deprecated. Please use models overrides instead.');
                 return {};
             },
             set: function(_) {
-                console.warn('BoxPlot \'y\' chart option is deprecated. Please use model overrides instead.');
+                console.warn('BoxPlot \'y\' chart option is deprecated. Please use models overrides instead.');
             }
         },
         // options that require extra logic in the setter

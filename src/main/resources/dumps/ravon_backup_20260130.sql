@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict T9OTeWYggc8DiS1WeJ0Y0huomESRnUKOvzEXlSo5MFsg0a7QrUj5yBPgMygVcDa
+\restrict y5aKQCKnbUIHlRiIY1xRiUhKRtjKvcl9plPhIxUF156BjEemEKwNK5BIGNWxves
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -36,6 +36,15 @@ CREATE SCHEMA inver;
 
 
 ALTER SCHEMA inver OWNER TO ravon;
+
+--
+-- Name: rvaig; Type: SCHEMA; Schema: -; Owner: ravon
+--
+
+CREATE SCHEMA rvaig;
+
+
+ALTER SCHEMA rvaig OWNER TO ravon;
 
 --
 -- Name: unres; Type: SCHEMA; Schema: -; Owner: ravon
@@ -825,6 +834,226 @@ CREATE TABLE public.sylt_structure (
 ALTER TABLE public.sylt_structure OWNER TO ravon;
 
 --
+-- Name: memory; Type: TABLE; Schema: rvaig; Owner: ravon
+--
+
+CREATE TABLE rvaig.memory (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    content text NOT NULL,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE rvaig.memory OWNER TO ravon;
+
+--
+-- Name: memory_id_seq; Type: SEQUENCE; Schema: rvaig; Owner: ravon
+--
+
+CREATE SEQUENCE rvaig.memory_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE rvaig.memory_id_seq OWNER TO ravon;
+
+--
+-- Name: memory_id_seq; Type: SEQUENCE OWNED BY; Schema: rvaig; Owner: ravon
+--
+
+ALTER SEQUENCE rvaig.memory_id_seq OWNED BY rvaig.memory.id;
+
+
+--
+-- Name: company; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.company (
+    id character varying(3) NOT NULL,
+    name character varying(100) NOT NULL,
+    region character varying(2) NOT NULL,
+    description text
+);
+
+
+ALTER TABLE unres.company OWNER TO ravon;
+
+--
+-- Name: detail; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.detail (
+    id bigint NOT NULL,
+    product character varying(24) NOT NULL,
+    language character varying(10) NOT NULL,
+    name character varying(200) NOT NULL,
+    description text
+);
+
+
+ALTER TABLE unres.detail OWNER TO ravon;
+
+--
+-- Name: detail_id_seq; Type: SEQUENCE; Schema: unres; Owner: ravon
+--
+
+CREATE SEQUENCE unres.detail_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE unres.detail_id_seq OWNER TO ravon;
+
+--
+-- Name: detail_id_seq; Type: SEQUENCE OWNED BY; Schema: unres; Owner: ravon
+--
+
+ALTER SEQUENCE unres.detail_id_seq OWNED BY unres.detail.id;
+
+
+--
+-- Name: factory; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.factory (
+    id bigint NOT NULL,
+    name character varying(100) NOT NULL,
+    company character varying(3) NOT NULL,
+    description text
+);
+
+
+ALTER TABLE unres.factory OWNER TO ravon;
+
+--
+-- Name: factory_id_seq; Type: SEQUENCE; Schema: unres; Owner: ravon
+--
+
+CREATE SEQUENCE unres.factory_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE unres.factory_id_seq OWNER TO ravon;
+
+--
+-- Name: factory_id_seq; Type: SEQUENCE OWNED BY; Schema: unres; Owner: ravon
+--
+
+ALTER SEQUENCE unres.factory_id_seq OWNED BY unres.factory.id;
+
+
+--
+-- Name: region; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.region (
+    id character varying(2) NOT NULL,
+    name character varying(50) NOT NULL,
+    description text
+);
+
+
+ALTER TABLE unres.region OWNER TO ravon;
+
+--
+-- Name: relation; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.relation (
+    id bigint NOT NULL,
+    product_id character varying(24) NOT NULL,
+    material_id character varying(24) NOT NULL,
+    quantity integer DEFAULT 1
+);
+
+
+ALTER TABLE unres.relation OWNER TO ravon;
+
+--
+-- Name: relation_id_seq; Type: SEQUENCE; Schema: unres; Owner: ravon
+--
+
+CREATE SEQUENCE unres.relation_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE unres.relation_id_seq OWNER TO ravon;
+
+--
+-- Name: relation_id_seq; Type: SEQUENCE OWNED BY; Schema: unres; Owner: ravon
+--
+
+ALTER SEQUENCE unres.relation_id_seq OWNED BY unres.relation.id;
+
+
+--
+-- Name: unres; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.unres (
+    id character varying(24) NOT NULL,
+    urc character varying(50) NOT NULL,
+    type character varying(10) NOT NULL,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE unres.unres OWNER TO ravon;
+
+--
+-- Name: urc_operation; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.urc_operation (
+    id bigint NOT NULL,
+    urc character varying(50) NOT NULL,
+    type character varying(10) NOT NULL,
+    factory_id character varying(20) NOT NULL,
+    operation_id character varying(50) NOT NULL,
+    auth_code character varying(4),
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE unres.urc_operation OWNER TO ravon;
+
+--
+-- Name: urc_operation_id_seq; Type: SEQUENCE; Schema: unres; Owner: ravon
+--
+
+CREATE SEQUENCE unres.urc_operation_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE unres.urc_operation_id_seq OWNER TO ravon;
+
+--
+-- Name: urc_operation_id_seq; Type: SEQUENCE OWNED BY; Schema: unres; Owner: ravon
+--
+
+ALTER SEQUENCE unres.urc_operation_id_seq OWNED BY unres.urc_operation.id;
+
+
+--
 -- Name: annotations note_id; Type: DEFAULT; Schema: inver; Owner: ravon
 --
 
@@ -930,6 +1159,41 @@ ALTER TABLE ONLY public.sylt_resources ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
+-- Name: memory id; Type: DEFAULT; Schema: rvaig; Owner: ravon
+--
+
+ALTER TABLE ONLY rvaig.memory ALTER COLUMN id SET DEFAULT nextval('rvaig.memory_id_seq'::regclass);
+
+
+--
+-- Name: detail id; Type: DEFAULT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.detail ALTER COLUMN id SET DEFAULT nextval('unres.detail_id_seq'::regclass);
+
+
+--
+-- Name: factory id; Type: DEFAULT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.factory ALTER COLUMN id SET DEFAULT nextval('unres.factory_id_seq'::regclass);
+
+
+--
+-- Name: relation id; Type: DEFAULT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.relation ALTER COLUMN id SET DEFAULT nextval('unres.relation_id_seq'::regclass);
+
+
+--
+-- Name: urc_operation id; Type: DEFAULT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.urc_operation ALTER COLUMN id SET DEFAULT nextval('unres.urc_operation_id_seq'::regclass);
+
+
+--
 -- Data for Name: geo_access; Type: TABLE DATA; Schema: base; Owner: ravon
 --
 
@@ -949,6 +1213,7 @@ COPY base.geo_access (geo_acc_id, user_id, access_time, ip, location_id, geoname
 13	10000000000	2026-01-26 23:23:52.407097	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
 14	10000000000	2026-01-26 23:32:04.380363	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
 15	10000000000	2026-01-27 10:53:48.176636	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+16	10000000000	2026-01-30 15:20:52.368237	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
 \.
 
 
@@ -1081,6 +1346,7 @@ COPY inver.files (file_id, file_name, file_type, course_id, file_remark, upload_
 10000000055	Moshimonogatari - Tani Yuuki	flac	10000000002	"Moshimonogatari" (もしものがたり) by Tani Yuuki means "What If Story" or "Hypothetical Tale" and is a gentle, perspective-shifting song for the Doraemon anime, encouraging seeing life's challenges differently, while Tani Yuuki is the popular Japanese singer known for heartfelt, relatable tracks, and the title references the Monogatari series' unique storytelling, blending fantasy with deep emotion.	10000000000	2026-01-18	/media/019bd0dc-f4fd-7da1-977e-b3169c685abd.flac
 10000000056	test music	flac	10000000006		10000000000	2026-01-19	/media/019bd42b-7379-7a54-8810-0c79c4e52e5b.flac
 10000000057	Test New Data Dir	flac	10000000006		10000000000	2026-01-25	/media/019bf31e-49f8-71ce-834f-7aa345e150c2.flac
+10000000058	Test Gen Music Subtitle	flac	10000000006		10000000000	2026-01-30	/media/019c0dc7-72ca-7202-b973-842cf42d9975.flac
 \.
 
 
@@ -1226,6 +1492,7 @@ COPY inver.view_records (record_id, file_id, user_id, view_duration, view_date, 
 10000000061	10000000036	10000000000	0	2026-01-11 18:14:01.725822	33	2025-12-18 00:03:32
 10000000063	10000000037	10000000000	0	2026-01-11 18:14:07.755808	89	2025-12-18 19:06:15
 10000000064	10000000038	10000000000	0	2026-01-11 18:14:22.104084	14	2025-12-18 19:47:22
+10000000082	10000000058	10000000000	0	2026-01-30 15:21:52.475092	1	2026-01-30 15:21:52.475092
 10000000053	10000000021	10000000000	0	2026-01-23 18:01:48.654157	8	2025-12-07 15:12:15
 10000000072	10000000048	10000000000	0	2026-01-16 22:46:12.239101	2	2026-01-16 22:45:35.417435
 10000000081	10000000057	10000000000	0	2026-01-25 11:06:49.960098	4	2026-01-24 22:58:16.115593
@@ -1268,6 +1535,70 @@ COPY public.sylt_structure (parent_id, child_id) FROM stdin;
 
 
 --
+-- Data for Name: memory; Type: TABLE DATA; Schema: rvaig; Owner: ravon
+--
+
+COPY rvaig.memory (id, user_id, content, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: company; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.company (id, name, region, description) FROM stdin;
+\.
+
+
+--
+-- Data for Name: detail; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.detail (id, product, language, name, description) FROM stdin;
+\.
+
+
+--
+-- Data for Name: factory; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.factory (id, name, company, description) FROM stdin;
+\.
+
+
+--
+-- Data for Name: region; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.region (id, name, description) FROM stdin;
+\.
+
+
+--
+-- Data for Name: relation; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.relation (id, product_id, material_id, quantity) FROM stdin;
+\.
+
+
+--
+-- Data for Name: unres; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.unres (id, urc, type, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: urc_operation; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.urc_operation (id, urc, type, factory_id, operation_id, auth_code, created_at) FROM stdin;
+\.
+
+
+--
 -- Name: geo_access_basic_seq; Type: SEQUENCE SET; Schema: base; Owner: ravon
 --
 
@@ -1278,7 +1609,7 @@ SELECT pg_catalog.setval('base.geo_access_basic_seq', 10000000005, true);
 -- Name: geo_access_geo_acc_id_seq; Type: SEQUENCE SET; Schema: base; Owner: ravon
 --
 
-SELECT pg_catalog.setval('base.geo_access_geo_acc_id_seq', 15, true);
+SELECT pg_catalog.setval('base.geo_access_geo_acc_id_seq', 16, true);
 
 
 --
@@ -1341,7 +1672,7 @@ SELECT pg_catalog.setval('inver.courses_course_id_seq', 10000000007, true);
 -- Name: files_file_id_seq; Type: SEQUENCE SET; Schema: inver; Owner: ravon
 --
 
-SELECT pg_catalog.setval('inver.files_file_id_seq', 10000000057, true);
+SELECT pg_catalog.setval('inver.files_file_id_seq', 10000000058, true);
 
 
 --
@@ -1383,7 +1714,7 @@ SELECT pg_catalog.setval('inver.users_user_id_seq', 10000000005, false);
 -- Name: view_records_record_id_seq; Type: SEQUENCE SET; Schema: inver; Owner: ravon
 --
 
-SELECT pg_catalog.setval('inver.view_records_record_id_seq', 10000000081, true);
+SELECT pg_catalog.setval('inver.view_records_record_id_seq', 10000000082, true);
 
 
 --
@@ -1391,6 +1722,41 @@ SELECT pg_catalog.setval('inver.view_records_record_id_seq', 10000000081, true);
 --
 
 SELECT pg_catalog.setval('public.sylt_resources_id_seq', 1, false);
+
+
+--
+-- Name: memory_id_seq; Type: SEQUENCE SET; Schema: rvaig; Owner: ravon
+--
+
+SELECT pg_catalog.setval('rvaig.memory_id_seq', 1, false);
+
+
+--
+-- Name: detail_id_seq; Type: SEQUENCE SET; Schema: unres; Owner: ravon
+--
+
+SELECT pg_catalog.setval('unres.detail_id_seq', 1, false);
+
+
+--
+-- Name: factory_id_seq; Type: SEQUENCE SET; Schema: unres; Owner: ravon
+--
+
+SELECT pg_catalog.setval('unres.factory_id_seq', 1, false);
+
+
+--
+-- Name: relation_id_seq; Type: SEQUENCE SET; Schema: unres; Owner: ravon
+--
+
+SELECT pg_catalog.setval('unres.relation_id_seq', 1, false);
+
+
+--
+-- Name: urc_operation_id_seq; Type: SEQUENCE SET; Schema: unres; Owner: ravon
+--
+
+SELECT pg_catalog.setval('unres.urc_operation_id_seq', 1, false);
 
 
 --
@@ -1610,6 +1976,86 @@ ALTER TABLE ONLY public.sylt_structure
 
 
 --
+-- Name: memory memory_pkey; Type: CONSTRAINT; Schema: rvaig; Owner: ravon
+--
+
+ALTER TABLE ONLY rvaig.memory
+    ADD CONSTRAINT memory_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: company company_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.company
+    ADD CONSTRAINT company_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: detail detail_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.detail
+    ADD CONSTRAINT detail_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: detail detail_product_language_key; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.detail
+    ADD CONSTRAINT detail_product_language_key UNIQUE (product, language);
+
+
+--
+-- Name: factory factory_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.factory
+    ADD CONSTRAINT factory_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: region region_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.region
+    ADD CONSTRAINT region_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: relation relation_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.relation
+    ADD CONSTRAINT relation_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: relation relation_product_id_material_id_key; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.relation
+    ADD CONSTRAINT relation_product_id_material_id_key UNIQUE (product_id, material_id);
+
+
+--
+-- Name: unres unres_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.unres
+    ADD CONSTRAINT unres_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: urc_operation urc_operation_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.urc_operation
+    ADD CONSTRAINT urc_operation_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: idx_access_time; Type: INDEX; Schema: base; Owner: ravon
 --
 
@@ -1771,6 +2217,83 @@ CREATE INDEX idx_sylt_structure_parent ON public.sylt_structure USING btree (par
 
 
 --
+-- Name: idx_unres_company_region; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_company_region ON unres.company USING btree (region);
+
+
+--
+-- Name: idx_unres_detail_lang; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_detail_lang ON unres.detail USING btree (language);
+
+
+--
+-- Name: idx_unres_detail_product; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_detail_product ON unres.detail USING btree (product);
+
+
+--
+-- Name: idx_unres_factory_company; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_factory_company ON unres.factory USING btree (company);
+
+
+--
+-- Name: idx_unres_relation_material; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_relation_material ON unres.relation USING btree (material_id);
+
+
+--
+-- Name: idx_unres_relation_product; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_relation_product ON unres.relation USING btree (product_id);
+
+
+--
+-- Name: idx_unres_type; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_type ON unres.unres USING btree (type);
+
+
+--
+-- Name: idx_unres_urc; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_urc ON unres.unres USING btree (urc);
+
+
+--
+-- Name: idx_urc_op_factory; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_urc_op_factory ON unres.urc_operation USING btree (factory_id);
+
+
+--
+-- Name: idx_urc_op_time; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_urc_op_time ON unres.urc_operation USING btree (created_at);
+
+
+--
+-- Name: idx_urc_op_urc; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_urc_op_urc ON unres.urc_operation USING btree (urc);
+
+
+--
 -- Name: annotations trg_annotations_updated_at; Type: TRIGGER; Schema: inver; Owner: ravon
 --
 
@@ -1805,5 +2328,5 @@ ALTER TABLE ONLY public.sylt_structure
 -- PostgreSQL database dump complete
 --
 
-\unrestrict T9OTeWYggc8DiS1WeJ0Y0huomESRnUKOvzEXlSo5MFsg0a7QrUj5yBPgMygVcDa
+\unrestrict y5aKQCKnbUIHlRiIY1xRiUhKRtjKvcl9plPhIxUF156BjEemEKwNK5BIGNWxves
 

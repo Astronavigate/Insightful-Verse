@@ -54,7 +54,7 @@ nv.models.tooltip = function() {
         return d;
     };
 
-    // By default, the tooltip model renders a beautiful table inside a DIV, returned as HTML
+    // By default, the tooltip models renders a beautiful table inside a DIV, returned as HTML
     // You can override this function if a custom tooltip is desired. For instance, you could directly manipulate
     // the DOM by accessing elem and returning false.
     var contentGenerator = function(d, elem) {

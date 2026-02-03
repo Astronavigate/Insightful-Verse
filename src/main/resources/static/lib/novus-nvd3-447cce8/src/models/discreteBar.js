@@ -1,4 +1,4 @@
-//TODO: consider deprecating by adding necessary features to multiBar model
+//TODO: consider deprecating by adding necessary features to multiBar models
 nv.models.discreteBar = function() {
     "use strict";
 

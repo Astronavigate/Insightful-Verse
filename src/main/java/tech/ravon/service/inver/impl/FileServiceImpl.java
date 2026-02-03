@@ -20,6 +20,7 @@ import com.fasterxml.uuid.Generators;
 import io.documentnode.epub4j.domain.Book;
 import io.documentnode.epub4j.epub.EpubReader;
 import jakarta.servlet.http.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Service;
 import tech.ravon.mapper.FileDao;
 import tech.ravon.model.inver.File;
 import tech.ravon.model.inver.User;
+import tech.ravon.service.VectorService;
 import tech.ravon.service.inver.AnnotationService;
 import tech.ravon.service.inver.FileService;
 import tech.ravon.service.inver.ViewRecordService;
@@ -46,6 +48,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
@@ -57,16 +61,21 @@ import java.util.stream.Collectors;
 @Slf4j
 public class FileServiceImpl implements FileService {
 
-    @Autowired
-    private FileDao fileDao;
+    private final FileDao fileDao;
+    private final ViewRecordService viewRecordService;
+    private final AnnotationService annotationService;
+    private final VectorService vectorService;
 
-    @Lazy
-    @Autowired
-    private ViewRecordService viewRecordService;
-
-    @Lazy
-    @Autowired
-    private AnnotationService annotationService;
+    public FileServiceImpl(
+            FileDao fileDao,
+            @Lazy ViewRecordService viewRecordService,
+            @Lazy AnnotationService annotationService,
+            @Lazy VectorService vectorService) {
+        this.fileDao = fileDao;
+        this.viewRecordService = viewRecordService;
+        this.annotationService = annotationService;
+        this.vectorService = vectorService;
+    }
 
     /* ===================== upload limits ===================== */
 
@@ -175,6 +184,7 @@ public class FileServiceImpl implements FileService {
         annotationService.deleteAnnotationsByUserAndBook(userId, fileId);
         viewRecordService.delRecordByFileId(fileId);
         fileDao.deleteFile(fileId);
+        vectorService.delVector(String.valueOf(fileId), "inver.files");
     }
 
     @Override
@@ -243,7 +253,6 @@ public class FileServiceImpl implements FileService {
                     );
                 }
             } else {
-                // oldFile.getFilePath example: "doc/uuid.pdf"
                 String oldPath = oldFile.getFilePath();
                 int lastSlash = oldPath.lastIndexOf('/');
                 insertDir = (lastSlash == -1) ? "" : oldPath.substring(0, lastSlash);
@@ -251,6 +260,7 @@ public class FileServiceImpl implements FileService {
             }
 
             /* ---------- subtitle ---------- */
+            boolean shouldTranscribe = false;
             if (hasSubtitle) {
                 String filename = subtitlePart.getSubmittedFileName();
                 String ext = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
@@ -261,11 +271,14 @@ public class FileServiceImpl implements FileService {
                             staticPath.resolve(baseName + "." + ext),
                             StandardCopyOption.REPLACE_EXISTING
                     );
-                    // Note: Files.copy(InputStream, Path, CopyOption...) signature used earlier.
                 }
+            } else if (hasMedia) {
+                // 检查内嵌字幕
+                Path mediaPath = staticPath.resolve(baseName + "." + mediaExt);
+                shouldTranscribe = !hasEmbeddedSubtitle(mediaPath.toString());
             }
 
-            /* ---------- cleanup ---------- */
+            /* ---------- cleanup old files ---------- */
             if (oldFile != null && hasMedia) {
                 Path oldPath = Paths.get(
                         System.getProperty("user.dir"),
@@ -275,7 +288,6 @@ public class FileServiceImpl implements FileService {
 
                 Path parentDir = oldPath.getParent();
                 String fileName = oldPath.getFileName().toString();
-                // 提取纯文件名前缀，例如 "uuid."
                 int dotIndex = fileName.lastIndexOf('.');
                 String prefix = ((dotIndex == -1) ? fileName : fileName.substring(0, dotIndex)) + ".";
 
@@ -283,14 +295,9 @@ public class FileServiceImpl implements FileService {
                     try (var stream = Files.list(parentDir)) {
                         stream.filter(path -> path.getFileName().toString().startsWith(prefix))
                                 .forEach(path -> {
-                                    try {
-                                        Files.deleteIfExists(path);
-                                    } catch (IOException e) {
-                                        // 静默处理或记录日志
-                                    }
+                                    try { Files.deleteIfExists(path); }
+                                    catch (IOException ignored) {}
                                 });
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
                 }
             }
@@ -319,8 +326,66 @@ public class FileServiceImpl implements FileService {
 
             createThumbnail(file.getFilePath());
 
+            File newFile = fileDao.getFileByInfo(file);
+
+            String fileHref = "/InsightfulVerse/File?fileId=" + newFile.getFileId();
+            String contentForVector = "<a href=\"" + fileHref +"\">" + "FileName: " + name + "\nRemark: " + remark + "</a>";
+
+            vectorService.updVector(String.valueOf(file.getFileId()), "inver.files", contentForVector);
+
+            /* ---------- 异步转写 SRT ---------- */
+            if (shouldTranscribe) {
+                String fullPath = Paths.get(System.getProperty("user.dir"), "data", file.getFilePath()).toString();
+                new Thread(() -> {
+                    try {
+                        URL url = new URL("http://127.0.0.1:7824/transcribe");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setDoOutput(true);
+
+                        String json = "{\"audio_path\": \"" + fullPath.replace("\\", "\\\\") + "\"}";
+                        try (OutputStream os = conn.getOutputStream()) {
+                            os.write(json.getBytes(StandardCharsets.UTF_8));
+                        }
+
+                        int code = conn.getResponseCode();
+                        if (code != 200) {
+                            System.err.println("Transcribe request failed: " + code);
+                        }
+                        conn.disconnect();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }).start();
+            }
+
         } catch (Exception e) {
             throw new RuntimeException("File upload failed", e);
+        }
+    }
+
+    /* ---------- 辅助方法 ---------- */
+
+    /**
+     * 检查文件是否包含内嵌字幕
+     */
+    private boolean hasEmbeddedSubtitle(String filePath) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "ffprobe", "-v", "error",
+                    "-select_streams", "s",
+                    "-show_entries", "stream=index",
+                    "-of", "csv=p=0",
+                    filePath
+            );
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                return reader.lines().findAny().isPresent();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 

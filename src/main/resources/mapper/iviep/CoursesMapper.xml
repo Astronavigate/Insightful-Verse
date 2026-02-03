@@ -67,4 +67,10 @@
         WHERE course_name LIKE CONCAT('%', #{keyword}, '%')
            OR course_info LIKE CONCAT('%', #{keyword}, '%')
     </select>
+
+    <select id="getCourseByInfo" resultMap="BaseResultMap">
+        SELECT * FROM inver.courses
+        WHERE course_name = #{courseName}
+        AND course_info = #{courseInfo}
+    </select>
 </mapper>

@@ -1,475 +1,292 @@
-<!--
-  Copyright 2025 Astronavigate
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
-
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Insightful Verse - AiBot</title>
-  <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
-  <style>
-    body {
-      background-color: #0071C5; /* Intel科技蓝 */
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-    }
-    .chat-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 1rem 2rem;
-      min-height: 0;
-    }
-    #chat-history {
-      flex: 1;
-      background: #C4C4C4; /* 介于浅灰色和灰色之间 */
-      border: 1px solid #ced4da;
-      border-radius: 10px;
-      padding: 1rem;
-      overflow-y: auto;
-      font-family: monospace;
-    }
-    /* Custom Scrollbar Styles */
-    #chat-history::-webkit-scrollbar {
-      width: 10px;
-      height: 10px;
-    }
-    #chat-history::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 10px;
-    }
-    #chat-history::-webkit-scrollbar-thumb {
-      background: #888;
-      border-radius: 10px;
-    }
-    #chat-history::-webkit-scrollbar-thumb:hover {
-      background: #555;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insightful Verse - Core Shell</title>
 
-    .message {
-      margin-bottom: 0.25rem;
-    }
-    .user {
-      font-weight: bold;
-      color: #0d6efd;
-    }
-    .ai {
-      font-weight: bold;
-      color: #198754;
-    }
-    .content {
-      white-space: pre-wrap;
-      margin-left: 0.5rem;
-      display: inline-block;
-      line-height: 1.4;
-    }
-    /* 新增的可折叠内容样式 */
-    .collapsible-content {
-      max-height: 4.2em; /* 约 3 行文字 (1.4 * 3 = 4.2) */
-      overflow: hidden;
-      position: relative;
-    }
-    .collapsible-content.expanded {
-      max-height: none;
-      overflow: visible;
-    }
-    .show-more-button {
-      color: #007bff;
-      cursor: pointer;
-      margin-left: 0.5rem;
-      font-size: 0.9em;
-      text-decoration: underline;
-    }
+    <th:block th:replace="~{common/sub/iviep/iviep-common.html}"></th:block>
+    <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
-    .input-area {
-      background: #C0C0C0; /* 介于浅灰色和灰色之间 */
-      border-top: 1px solid #ced4da;
-      display: flex;
-      flex-direction: column;
-      padding: 1rem 2rem;
-    }
-    .file-upload-area {
-      margin-bottom: 0.5rem;
-      display: flex;
-      align-items: center;
-    }
-    .file-upload-area input[type="file"] {
-      padding: 0.5rem;
-      background: #ffffff;
-      border: 1px solid #ced4da;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .message-input-area {
-      display: flex;
-      width: 100%;
-      align-items: flex-start;
-    }
-    .message-input-area textarea {
-      flex: 1;
-      resize: none;
-      min-height: 6rem;
-      max-height: 12rem;
-      overflow-y: hidden;
-      margin-right: 1rem;
-      padding: 0.5rem 0.75rem;
-      line-height: 1.5;
-      box-sizing: border-box;
-      border: 1px solid #ced4da;
-      border-radius: 5px;
-    }
-    .button-group {
-      display: flex;
-      flex-direction: column;
-    }
-    .button-group .btn {
-      margin-bottom: 0.5rem;
-    }
-  </style>
-  <!-- Mammoth.js for .docx parsing -->
-  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #0a0a0a;
+            --bg-panel: #121212;
+            --accent: #0071C5;
+            --text-primary: #e6eef8;
+            --text-secondary: #888;
+            --border-color: #262626;
+        }
+
+        body {
+            background: var(--bg-main);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 终端显示区 */
+        #terminal {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        .entry {
+            margin-bottom: 2rem;
+            border-left: 2px solid var(--border-color);
+            padding-left: 1.5rem;
+            transition: border-color 0.3s;
+        }
+        .entry:hover { border-color: var(--accent); }
+
+        .tag {
+            font-size: 0.7rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .file-badge {
+            display: inline-block;
+            background: rgba(0, 113, 197, 0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .out { line-height: 1.7; font-size: 0.95rem; }
+        .out pre { background: #000; border: 1px solid var(--border-color); padding: 1rem; margin: 1rem 0; }
+        .out code { color: #8cb4ff; }
+
+        /* 输入区 */
+        .input-zone {
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem 2rem;
+        }
+
+        #meta-info {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 1rem;
+            outline: none;
+            resize: none;
+            font-family: inherit;
+            border-radius: 4px;
+        }
+        textarea:focus { border-color: var(--accent); }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        .btn-custom {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            padding: 0.5rem 1rem;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+        .btn-custom:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .btn-primary-custom { background: var(--accent); color: #fff; border-color: var(--accent); }
+    </style>
 </head>
 <body>
-<th:block th:replace="~{common/sub/iviep/iviep-header.html}"></th:block>
+<th:block th:replace="~{common/sub/iviep/iviep-header :: header}"></th:block>
 
-<div class="chat-container">
-  <div id="chat-history"></div>
-</div>
+<div id="terminal"></div>
 
-<div class="input-area">
-    <!-- 文本输入和按钮 -->
-    <div class="message-input-area">
-        <textarea id="prompt" class="form-control" th:placeholder="#{insightful.chat.placeholder}"></textarea>
-        <div>
-            <!-- File upload controls -->
-            <div class="file-upload-area">
-                <input type="file" id="fileInput" accept=".txt,.md,.csv,.doc,.docx">
-                <!--label for="fileInput" th:text="#{insightful.chat.uploadFile}"></label-->
-            </div>
-            <div class="button-group" style="display: inline-block; align-items: center;">
-                <button class="btn btn-primary" style="display: inline;" th:text="#{insightful.chat.send}" onclick="sendPrompt()"></button>
-                <button class="btn btn-warning" style="display: inline;" th:text="#{insightful.chat.stop}" onclick="interruptGeneration()"></button>
-                <button class="btn btn-danger" style="display: inline;" th:text="#{insightful.chat.clear}" onclick="clearResponse()"></button>
-                <button class="btn btn-secondary" style="display: inline;" th:text="#{insightful.chat.export}" onclick="exportChat()"></button>
-            </div>
-        </div>
+<div class="input-zone">
+    <div id="meta-info">SYSTEM_READY // IDLE</div>
+    <textarea id="cmd" rows="3" placeholder="Input instructions or logic queries..."></textarea>
+
+    <div class="controls">
+        <input type="file" id="file-in" hidden accept=".txt,.md,.csv,.docx">
+        <button class="btn btn-custom" onclick="document.getElementById('file-in').click()">Mount_File</button>
+        <button class="btn btn-custom btn-primary-custom" onclick="run()">Execute_Logic</button>
+        <button class="btn btn-custom text-danger" id="interruptBtn">Interrupt</button>
+        <button class="btn btn-custom" id="exportBtn">Export_Log</button>
     </div>
 </div>
 
 <script>
-  const promptEl = document.getElementById("prompt");
-  const fileInput = document.getElementById("fileInput");
-  const initialMinHeight = window.getComputedStyle(promptEl).minHeight;
-  let currentEventSource = null; // 用于存储当前的 EventSource 实例
-  let docContent = ""; // 存储文档文本
+    let rawDoc = "", fName = "";
+    let currentReader = null, currentSessionId = null;
+    let mdBuffer = '';
 
-  promptEl.addEventListener("input", function() {
-    this.style.height = 'auto';
-    let scrollHeight = this.scrollHeight;
-    const maxHeight = parseInt(window.getComputedStyle(this).maxHeight, 10);
+    // --- 文件读取逻辑 (修复无法重复上传问题) ---
+    document.getElementById('file-in').onchange = async (e) => {
+        const f = e.target.files[0];
+        if(!f) return;
 
-    if (maxHeight && scrollHeight > maxHeight) {
-      this.style.height = maxHeight + 'px';
-      this.style.overflowY = 'auto';
-    } else {
-      const minHeightVal = parseInt(initialMinHeight, 10);
-      if (scrollHeight < minHeightVal) {
-        this.style.height = initialMinHeight;
-      } else {
-        this.style.height = scrollHeight + 'px';
-      }
-      this.style.overflowY = 'hidden';
-    }
-  });
+        fName = f.name;
+        document.getElementById('meta-info').innerText = `MOUNTED // ${fName.toUpperCase()}`;
 
-  // 处理文件上传
-  fileInput.addEventListener('change', async function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const filename = file.name;
-    const extension = filename.split('.').pop().toLowerCase();
-
-    try {
-      if (extension === 'docx') {
-        // 使用 mammoth 解析 docx
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-        docContent = result.value;
-      } else if (['txt', 'md', 'csv'].includes(extension)) {
-        // 以文本方式读取
-        docContent = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(reader.error);
-          reader.readAsText(file);
-        });
-      } else if (extension === 'doc') {
-        // 对 .doc 文件浏览器环境下无法直接解析，提示用户
-        alert('DOC 格式暂不支持内容解析，请转换为 DOCX。');
-        clearFile();
-        return;
-      } else {
-        alert('Unsupported file type');
-        clearFile();
-        return;
-      }
-      // 控制最大字符数为 1000
-      if (docContent.length > 1000) {
-        docContent = docContent.slice(0, 1000);
-      }
-    } catch (error) {
-      console.error('Error reading file:', error);
-      alert('读取文件时出错');
-      clearFile();
-    }
-  });
-
-  function clearFile() {
-    fileInput.value = '';
-    docContent = '';
-  }
-
-  async function sendPrompt() {
-    let userText = promptEl.value.trim();
-    if (!userText && !docContent) return;
-
-    // 如果存在文档内容，将其附加到用户输入前面
-    let combinedText = userText;
-    if (docContent) {
-      combinedText = `promot 以下是用户附带文档内容：【${docContent}】\n${userText}`;
-    }
-
-    promptEl.value = "";
-    promptEl.style.height = initialMinHeight;
-    promptEl.style.overflowY = 'hidden';
-
-    const chatHistory = document.getElementById("chat-history");
-
-    // 添加用户消息到聊天历史
-    const userDiv = document.createElement("div");
-    userDiv.className = "message";
-    const userPrefix = document.createElement("span");
-    userPrefix.className = "user";
-    userPrefix.textContent = "You: ";
-    const userContent = document.createElement("span");
-    userContent.className = "content";
-    userContent.textContent = combinedText;
-    userDiv.appendChild(userPrefix);
-    userDiv.appendChild(userContent);
-    chatHistory.appendChild(userDiv);
-
-    // 重置文档内容
-    clearFile();
-
-    // 添加 AI 消息容器 (流式接收内容)
-    const aiDiv = document.createElement("div");
-    aiDiv.className = "message";
-    const aiContentId = "ai-" + Date.now();
-    const aiPrefix = document.createElement("span");
-    aiPrefix.className = "ai";
-    aiPrefix.textContent = "AiBot: ";
-    const aiContentSpan = document.createElement("span");
-    aiContentSpan.className = "content collapsible-content"; // 添加可折叠类
-    aiContentSpan.id = aiContentId;
-    aiDiv.appendChild(aiPrefix);
-    aiDiv.appendChild(aiContentSpan);
-    chatHistory.appendChild(aiDiv);
-
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-
-    // 如果有旧的 EventSource 实例在运行，先关闭它
-    if (currentEventSource) {
-      console.warn("Closing previous EventSource before starting a new one.");
-      currentEventSource.close();
-      currentEventSource = null; // 清除旧的引用
-    }
-
-    // 使用 EventSource 连接 SSE 端点
-    const url = `/InsightfulVerse/AiBot/stream?prompt=${encodeURIComponent(combinedText)}`;
-    currentEventSource = new EventSource(url);
-
-    let fullAiResponse = ""; // 累积完整的AI响应
-
-    // 监听 SSE 接收到的消息
-    currentEventSource.onmessage = function(event) {
-      const textChunk = event.data; // 接收到的数据
-      // 检查服务器发送的中断标记
-      if (textChunk === "[STOP]") {
-        console.log("AI stream stopped by server due to interruption.");
-        aiContentSpan.textContent += " [Generation Stopped]"; // 提示用户
-        currentEventSource.close(); // 收到停止标记，关闭 EventSource
-        return;
-      }
-
-      fullAiResponse += textChunk;
-      aiContentSpan.textContent = fullAiResponse; // 更新内容
-      chatHistory.scrollTop = chatHistory.scrollHeight; // 滚动到底部
-    };
-
-    // 监听 SSE 错误
-    currentEventSource.onerror = function(error) {
-      console.error('EventSource failed:', error);
-      aiContentSpan.textContent += " [Error occurred or connection closed]";
-      currentEventSource.close(); // 发生错误时关闭连接
-      chatHistory.scrollTop = chatHistory.scrollHeight;
-    };
-
-    // 监听 SSE 连接打开
-    currentEventSource.onopen = function() {
-      console.log('EventSource connected.');
-    };
-
-    // 监听 SSE 连接关闭
-    currentEventSource.onclose = function() {
-      console.log('EventSource disconnected.');
-      // Stream 完成或被中断后，检查最终内容是否需要折叠
-      checkAndApplyCollapsible(aiContentSpan, aiDiv);
-      currentEventSource = null; // 清除引用
-    };
-  }
-
-  // 新增的中断函数
-  async function interruptGeneration() {
-    if (currentEventSource) {
-      currentEventSource.close();
-      console.log("Client-side EventSource closed.");
-      try {
-        const res = await fetch("/InsightfulVerse/AiBot/interrupt", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({})
-        });
-        const data = await res.json();
-        console.log("Interrupt API response:", data.message);
-      } catch (error) {
-        console.error("Error sending interrupt signal to backend:", error);
-      } finally {
-        currentEventSource = null;
-      }
-    } else {
-      console.log("No active AI stream to interrupt.");
-    }
-  }
-
-  // 检查并应用/移除折叠功能
-  function checkAndApplyCollapsible(contentElement, parentMessageDiv) {
-    setTimeout(() => {
-      const lineHeight = parseFloat(window.getComputedStyle(contentElement).lineHeight);
-      const maxHeightLines = 3;
-      const maxHeightPx = lineHeight * maxHeightLines;
-
-      const originalMaxHeight = contentElement.style.maxHeight;
-      const originalOverflow = contentElement.style.overflow;
-      contentElement.style.maxHeight = 'none';
-      contentElement.style.overflow = 'visible';
-
-      const currentScrollHeight = contentElement.scrollHeight;
-
-      contentElement.style.maxHeight = originalMaxHeight;
-      contentElement.style.overflow = originalOverflow;
-
-      if (currentScrollHeight > maxHeightPx) {
-        if (!contentElement.classList.contains("collapsible-content")) {
-          contentElement.classList.add("collapsible-content");
-        }
-        let showMoreBtn = parentMessageDiv.querySelector(".show-more-button");
-        if (!showMoreBtn) {
-          showMoreBtn = document.createElement("span");
-          showMoreBtn.className = "show-more-button";
-          showMoreBtn.textContent = "Show More";
-          showMoreBtn.onclick = function() {
-            contentElement.classList.toggle("expanded");
-            if (contentElement.classList.contains("expanded")) {
-              showMoreBtn.textContent = "Show Less";
+        try {
+            if(fName.endsWith('.docx')){
+                const b = await f.arrayBuffer();
+                const r = await mammoth.extractRawText({arrayBuffer: b});
+                rawDoc = r.value;
             } else {
-              showMoreBtn.textContent = "Show More";
+                rawDoc = await f.text();
             }
-            document.getElementById("chat-history").scrollTop = document.getElementById("chat-history").scrollHeight;
-          };
-          parentMessageDiv.appendChild(showMoreBtn);
+        } catch (err) {
+            console.error("File Read Error:", err);
+            document.getElementById('meta-info').innerText = "ERROR // FILE_READ_FAILED";
         }
-      } else {
-        contentElement.classList.remove("collapsible-content", "expanded");
-        let showMoreBtn = parentMessageDiv.querySelector(".show-more-button");
-        if (showMoreBtn) {
-          showMoreBtn.remove();
+
+        // 重要：清空 value，确保下一次选择同一个文件时依然能触发 onchange
+        e.target.value = '';
+    };
+
+    // --- Markdown 解析与渲染逻辑 ---
+    function renderOutput(node, content) {
+        // 1. 标准化 HTML 链接
+        let processed = content.replace(/<a\s+href\s*=\s*["']?([^"'\s>]+)["']?\s*>([\s\S]*?)<\/a>/gi, (match, href, label) => {
+            return `[${label.trim() || href}](${href})`;
+        });
+
+        // 2. 链接化普通 URL
+        const urlRegex = /(https?:\/\/[^\s`<>()\]\[]+)/g;
+        processed = processed.replace(urlRegex, (url) => {
+            // 简单判断是否已经在 Markdown 链接格式内
+            return `[${url}](${url})`;
+        });
+
+        // 3. Marked 解析与 Sanitization
+        const rawHtml = marked.parse(processed, { breaks: true, gfm: true });
+        node.innerHTML = DOMPurify.sanitize(rawHtml);
+    }
+
+    // --- 执行逻辑 ---
+    async function run(){
+        const input = document.getElementById('cmd');
+        const term = document.getElementById('terminal');
+        const userPrompt = input.value.trim();
+
+        if(!userPrompt && !rawDoc) return;
+
+        // UI: User Entry
+        const userEntry = document.createElement('div');
+        userEntry.className = 'entry';
+        userEntry.innerHTML = `
+            <div class="tag">Source_Origin</div>
+            ${fName ? `<span class="file-badge">${fName}</span><br>` : ""}
+            <div class="out">${escapeHtml(userPrompt || "Analyzing mounted document...")}</div>
+        `;
+        term.appendChild(userEntry);
+
+        // UI: AI Entry
+        const aiEntry = document.createElement('div');
+        aiEntry.className = 'entry';
+        aiEntry.innerHTML = `<div class="tag">Logic_Output</div><div class="out"></div>`;
+        term.appendChild(aiEntry);
+        const outputNode = aiEntry.querySelector('.out');
+
+        const fullContent = rawDoc ? `Context: ${rawDoc}\n\nQuery: ${userPrompt}` : userPrompt;
+
+        // Reset state
+        input.value = "";
+        rawDoc = "";
+        fName = "";
+        mdBuffer = '';
+        document.getElementById('meta-info').innerText = "PROCESSING...";
+
+        try {
+            const response = await fetch('/api/AiBot/stream', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({query: fullContent, table_name: ""})
+            });
+
+            if(!response.ok) throw new Error(`HTTP_${response.status}`);
+            const reader = response.body.getReader();
+            currentReader = reader;
+
+            let buffer = "";
+            while(true){
+                const {done, value} = await reader.read();
+                if(done) break;
+
+                buffer += new TextDecoder().decode(value, {stream:true});
+                let parts = buffer.split('\n\n');
+                buffer = parts.pop();
+
+                for(const part of parts){
+                    if(part.startsWith('data:')){
+                        const payload = part.substring(5).trim();
+                        if(payload === '[STOP]') break;
+
+                        try {
+                            const obj = JSON.parse(payload);
+                            if(obj.session_id) currentSessionId = obj.session_id;
+                            if(obj.type === 'token') {
+                                mdBuffer += obj.content;
+                                renderOutput(outputNode, mdBuffer);
+                            }
+                        } catch(e) {
+                            mdBuffer += payload;
+                            renderOutput(outputNode, mdBuffer);
+                        }
+                        term.scrollTop = term.scrollHeight;
+                    }
+                }
+            }
+        } catch (err) {
+            outputNode.innerHTML += `<div class="text-danger mt-2">[FATAL_ERROR] ${err.message}</div>`;
+        } finally {
+            document.getElementById('meta-info').innerText = "SYSTEM_READY // IDLE";
+            currentReader = null;
         }
-      }
-    }, 50);
-  }
-
-  function clearResponse() {
-    document.getElementById("chat-history").innerHTML = "";
-    if (currentEventSource) {
-      currentEventSource.close();
-      currentEventSource = null;
-    }
-    clearFile();
-  }
-
-  function exportChat() {
-    const chatHistory = document.getElementById("chat-history");
-    let chatContent = "";
-    const messages = chatHistory.children;
-
-    for (let i = 0; i < messages.length; i++) {
-      const messageElement = messages[i];
-      const speakerElement = messageElement.querySelector(".user, .ai");
-      const contentElement = messageElement.querySelector(".content");
-      let actualContent = contentElement.textContent;
-      if (actualContent.endsWith(" [Generation Stopped]")) {
-        actualContent = actualContent.slice(0, -21);
-      } else if (actualContent.endsWith(" [Error occurred or connection closed]")) {
-        actualContent = actualContent.slice(0, -37);
-      }
-
-      if (speakerElement && contentElement) {
-        let speakerText = speakerElement.textContent;
-        if (!speakerText.endsWith(" ")) speakerText += " ";
-        chatContent += speakerText + actualContent + "\n\n";
-      }
     }
 
-    if (chatContent.trim() === "") {
-      alert("Nothing to export!");
-      return;
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
-    const blob = new Blob([chatContent], { type: "text/plain;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    const timestamp = new Date().toISOString().replace(/:/g, "-").slice(0, 19);
-    a.download = `chat-export-${timestamp}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
-  }
+    // 中断与导出逻辑
+    document.getElementById('interruptBtn').onclick = async ()=> {
+        if(!currentSessionId) return;
+        fetch(`/api/AiBot/interrupt/${currentSessionId}`, { method: 'POST' });
+        if(currentReader) currentReader.cancel();
+        document.getElementById('meta-info').innerText = 'INTERRUPTED';
+    };
 
-  document.getElementById("prompt").addEventListener("keydown", function(event) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      sendPrompt();
-    }
-  });
+    document.getElementById('exportBtn').onclick = () => {
+        const content = document.getElementById('terminal').innerText;
+        const blob = new Blob([content], {type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `session_${Date.now()}.txt`;
+        a.click();
+    };
 </script>
 </body>
 </html>

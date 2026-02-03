@@ -32,12 +32,12 @@
 
     <select id="getFilesByPop" resultMap="BaseResultMap">
         SELECT f.*
-        FROM files f
+        FROM inver.files f
                  LEFT JOIN (
             SELECT
                 file_id,
                 SUM(view_count) AS total_sum
-            FROM view_records
+            FROM inver.view_records
             GROUP BY file_id
         ) v_stat ON f.file_id = v_stat.file_id
         ORDER BY v_stat.total_sum DESC, f.file_id ASC
@@ -47,12 +47,12 @@
     </select>
 
     <select id="getFileById" resultType="tech.ravon.model.inver.File" resultMap="BaseResultMap">
-        SELECT * FROM files WHERE file_id = #{fileId} LIMIT 1
+        SELECT * FROM inver.files WHERE file_id = #{fileId} LIMIT 1
     </select>
 
     <select id="getFilesByCourse" resultType="tech.ravon.model.inver.File" resultMap="BaseResultMap">
         SELECT *
-        FROM files
+        FROM inver.files
         WHERE course_id = #{courseId}
     </select>
 
@@ -86,19 +86,19 @@
     <insert id="updFile" parameterType="map">
         <choose>
             <when test="file.fileId == null">
-                INSERT INTO files (file_name, file_type, course_id, file_remark, upload_user, upload_date, file_path)
+                INSERT INTO inver.files (file_name, file_type, course_id, file_remark, upload_user, upload_date, file_path)
                 VALUES (#{file.fileName}, #{file.type}, #{file.courseId}, #{file.remarks}, #{userId}, NOW(), #{file.filePath})
             </when>
             <otherwise>
                 <choose>
                     <when test="file.filePath == null">
-                        UPDATE files
+                        UPDATE inver.files
                         SET file_name = #{file.fileName}, course_id = #{file.courseId}, file_remark = #{file.remarks},
                         upload_user = #{userId}, upload_date = NOW()
                         WHERE file_id = #{file.fileId}
                     </when>
                     <otherwise>
-                        UPDATE files
+                        UPDATE inver.files
                         SET file_name = #{file.fileName}, file_type = #{file.type}, course_id = #{file.courseId},
                         file_remark = #{file.remarks}, upload_user = #{userId}, upload_date = NOW(), file_path = #{file.filePath}
                         WHERE file_id = #{file.fileId}
@@ -109,14 +109,22 @@
     </insert>
 
     <delete id="deleteFile">
-        DELETE FROM files WHERE file_id = #{fileId}
+        DELETE FROM inver.files WHERE file_id = #{fileId}
     </delete>
 
     <select id="getFileByName" resultType="tech.ravon.model.inver.File" resultMap="BaseResultMap">
         SELECT *
-        FROM files
+        FROM inver.files
         WHERE file_name LIKE CONCAT('%', #{keyword}, '%')
            OR file_remark LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
+    <select id="getFileByInfo" resultMap="BaseResultMap">
+        SELECT *
+        FROM inver.files
+        WHERE file_name = #{fileName}
+        AND file_remark = #{remarks}
+        AND file_path = #{filePath}
     </select>
 
 </mapper>

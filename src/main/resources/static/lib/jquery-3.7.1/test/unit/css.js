@@ -1102,7 +1102,7 @@ QUnit.test( "computed margins (trac-3333; gh-2237)", function( assert ) {
 	assert.equal( $child.css( "marginLeft" ), "25px", "auto margins are computed to pixels" );
 } );
 
-QUnit.test( "box model properties incorrectly returning % instead of px, see trac-10639 and trac-12088", function( assert ) {
+QUnit.test( "box models properties incorrectly returning % instead of px, see trac-10639 and trac-12088", function( assert ) {
 	assert.expect( 2 );
 
 	var container = jQuery( "<div></div>" ).width( 400 ).appendTo( "#qunit-fixture" ),

@@ -475,7 +475,7 @@ nv.models.lineChart = function() {
         showYAxis:    {get: function(){return showYAxis;}, set: function(_){showYAxis=_;}},
         defaultState:    {get: function(){return defaultState;}, set: function(_){defaultState=_;}},
         noData:    {get: function(){return noData;}, set: function(_){noData=_;}},
-        // Focus options, mostly passed onto focus model.
+        // Focus options, mostly passed onto focus models.
         focusEnable:    {get: function(){return focusEnable;}, set: function(_){focusEnable=_;}},
         focusHeight:     {get: function(){return focus.height();}, set: function(_){focus.height(_);}},
         focusShowAxisX:    {get: function(){return focus.showXAxis();}, set: function(_){focus.showXAxis(_);}},

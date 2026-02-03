@@ -12860,7 +12860,7 @@
             //         </a:srgbClr>
             //     </a: solidFill >
 
-            //13. "hue" (This element specifies a color using the HSL color model):
+            //13. "hue" (This element specifies a color using the HSL color models):
             // This element specifies the input color with the specified hue, but with its saturation and luminance unchanged.
             // < a: solidFill >
             //     <a:hslClr hue="14400000" sat="100%" lum="50%">
@@ -12871,7 +12871,7 @@
             //     <a:hslClr/>
             // </a:solidFill>
 
-            //14. "hueMod" (This element specifies a color using the HSL color model):
+            //14. "hueMod" (This element specifies a color using the HSL color models):
             // Specifies the hue as expressed by a percentage relative to the input color.
             // [Example: The following manipulates the fill color from having RGB value RRGGBB = (00, FF, 00) to value RRGGBB = (FF, FF, 00)
             //         < a: solidFill >
@@ -12885,7 +12885,7 @@
             if (!isNaN(hueMod)) {
                 color = applyHueMod(color, hueMod, isAlpha);
             }
-            //15. "hueOff"(This element specifies a color using the HSL color model):
+            //15. "hueOff"(This element specifies a color using the HSL color models):
             // Specifies the actual angular value of the shift.The result of the shift shall be between 0
             // and 360 degrees.Shifts resulting in angular values less than 0 are treated as 0. Shifts
             // resulting in angular values greater than 360 are treated as 360.

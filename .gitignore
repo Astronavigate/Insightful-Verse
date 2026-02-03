@@ -42,3 +42,7 @@ build/
 
 ### Resources ###
 data/
+
+### Model ###
+src/main/python/models/
+src/main/python/llama/

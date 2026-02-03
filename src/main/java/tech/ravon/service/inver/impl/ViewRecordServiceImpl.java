@@ -17,7 +17,7 @@
 package tech.ravon.service.inver.impl;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import tech.ravon.mapper.ViewRecordDao;
 import tech.ravon.model.inver.User;
@@ -30,11 +30,15 @@ import java.util.List;
 @Service
 public class ViewRecordServiceImpl implements ViewRecordService {
 
-    @Autowired
-    ViewRecordDao viewRecordDao;
+    private final ViewRecordDao viewRecordDao;
+    private final FileService fileService;
 
-    @Autowired
-    FileService fileService;
+    public ViewRecordServiceImpl(
+            ViewRecordDao viewRecordDao,
+            @Lazy FileService fileService) {
+        this.viewRecordDao = viewRecordDao;
+        this.fileService = fileService;
+    }
 
 
     @Override

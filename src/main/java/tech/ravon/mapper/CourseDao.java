@@ -36,4 +36,6 @@ public interface CourseDao extends BaseMapper<Course> {
 
     List<Course> getCourseByName(String keyword);
 
+    Course getCourseByInfo(Course course);
+
 }

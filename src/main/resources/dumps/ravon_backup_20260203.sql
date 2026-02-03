@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict T9OTeWYggc8DiS1WeJ0Y0huomESRnUKOvzEXlSo5MFsg0a7QrUj5yBPgMygVcDa
+\restrict 6rcMdDodnuwva3UzkErUtFHAWwtiXlJ8RON3wEl7Pa9fg0dODeT9sl4fNajdghF
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -36,6 +36,15 @@ CREATE SCHEMA inver;
 
 
 ALTER SCHEMA inver OWNER TO ravon;
+
+--
+-- Name: rvaig; Type: SCHEMA; Schema: -; Owner: ravon
+--
+
+CREATE SCHEMA rvaig;
+
+
+ALTER SCHEMA rvaig OWNER TO ravon;
 
 --
 -- Name: unres; Type: SCHEMA; Schema: -; Owner: ravon
@@ -825,6 +834,226 @@ CREATE TABLE public.sylt_structure (
 ALTER TABLE public.sylt_structure OWNER TO ravon;
 
 --
+-- Name: memory; Type: TABLE; Schema: rvaig; Owner: ravon
+--
+
+CREATE TABLE rvaig.memory (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    content text NOT NULL,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE rvaig.memory OWNER TO ravon;
+
+--
+-- Name: memory_id_seq; Type: SEQUENCE; Schema: rvaig; Owner: ravon
+--
+
+CREATE SEQUENCE rvaig.memory_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE rvaig.memory_id_seq OWNER TO ravon;
+
+--
+-- Name: memory_id_seq; Type: SEQUENCE OWNED BY; Schema: rvaig; Owner: ravon
+--
+
+ALTER SEQUENCE rvaig.memory_id_seq OWNED BY rvaig.memory.id;
+
+
+--
+-- Name: company; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.company (
+    id character varying(3) NOT NULL,
+    name character varying(100) NOT NULL,
+    region character varying(2) NOT NULL,
+    description text
+);
+
+
+ALTER TABLE unres.company OWNER TO ravon;
+
+--
+-- Name: detail; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.detail (
+    id bigint NOT NULL,
+    product character varying(24) NOT NULL,
+    language character varying(10) NOT NULL,
+    name character varying(200) NOT NULL,
+    description text
+);
+
+
+ALTER TABLE unres.detail OWNER TO ravon;
+
+--
+-- Name: detail_id_seq; Type: SEQUENCE; Schema: unres; Owner: ravon
+--
+
+CREATE SEQUENCE unres.detail_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE unres.detail_id_seq OWNER TO ravon;
+
+--
+-- Name: detail_id_seq; Type: SEQUENCE OWNED BY; Schema: unres; Owner: ravon
+--
+
+ALTER SEQUENCE unres.detail_id_seq OWNED BY unres.detail.id;
+
+
+--
+-- Name: factory; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.factory (
+    id bigint NOT NULL,
+    name character varying(100) NOT NULL,
+    company character varying(3) NOT NULL,
+    description text
+);
+
+
+ALTER TABLE unres.factory OWNER TO ravon;
+
+--
+-- Name: factory_id_seq; Type: SEQUENCE; Schema: unres; Owner: ravon
+--
+
+CREATE SEQUENCE unres.factory_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE unres.factory_id_seq OWNER TO ravon;
+
+--
+-- Name: factory_id_seq; Type: SEQUENCE OWNED BY; Schema: unres; Owner: ravon
+--
+
+ALTER SEQUENCE unres.factory_id_seq OWNED BY unres.factory.id;
+
+
+--
+-- Name: region; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.region (
+    id character varying(2) NOT NULL,
+    name character varying(50) NOT NULL,
+    description text
+);
+
+
+ALTER TABLE unres.region OWNER TO ravon;
+
+--
+-- Name: relation; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.relation (
+    id bigint NOT NULL,
+    product_id character varying(24) NOT NULL,
+    material_id character varying(24) NOT NULL,
+    quantity integer DEFAULT 1
+);
+
+
+ALTER TABLE unres.relation OWNER TO ravon;
+
+--
+-- Name: relation_id_seq; Type: SEQUENCE; Schema: unres; Owner: ravon
+--
+
+CREATE SEQUENCE unres.relation_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE unres.relation_id_seq OWNER TO ravon;
+
+--
+-- Name: relation_id_seq; Type: SEQUENCE OWNED BY; Schema: unres; Owner: ravon
+--
+
+ALTER SEQUENCE unres.relation_id_seq OWNED BY unres.relation.id;
+
+
+--
+-- Name: unres; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.unres (
+    id character varying(24) NOT NULL,
+    urc character varying(50) NOT NULL,
+    type character varying(10) NOT NULL,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE unres.unres OWNER TO ravon;
+
+--
+-- Name: urc_operation; Type: TABLE; Schema: unres; Owner: ravon
+--
+
+CREATE TABLE unres.urc_operation (
+    id bigint NOT NULL,
+    urc character varying(50) NOT NULL,
+    type character varying(10) NOT NULL,
+    factory_id character varying(20) NOT NULL,
+    operation_id character varying(50) NOT NULL,
+    auth_code character varying(4),
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE unres.urc_operation OWNER TO ravon;
+
+--
+-- Name: urc_operation_id_seq; Type: SEQUENCE; Schema: unres; Owner: ravon
+--
+
+CREATE SEQUENCE unres.urc_operation_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE unres.urc_operation_id_seq OWNER TO ravon;
+
+--
+-- Name: urc_operation_id_seq; Type: SEQUENCE OWNED BY; Schema: unres; Owner: ravon
+--
+
+ALTER SEQUENCE unres.urc_operation_id_seq OWNED BY unres.urc_operation.id;
+
+
+--
 -- Name: annotations note_id; Type: DEFAULT; Schema: inver; Owner: ravon
 --
 
@@ -930,6 +1159,41 @@ ALTER TABLE ONLY public.sylt_resources ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
+-- Name: memory id; Type: DEFAULT; Schema: rvaig; Owner: ravon
+--
+
+ALTER TABLE ONLY rvaig.memory ALTER COLUMN id SET DEFAULT nextval('rvaig.memory_id_seq'::regclass);
+
+
+--
+-- Name: detail id; Type: DEFAULT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.detail ALTER COLUMN id SET DEFAULT nextval('unres.detail_id_seq'::regclass);
+
+
+--
+-- Name: factory id; Type: DEFAULT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.factory ALTER COLUMN id SET DEFAULT nextval('unres.factory_id_seq'::regclass);
+
+
+--
+-- Name: relation id; Type: DEFAULT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.relation ALTER COLUMN id SET DEFAULT nextval('unres.relation_id_seq'::regclass);
+
+
+--
+-- Name: urc_operation id; Type: DEFAULT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.urc_operation ALTER COLUMN id SET DEFAULT nextval('unres.urc_operation_id_seq'::regclass);
+
+
+--
 -- Data for Name: geo_access; Type: TABLE DATA; Schema: base; Owner: ravon
 --
 
@@ -941,14 +1205,13 @@ COPY base.geo_access (geo_acc_id, user_id, access_time, ip, location_id, geoname
 5	10000000000	2026-01-22 15:27:09.568389	165.204.52.173	4	5392171	37.3028	-121.9982	10	165.204.52.0/22	33619	AMD-MARKHAM
 6	10000000000	2026-01-22 15:27:09.575396	174.193.53.204	5	5366375	38.8897	-121.2873	500	174.193.32.0/19	22394	CELLCO
 7	10000000000	2026-01-22 15:27:09.583406	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
-8	10000000000	2026-01-22 15:39:10.238758	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
-9	10000000000	2026-01-22 15:47:51.810828	172.18.4.62	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
-10	10000000000	2026-01-22 15:52:47.134848	172.18.5.224	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
-11	10000000000	2026-01-22 15:53:08.480585	0:0:0:0:0:0:0:1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
-12	10000000000	2026-01-26 22:40:04.495317	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
-13	10000000000	2026-01-26 23:23:52.407097	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
-14	10000000000	2026-01-26 23:32:04.380363	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
-15	10000000000	2026-01-27 10:53:48.176636	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+8	10000000000	2026-01-22 15:39:10.238758	172.18.4.62	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+9	10000000000	2026-01-22 15:47:51.810828	172.18.5.224	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+10	10000000000	2026-01-22 15:52:47.134848	0:0:0:0:0:0:0:1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+23	10000000000	2026-02-03 10:23:18.314432	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+24	10000000000	2026-02-03 10:25:38.658504	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+25	10000000000	2026-02-03 10:55:28.646354	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
+26	10000000000	2026-02-03 11:15:07.052171	127.0.0.1	6	\N	728.66	324.53	0	0.0.0.0/0	4294967295	N/A
 \.
 
 
@@ -1025,13 +1288,14 @@ COPY inver.comments (comment_id, user_id, comment_content, related_type, related
 --
 
 COPY inver.courses (course_id, course_name, course_info) FROM stdin;
+10000000002	Music	Listen, just feel your heart!
 10000000000	OOSA&D	Object-Oriented System Analysis and Design.
 10000000001	Computer Network	Computer networking refers to connected computing devices and an ever-expanding array of IoT devices that communicate with one another.
-10000000002	Music	Listen, just feel your heart!
 10000000003	Genshin Impact	Step Into a Vast Magical World of Adventure
-10000000004	English	\N
-10000000006	Temp Recourse	\N
-10000000005	Language and Literatures	\N
+10000000004	English	
+10000000005	Language and Literatures	
+10000000006	Temp Recourse	
+10000000008	Zenless Zone Zero	Welcome to New Eridu!
 \.
 
 
@@ -1047,15 +1311,8 @@ COPY inver.files (file_id, file_name, file_type, course_id, file_remark, upload_
 10000000005	Singleton Java Example	java	10000000000	The print pool is an application that manages print tasks, allowing a print pool user to delete, abort, or change the priority of the print tasks, only one print pool object can run in a system.	10000000001	2024-07-18	/code/SingletonExample.java
 10000000006	Character Demo - Cyno	mp4	10000000003	Counsel of Condemnation | Genshin Impact	10000000001	2024-07-18	/media/Character Demo - Cyno Counsel of Condemnation Genshin Impact.mp4
 10000000007	Character Teaser - Cyno	mp4	10000000003	A Just Punishment | Genshin Impact	10000000001	2024-07-18	/media/Character Teaser - Cyno A Just Punishment Genshin Impact.mp4
-10000000008	最后时刻 - Li Jian	m4a	10000000002	On May 12, 2008, the Wenchuan earthquake. As a singer, the only thing I can do at this moment is to use music to express my care. Li Jian created such a song in the shortest possible time, but it has become the most warm and restrained work among all disaster relief songs. The small love between lovers and relatives replaces the big love in the mainstream voice, and expresses the sadness and love hidden deep in the heart with warm melodies and lyrics.	10000000001	2024-07-18	/media/01 最后时刻.m4a
 10000000009	Character Picture - Cyno	png	10000000003	Genshin Impact	10000000001	2024-07-18	/image/4d708230-877f-42c0-8cee-fde3304f5278.png
-10000000010	VORTEX - 白鲨JAWS	mp3	10000000002	The song "VORTEX" is from the album titled "Link Click Season 2 Original Soundtrack" released in 2023. It is produced by Bilibili and written by Michael Yu, who is also the lyricist. The relatable lyrics and powerful melodies transport me to a world where anything is possible. This song reminds me to embrace the uncertainties of life and to face challenges head-on, knowing that there is always something to hold onto, even in the darkest of times. It is a reminder that we are all part of a larger narrative and that our actions today can shape a better tomorrow.	10000000001	2024-07-18	/media/白鲨JAWS - VORTEX.mp3
-10000000011	Shadow Assassins - 王舜禾	mp3	10000000002	SCISSOR SEVEN Season 3 (Animation Original Soundtracks)	10000000001	2024-07-18	/media/王舜禾 - 暗影刺客.mp3
-10000000013	Do I Matter To Me - 赵寒	mp3	10000000002	"One day, when the people and things around you are gone, is it still important to you?" "Do I Matter To Me" is the first officially published English lyrics by Zhang Jiacheng, and the whole lyrics use the end of the world as a metaphorical background, describing a person's reflection after losing everything when he is most lonely and lost. Using musicians from Beijing, Hong Kong, Canada and the United States, Zhang Jiacheng ripped apart the worldview of nothingness and an instrumental solo before the final chorus.	10000000001	2024-07-18	/media/赵寒 - Do I Matter To Me.mp3
-10000000014	I Will Never Get Loved - Milk Coffee	mp3	10000000002	SCISSOR SEVEN Season 4 (Animation Original Soundtracks)	10000000001	2024-07-18	/media/牛奶咖啡 - 怀抱的温柔并不属于我.mp3
 10000000016	Character Picture - Ororon	jpg	10000000003	Genshin Impact 5.2	10000000000	2024-12-18	/image/20241208_221123833_iOS.jpg
-10000000018	风吹过的晨曦	flac	10000000002		10000000000	2025-12-04	/media/风吹过的晨曦_1.flac
-10000000020	你一定能看见	flac	10000000002		10000000000	2025-12-07	/media/你一定能看见.flac
 10000000033	Test ePub Book	epub	10000000006		10000000000	2025-12-15	/doc/019b2280-57d2-7120-99e5-07fcc11c920c.epub
 10000000035	Test Text	txt	10000000006		10000000000	2025-12-18	/doc/019b2d0b-addf-7bb0-809b-ddeaef0d782d.txt
 10000000036	Test Word	docx	10000000006		10000000000	2025-12-18	/doc/019b2d0d-63c5-7a8a-94b3-1bba31804bca.docx
@@ -1065,22 +1322,33 @@ COPY inver.files (file_id, file_name, file_type, course_id, file_remark, upload_
 10000000040	test video	mp4	10000000006		10000000000	2025-12-20	/media/019b3bf5-6d96-79ba-9252-84cdf4f7c322.mp4
 10000000041	Test PDF	pdf	10000000006		10000000000	2025-12-21	/doc/019b418a-ef06-7a3c-8174-2d009966cd44.pdf
 10000000042	Test Python	py	10000000000		10000000000	2025-12-28	/code/019b6583-dee9-7d7b-9513-8cd99caf5cbf.py
-10000000021	Dive Back In Time - 白鯊JAWS	flac	10000000002		10000000000	2026-01-23	/media/019bea4d-5cd3-7426-ad91-baffbe565534.flac
+10000000008	最后时刻 - Li Jian	m4a	10000000002	On May 12, 2008, the Wenchuan earthquake. As a singer, the only thing I can do at this moment is to use music to express my care. Li Jian created such a song in the shortest possible time, but it has become the most warm and restrained work among all disaster relief songs. The small love between lovers and relatives replaces the big love in the mainstream voice, and expresses the sadness and love hidden deep in the heart with warm melodies and lyrics.	10000000000	2026-02-03	/media/01 最后时刻.m4a
+10000000010	VORTEX - 白鲨JAWS	mp3	10000000002	The song "VORTEX" is from the album titled "Link Click Season 2 Original Soundtrack" released in 2023. It is produced by Bilibili and written by Michael Yu, who is also the lyricist. The relatable lyrics and powerful melodies transport me to a world where anything is possible. This song reminds me to embrace the uncertainties of life and to face challenges head-on, knowing that there is always something to hold onto, even in the darkest of times. It is a reminder that we are all part of a larger narrative and that our actions today can shape a better tomorrow.	10000000000	2026-02-03	/media/白鲨JAWS - VORTEX.mp3
+10000000011	Shadow Assassins - 王舜禾	mp3	10000000002	SCISSOR SEVEN Season 3 (Animation Original Soundtracks)	10000000000	2026-02-03	/media/王舜禾 - 暗影刺客.mp3
+10000000013	Do I Matter To Me - 赵寒	mp3	10000000002	"One day, when the people and things around you are gone, is it still important to you?" "Do I Matter To Me" is the first officially published English lyrics by Zhang Jiacheng, and the whole lyrics use the end of the world as a metaphorical background, describing a person's reflection after losing everything when he is most lonely and lost. Using musicians from Beijing, Hong Kong, Canada and the United States, Zhang Jiacheng ripped apart the worldview of nothingness and an instrumental solo before the final chorus.	10000000000	2026-02-03	/media/赵寒 - Do I Matter To Me.mp3
+10000000014	I Will Never Get Loved - Milk Coffee	mp3	10000000002	SCISSOR SEVEN Season 4 (Animation Original Soundtracks)	10000000000	2026-02-03	/media/牛奶咖啡 - 怀抱的温柔并不属于我.mp3
+10000000018	风吹过的晨曦	flac	10000000002		10000000000	2026-02-03	/media/风吹过的晨曦_1.flac
+10000000020	你一定能看见	flac	10000000002		10000000000	2026-02-03	/media/你一定能看见.flac
+10000000021	Dive Back In Time - 白鯊JAWS	flac	10000000002		10000000000	2026-02-03	/media/019bea4d-5cd3-7426-ad91-baffbe565534.flac
 10000000044	The divine comedy by Dante Alighieri	epub	10000000005	"The divine comedy" by Dante Alighieri is an Italian narrative poem written between 1308 and 1321. The work follows Dante's journey through the three realms of the afterlife: Hell, Purgatory, and Heaven. Guided by the poet Virgil and his idealized woman Beatrice, Dante encounters souls receiving divine justice based on their earthly actions. The poem allegorically represents the soul's journey toward God through recognition of sin, penance, and spiritual ascent, drawing on medieval Catholic theology and philosophy. (This is an automatically generated summary.)	10000000000	2026-01-12	/doc/019ba5c1-1065-7faf-a70b-9340edf52c4b.epub
 10000000046	The Time Machine by H. G. Wells	epub	10000000005	"The Time Machine" by H. G. Wells is a science fiction novella published in 1895. A Victorian scientist known as the Time Traveller journeys to the year 802,701, where he discovers humanity has evolved into two distinct species: the childlike Eloi and the savage Morlocks. This groundbreaking work popularized the concept of time travel and coined the term "time machine." Wells crafts a haunting vision of the future that explores class divisions	10000000000	2026-01-12	/doc/019bb14a-2037-7698-b6f4-c7102136b8ae.epub
 10000000048	Test Word by Word Lyrics	flac	10000000006		10000000000	2026-01-16	/media/019bc744-cafc-75be-92f8-48cfbff96ea9.flac
 10000000052	東坡樂府 by Shi Su	epub	10000000005	"東坡樂府" by Shi Su is a collection of poetic works written in the late 11th century. This compilation honors the renowned Chinese poet and statesman Su Shi and reflects his passion for life, nature, and artistry. The poems capture various themes such as love, nostalgia, and the beauty of spring, often set against the backdrop of scenic landscapes. The opening of the collection features a series of verses that convey the poet's observations and reflections during seasons like spring and autumn. Su Shi's lyrical style shines through as he explores the emotions tied to nature and personal experiences with friends and loved ones. The poems, rich with imagery, evoke a sense of longing and appreciation for transient moments and relationships, setting the stage for a deeper exploration of the poet's thoughts and feelings in the subsequent sections of the collection. (This is an automatically generated summary.)	10000000000	2026-01-17	/doc/019bcbb7-5d1b-7a65-a711-737902183e26.epub
-10000000047	Good Luck, Babe! - Chappell Roan	flac	10000000002	In April 2024, Roan sent an email to fans stating that "Good Luck, Babe!" would be released on April 5, writing that the song is "about wishing good luck to someone who is denying fate".	10000000000	2026-01-18	/media/019bc9a6-a0bf-750d-a8d2-e7b87050ea22.flac
 10000000053	李太白集 by Bai Li	epub	10000000005	"李太白集" by Bai Li is a collection of poetry written in the 8th century. This work presents a rich anthology of poems crafted by the famed Tang dynasty poet Li Bai, known for his vivid imagery, emotional depth, and connection to nature. The collection showcases Li Bai’s themes of romance, nature, and the pursuit of a transcendent existence. At the start of the anthology, the introductory information details the historical context of Li Bai's life, establishing his birth in the year 701 and providing references to significant events during the Tang dynasty that shaped his poetry. The opening portion includes a glimpse of poetic forms and themes that resonate within Li Bai’s works, such as the carefree spirit of youth, the influence of nature, and allusions to his philosophical musings on life, love, and the cosmos. Through these preliminary introductions and selected poems, readers are invited to explore the profound reflections and aesthetic beauty that characterize Li Bai’s poetry. (This is an automatically generated summary.)	10000000000	2026-01-17	/doc/019bcbcd-698f-7716-82a1-f03152ef3b92.epub
 10000000054	The King James Version of the Bible	epub	10000000005	"The King James Version of the Bible" is an English translation of the Christian Bible commissioned in 1604 and published in 1611 under King James VI and I. This translation for the Church of England contains 80 books and was created to address controversies surrounding existing versions. Celebrated for its majestic style, it has profoundly shaped English literature, Christian thought, and everyday speech for over four centuries. The translation became the unchallenged standard in English Protestant churches and remains one of the most widely read versions today. (This is an automatically generated summary.)	10000000000	2026-01-17	/doc/019bcbd5-8253-73eb-93c1-27258255ed5a.epub
-10000000019	絵本 - Sān-Z & HOYO-MiX	flac	10000000002	Set beneath a heavy, leaden sky where "happiness never poured down," the song tracks the movement of a solitary figure defined by the single shadow at their feet. It is a story of internal fracture—where wings shatter and the soul plunges into a bottomless dark—only to be reclaimed through the sheer mechanics of persistence and the mutual recognition between companions who have been walking together all along and its solitude.	10000000000	2026-01-17	/media/019bcb47-5784-7e95-a562-8b78a9d4cb48.flac
+10000000019	絵本 - Sān-Z & HOYO-MiX	flac	10000000002	Set beneath a heavy, leaden sky where "happiness never poured down," the song tracks the movement of a solitary figure defined by the single shadow at their feet. It is a story of internal fracture—where wings shatter and the soul plunges into a bottomless dark—only to be reclaimed through the sheer mechanics of persistence and the mutual recognition between companions who have been walking together all along and its solitude.	10000000000	2026-02-03	/media/019bcb47-5784-7e95-a562-8b78a9d4cb48.flac
 10000000050	山海經 by Anonymous	epub	10000000005	"山海經" by Anonymous is a Chinese classic text compiled during the early Han dynasty, though early versions may have existed since the 4th century BCE. This mythic compilation describes over 550 mountains and 300 channels across pre-Qin China, blending fabulous geography with cultural accounts and mythology. The work catalogs medicines, animals, geological features, and short myths through detailed descriptions organized by cardinal directions—mixing mundane observations with fanciful and strange creatures in a repetitious, encyclopedic format. (This is an automatically generated summary.)	10000000000	2026-01-17	/doc/019bcbb5-48a8-73eb-a6cf-00ea4f90beee.epub
 10000000051	道德經 by Laozi	epub	10000000005	"道德經" by Laozi is an ancient Chinese text from the late Warring States period (475-221 BCE). Traditionally attributed to the sage Laozi, this foundational work of Taoism explores the Way and its virtue through philosophical teachings. The text has profoundly influenced Chinese philosophy, religion, and culture, while also becoming one of the most translated works in world literature. Its authorship remains debated, with archaeological discoveries continuing to reveal earlier manuscript versions that reshape understanding of this classic. (This is an automatically generated summary.)	10000000000	2026-01-17	/doc/019bcbb6-4da0-78a7-9aef-61f14d44f2ee.epub
-10000000049	A Thousand Year - Christina Perri	flac	10000000002	Christina Perri's "A Thousand Years" is about timeless, enduring love, patient waiting, and overcoming fear for a deep, destined connection, popularized for Twilight's Bella and Edward but resonating universally for weddings and profound devotion, expressing a belief in a soulmate found after lifetimes of waiting. The lyrics convey a powerful commitment, highlighting themes of bravery, hope, and an eternal bond that feels predestined, making every moment of past longing worthwhile. 	10000000000	2026-01-18	/media/019bc7f6-1180-780f-b6ff-cc867cfbd3be.flac
-10000000012	What are you waiting for? - Nickelback	flac	10000000002	"What Are You Waiting For?" is a high‐octane pop-rock rally cry from Nickelback, co‐written by Chad Kroeger and Mike Kroeger. Driven by urgent drums, throbbing bass, and shimmering synth layers, its punchy chorus—"What are you waiting for?"—cuts through complacency like a clarion call. A brief piano-led interlude before the final chorus offers a moment of introspection, only to give way to a full-band explosion that propels listeners from hesitation into action. Since its release as the breakout single from No Fixed Address, it has become a live-show staple, uniting crowds in a shared vow to stop waiting and start living.	10000000000	2026-01-18	/media/019bd05c-c782-7a1b-bf09-6701a07e70f3.flac
-10000000055	Moshimonogatari - Tani Yuuki	flac	10000000002	"Moshimonogatari" (もしものがたり) by Tani Yuuki means "What If Story" or "Hypothetical Tale" and is a gentle, perspective-shifting song for the Doraemon anime, encouraging seeing life's challenges differently, while Tani Yuuki is the popular Japanese singer known for heartfelt, relatable tracks, and the title references the Monogatari series' unique storytelling, blending fantasy with deep emotion.	10000000000	2026-01-18	/media/019bd0dc-f4fd-7da1-977e-b3169c685abd.flac
+10000000047	Good Luck, Babe! - Chappell Roan	flac	10000000002	In April 2024, Roan sent an email to fans stating that "Good Luck, Babe!" would be released on April 5, writing that the song is "about wishing good luck to someone who is denying fate".	10000000000	2026-02-03	/media/019bc9a6-a0bf-750d-a8d2-e7b87050ea22.flac
 10000000056	test music	flac	10000000006		10000000000	2026-01-19	/media/019bd42b-7379-7a54-8810-0c79c4e52e5b.flac
 10000000057	Test New Data Dir	flac	10000000006		10000000000	2026-01-25	/media/019bf31e-49f8-71ce-834f-7aa345e150c2.flac
+10000000058	Test Gen Music Subtitle	flac	10000000006		10000000000	2026-01-30	/media/019c0dce-2d3f-773e-a5fb-5bcef09fe315.flac
+10000000059	Test Gen Video Subtitle	mp4	10000000006		10000000000	2026-01-30	/media/019c0dd4-b438-765c-bf23-929f70fa18dd.mp4
+10000000049	A Thousand Year - Christina Perri	flac	10000000002	Christina Perri's "A Thousand Years" is about timeless, enduring love, patient waiting, and overcoming fear for a deep, destined connection, popularized for Twilight's Bella and Edward but resonating universally for weddings and profound devotion, expressing a belief in a soulmate found after lifetimes of waiting. The lyrics convey a powerful commitment, highlighting themes of bravery, hope, and an eternal bond that feels predestined, making every moment of past longing worthwhile. 	10000000000	2026-02-03	/media/019bc7f6-1180-780f-b6ff-cc867cfbd3be.flac
+10000000060	Asaba Harumasa EP - "Picture Book"	mp4	10000000008	Yet this time, I'll seize the light.	10000000000	2026-01-31	/media/019c12a4-bfbc-723c-9b3f-05a681b2ce00.mp4
+10000000055	Moshimonogatari - Tani Yuuki	flac	10000000002	"Moshimonogatari" (もしものがたり) by Tani Yuuki means "What If Story" or "Hypothetical Tale" and is a gentle, perspective-shifting song for the Doraemon anime, encouraging seeing life's challenges differently, while Tani Yuuki is the popular Japanese singer known for heartfelt, relatable tracks, and the title references the Monogatari series' unique storytelling, blending fantasy with deep emotion.	10000000000	2026-02-03	/media/019bd0dc-f4fd-7da1-977e-b3169c685abd.flac
+10000000061	Asaba Harumasa	png	10000000008	Asaba Harumasa is a character from the Zenless Zone Zero game, where he serves as an Executive Officer of Hollow Special Operations Section 6. He is known for his exceptional Ether aptitude and martial arts skills. Harumasa is a member of the organization "H.A.N.D" in New Eridu and is often seen as a lazy slacker who uses his illness as a reason for sick leave. Despite his lack of passion for work, Harumasa is a skilled archer who can switch between close combat and ranged attacks. His character is deeply affected by Ether Aptitude Regression Syndrome, a rare illness that grants him exceptional Ether aptitude but also causes significant health issues.	10000000000	2026-02-03	/img/019c2140-abec-7159-851c-f4a542613656.png
+10000000012	What are you waiting for? - Nickelback	flac	10000000002	"What Are You Waiting For?" is a high‐octane pop-rock rally cry from Nickelback, co‐written by Chad Kroeger and Mike Kroeger. Driven by urgent drums, throbbing bass, and shimmering synth layers, its punchy chorus—"What are you waiting for?"—cuts through complacency like a clarion call. A brief piano-led interlude before the final chorus offers a moment of introspection, only to give way to a full-band explosion that propels listeners from hesitation into action. Since its release as the breakout single from No Fixed Address, it has become a live-show staple, uniting crowds in a shared vow to stop waiting and start living.	10000000000	2026-02-03	/media/019bd05c-c782-7a1b-bf09-6701a07e70f3.flac
 \.
 
 
@@ -1166,6 +1434,7 @@ e24e0920-3b9b-11f0-8b9c-a51ae60b576a	1.0.30.1000.beta.1.aic	1. Added automatic d
 9bc4dd30-d32b-11f0-9dbd-d964415d14f3	1.2.59.100.release.aic	1. Adjusted audio player interface	2025-11-07 10:00:00+08
 019bd654-e4c2-7924-9306-996fab0257a7	1.4.138.1223.beta.2.aic	1. Added support for online Zig code compilation; 2. Updated dependencies to the latest stable version; 3. Optimized some controller code.	2026-01-19 21:02:43.580746+08
 019bfb10-f144-7676-855d-ebe237cd3885	1.4.143.1248.beta.3.aic	1. Added a feature for saving course resources to favorites; 2. Updated the homepage to display the top 5 most viewed resources by registered users; 3. Optimized some styling; 4. Optimized some code in the config and controller sections.	2026-01-27 00:09:23.823555+08
+019c224e-781f-71c2-8a08-80d68747137b	2.0.155.1264.release.aix	1. Updated FastAPI interface and backend service logic; 2. Upgraded the AI ​​model to Phi-4-Q3_K_S; 3. Added vector-enhanced retrieval functionality (based on Weaviate storage, using mxbai-embed-large-v1 as the embedding model); 4. Integrated Whisper to automatically generate missing subtitles (SRT format) for audio and video resources; 5. Added corresponding vector addition, deletion, and modification operations during the creation, update, and deletion lifecycle of courses and files.	2026-02-03 15:02:44.867892+08
 \.
 
 
@@ -1232,13 +1501,15 @@ COPY inver.view_records (record_id, file_id, user_id, view_duration, view_date, 
 10000000079	10000000055	10000000000	0	2026-01-26 15:42:59.418442	4	2026-01-18 19:28:22.97629
 10000000013	10000000010	10000000000	0	2026-01-17 09:58:05.869237	3	2024-07-16 03:30:40
 10000000033	10000000011	10000000000	0	2026-01-17 09:58:10.207047	4	2024-07-17 00:31:41
+10000000082	10000000058	10000000000	0	2026-01-30 15:31:44.004511	5	2026-01-30 15:21:52.475092
 10000000031	10000000013	10000000000	0	2026-01-17 09:58:19.147673	6	2024-07-17 00:25:11
 10000000043	10000000014	10000000000	0	2026-01-17 09:58:33.593717	3	2025-10-07 20:31:27
 10000000047	10000000018	10000000000	0	2026-01-17 09:58:37.536501	5	2025-12-04 21:24:40
-10000000009	10000000008	10000000000	0	2026-01-19 10:29:26.604559	10	2024-07-16 03:06:36
+10000000083	10000000061	10000000000	0	2026-02-03 10:31:36.538407	3	2026-02-03 10:06:59.996661
 10000000080	10000000056	10000000000	0	2026-01-19 10:52:57.470218	1	2026-01-19 10:52:57.470218
 10000000071	10000000047	10000000000	0	2026-01-23 17:14:15.786809	9	2026-01-16 11:30:00.883509
-10000000052	10000000020	10000000000	0	2026-01-27 10:54:06.00202	2	2025-12-07 11:36:22
+10000000009	10000000008	10000000000	0	2026-02-03 11:15:40.748755	12	2024-07-16 03:06:36
+10000000052	10000000020	10000000000	0	2026-02-03 11:17:50.56273	3	2025-12-07 11:36:22
 10000000073	10000000049	10000000000	0	2026-01-27 11:02:35.316055	17	2026-01-17 01:51:50.826951
 \.
 
@@ -1268,6 +1539,70 @@ COPY public.sylt_structure (parent_id, child_id) FROM stdin;
 
 
 --
+-- Data for Name: memory; Type: TABLE DATA; Schema: rvaig; Owner: ravon
+--
+
+COPY rvaig.memory (id, user_id, content, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: company; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.company (id, name, region, description) FROM stdin;
+\.
+
+
+--
+-- Data for Name: detail; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.detail (id, product, language, name, description) FROM stdin;
+\.
+
+
+--
+-- Data for Name: factory; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.factory (id, name, company, description) FROM stdin;
+\.
+
+
+--
+-- Data for Name: region; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.region (id, name, description) FROM stdin;
+\.
+
+
+--
+-- Data for Name: relation; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.relation (id, product_id, material_id, quantity) FROM stdin;
+\.
+
+
+--
+-- Data for Name: unres; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.unres (id, urc, type, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: urc_operation; Type: TABLE DATA; Schema: unres; Owner: ravon
+--
+
+COPY unres.urc_operation (id, urc, type, factory_id, operation_id, auth_code, created_at) FROM stdin;
+\.
+
+
+--
 -- Name: geo_access_basic_seq; Type: SEQUENCE SET; Schema: base; Owner: ravon
 --
 
@@ -1278,7 +1613,7 @@ SELECT pg_catalog.setval('base.geo_access_basic_seq', 10000000005, true);
 -- Name: geo_access_geo_acc_id_seq; Type: SEQUENCE SET; Schema: base; Owner: ravon
 --
 
-SELECT pg_catalog.setval('base.geo_access_geo_acc_id_seq', 15, true);
+SELECT pg_catalog.setval('base.geo_access_geo_acc_id_seq', 26, true);
 
 
 --
@@ -1334,14 +1669,14 @@ SELECT pg_catalog.setval('inver.comments_comment_id_seq', 10000000001, false);
 -- Name: courses_course_id_seq; Type: SEQUENCE SET; Schema: inver; Owner: ravon
 --
 
-SELECT pg_catalog.setval('inver.courses_course_id_seq', 10000000007, true);
+SELECT pg_catalog.setval('inver.courses_course_id_seq', 10000000008, true);
 
 
 --
 -- Name: files_file_id_seq; Type: SEQUENCE SET; Schema: inver; Owner: ravon
 --
 
-SELECT pg_catalog.setval('inver.files_file_id_seq', 10000000057, true);
+SELECT pg_catalog.setval('inver.files_file_id_seq', 10000000061, true);
 
 
 --
@@ -1383,7 +1718,7 @@ SELECT pg_catalog.setval('inver.users_user_id_seq', 10000000005, false);
 -- Name: view_records_record_id_seq; Type: SEQUENCE SET; Schema: inver; Owner: ravon
 --
 
-SELECT pg_catalog.setval('inver.view_records_record_id_seq', 10000000081, true);
+SELECT pg_catalog.setval('inver.view_records_record_id_seq', 10000000083, true);
 
 
 --
@@ -1391,6 +1726,41 @@ SELECT pg_catalog.setval('inver.view_records_record_id_seq', 10000000081, true);
 --
 
 SELECT pg_catalog.setval('public.sylt_resources_id_seq', 1, false);
+
+
+--
+-- Name: memory_id_seq; Type: SEQUENCE SET; Schema: rvaig; Owner: ravon
+--
+
+SELECT pg_catalog.setval('rvaig.memory_id_seq', 1, false);
+
+
+--
+-- Name: detail_id_seq; Type: SEQUENCE SET; Schema: unres; Owner: ravon
+--
+
+SELECT pg_catalog.setval('unres.detail_id_seq', 1, false);
+
+
+--
+-- Name: factory_id_seq; Type: SEQUENCE SET; Schema: unres; Owner: ravon
+--
+
+SELECT pg_catalog.setval('unres.factory_id_seq', 1, false);
+
+
+--
+-- Name: relation_id_seq; Type: SEQUENCE SET; Schema: unres; Owner: ravon
+--
+
+SELECT pg_catalog.setval('unres.relation_id_seq', 1, false);
+
+
+--
+-- Name: urc_operation_id_seq; Type: SEQUENCE SET; Schema: unres; Owner: ravon
+--
+
+SELECT pg_catalog.setval('unres.urc_operation_id_seq', 1, false);
 
 
 --
@@ -1610,6 +1980,86 @@ ALTER TABLE ONLY public.sylt_structure
 
 
 --
+-- Name: memory memory_pkey; Type: CONSTRAINT; Schema: rvaig; Owner: ravon
+--
+
+ALTER TABLE ONLY rvaig.memory
+    ADD CONSTRAINT memory_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: company company_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.company
+    ADD CONSTRAINT company_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: detail detail_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.detail
+    ADD CONSTRAINT detail_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: detail detail_product_language_key; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.detail
+    ADD CONSTRAINT detail_product_language_key UNIQUE (product, language);
+
+
+--
+-- Name: factory factory_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.factory
+    ADD CONSTRAINT factory_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: region region_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.region
+    ADD CONSTRAINT region_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: relation relation_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.relation
+    ADD CONSTRAINT relation_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: relation relation_product_id_material_id_key; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.relation
+    ADD CONSTRAINT relation_product_id_material_id_key UNIQUE (product_id, material_id);
+
+
+--
+-- Name: unres unres_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.unres
+    ADD CONSTRAINT unres_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: urc_operation urc_operation_pkey; Type: CONSTRAINT; Schema: unres; Owner: ravon
+--
+
+ALTER TABLE ONLY unres.urc_operation
+    ADD CONSTRAINT urc_operation_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: idx_access_time; Type: INDEX; Schema: base; Owner: ravon
 --
 
@@ -1771,6 +2221,83 @@ CREATE INDEX idx_sylt_structure_parent ON public.sylt_structure USING btree (par
 
 
 --
+-- Name: idx_unres_company_region; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_company_region ON unres.company USING btree (region);
+
+
+--
+-- Name: idx_unres_detail_lang; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_detail_lang ON unres.detail USING btree (language);
+
+
+--
+-- Name: idx_unres_detail_product; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_detail_product ON unres.detail USING btree (product);
+
+
+--
+-- Name: idx_unres_factory_company; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_factory_company ON unres.factory USING btree (company);
+
+
+--
+-- Name: idx_unres_relation_material; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_relation_material ON unres.relation USING btree (material_id);
+
+
+--
+-- Name: idx_unres_relation_product; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_relation_product ON unres.relation USING btree (product_id);
+
+
+--
+-- Name: idx_unres_type; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_type ON unres.unres USING btree (type);
+
+
+--
+-- Name: idx_unres_urc; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_unres_urc ON unres.unres USING btree (urc);
+
+
+--
+-- Name: idx_urc_op_factory; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_urc_op_factory ON unres.urc_operation USING btree (factory_id);
+
+
+--
+-- Name: idx_urc_op_time; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_urc_op_time ON unres.urc_operation USING btree (created_at);
+
+
+--
+-- Name: idx_urc_op_urc; Type: INDEX; Schema: unres; Owner: ravon
+--
+
+CREATE INDEX idx_urc_op_urc ON unres.urc_operation USING btree (urc);
+
+
+--
 -- Name: annotations trg_annotations_updated_at; Type: TRIGGER; Schema: inver; Owner: ravon
 --
 
@@ -1805,5 +2332,5 @@ ALTER TABLE ONLY public.sylt_structure
 -- PostgreSQL database dump complete
 --
 
-\unrestrict T9OTeWYggc8DiS1WeJ0Y0huomESRnUKOvzEXlSo5MFsg0a7QrUj5yBPgMygVcDa
+\unrestrict 6rcMdDodnuwva3UzkErUtFHAWwtiXlJ8RON3wEl7Pa9fg0dODeT9sl4fNajdghF
 

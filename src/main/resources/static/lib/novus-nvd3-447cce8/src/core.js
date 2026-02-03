@@ -126,9 +126,9 @@ or
 
 nv.addGraph(<generate Function>, <callback Function>)
 
-The generate function should contain code that creates the NVD3 model, sets options
-on it, adds data to an SVG element, and invokes the chart model. The generate function
-should return the chart model.  See examples/lineChart.html for a usage example.
+The generate function should contain code that creates the NVD3 models, sets options
+on it, adds data to an SVG element, and invokes the chart models. The generate function
+should return the chart models.  See examples/lineChart.html for a usage example.
 
 The callback function is optional, and it is called when the generate function completes.
 */

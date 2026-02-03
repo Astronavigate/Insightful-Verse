@@ -16,9 +16,6 @@
 
 package tech.ravon.service.inver;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 public interface CodeService {
     String runCode(String code, String lang);
     String runC(String code);
